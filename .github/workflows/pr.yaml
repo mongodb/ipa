@@ -1,8 +1,9 @@
 # Trigger the workflow on pull requests and pushes to the main branch
 on:
+  push:
+    branches:
+      - main
   pull_request:
-  branches:
-    - main
 jobs:
   lint:
     runs-on: ubuntu-latest
