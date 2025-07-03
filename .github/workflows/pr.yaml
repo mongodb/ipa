@@ -16,6 +16,6 @@ jobs:
         node-version-file: 'package.json'
         cache: 'npm'
     - name: Install npm dependencies
-      run: npm install
+      run: npm ci
     - name: lint
       run: npm run lint
