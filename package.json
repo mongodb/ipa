@@ -1,0 +1,22 @@
+{
+  "name": "ipa",
+  "homepage": "https://github.com/10gen/ipa#readme",
+  "license": "UNLICENSED",
+  "private": true,
+  "engines": {
+    "node": "22.x",
+    "npm": "10.x"
+  },
+  "scripts": {
+    "format:prettier": "npx prettier . --write",
+    "lint:prettier": "npx prettier . --check",
+    "lint:markdown": "npx markdownlint \"**/*.md\" \".github/**/*.md\" --ignore node_modules --ignore LICENSE.md",
+    "lint": "run-p lint:*"
+  },
+  "devDependencies": {
+    "markdownlint": "^0.38.0",
+    "markdownlint-cli": "^0.45.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "3.6.1"
+  }
+}

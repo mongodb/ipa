@@ -1,0 +1,23 @@
+buildvariants:
+  - name: ubuntu
+    display_name: Ubuntu
+    run_on:
+      - ubuntu2204-small
+    tasks:
+      - write_and_set_downstream_expansions
+
+functions:
+  write repo name to downstream_expansions.yaml for Pine:
+    - command: shell.exec
+      params:
+        script: |
+          touch downstream_expansions.yaml
+          echo "pine_repo_name: ipa" | tee downstream_expansions.yaml
+
+tasks:
+  - name: write_and_set_downstream_expansions
+    commands:
+      - func: write repo name to downstream_expansions.yaml for Pine
+      - command: downstream_expansions.set
+        params:
+          file: downstream_expansions.yaml

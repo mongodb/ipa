@@ -1,0 +1,9 @@
+{
+  "label": "General",
+  "collapsible": true,
+  "collapsed": false,
+  "link": {
+    "type": "generated-index",
+    "title": "Improvement Proposal for APIs"
+  }
+}
