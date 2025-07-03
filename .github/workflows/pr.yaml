@@ -8,15 +8,14 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    # Checkout the code
-    - name: Checkout repository
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
-    - name: Setup Node
-      uses: actions/setup-node@v4
-      with:
-        node-version-file: 'package.json'
-        cache: 'npm'
-    - name: Install npm dependencies
-      run: npm ci
-    - name: lint
-      run: npm run lint
+      - name: Checkout repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "package.json"
+          cache: "npm"
+      - name: Install npm dependencies
+        run: npm ci
+      - name: lint
+        run: npm run lint
