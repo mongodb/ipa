@@ -7,7 +7,7 @@ const darkCodeTheme = themes.dracula;
 module.exports = {
   title: "IPA - Improvement Proposal for APIs",
   url: "https://mongodb.github.io", // Your website URL
-  baseUrl: "/ipa",
+  baseUrl: "/ipa/",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
   favicon: "img/favicon.ico",
