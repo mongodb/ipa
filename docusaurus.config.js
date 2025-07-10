@@ -6,8 +6,8 @@ const darkCodeTheme = themes.dracula;
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
 module.exports = {
   title: "IPA - Improvement Proposal for APIs",
-  url: "https://go.mongodb.org", // Your website URL
-  baseUrl: "/",
+  url: "https://mongodb.github.io", // Your website URL
+  baseUrl: "/ipa",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
   favicon: "img/favicon.ico",
