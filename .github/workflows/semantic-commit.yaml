@@ -14,12 +14,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check commit messages
-        uses: wagoid/commitlint-github-action@v6
-        with:
-          configFile: ".commitlintrc.json"
-          helpURL: "https://github.com/10gen/ipa/blob/main/CONTRIBUTING.md#commit-message-guidelines"
-
       - name: Check PR title
         uses: amannn/action-semantic-pull-request@v5
         env:
