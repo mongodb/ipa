@@ -54,13 +54,8 @@ npm run lint:markdown
 
 ## Commit Message Guidelines
 
-We follow the [Conventional Commits](https://conventionalcommits.org/). 
-When creating PR title you would need to use conventional commits format. 
-Individual commits do not matter. 
-
-## Commit Message Guidelines
-
-We follow [Conventional Commits](https://conventionalcommits.org/) for **PR titles only**. Individual commits are flexible.
+We follow [Conventional Commits](https://conventionalcommits.org/) for **PR titles only**. 
+Individual commits are flexible. 
 
 ### Examples
 - `fix(ipa0110): remove explicit number for items per page`
