@@ -1,5 +1,7 @@
 ---
+id: index
 sidebar_position: 1
+slug: /
 ---
 
 # Improvement Proposal for APIs (IPA)
