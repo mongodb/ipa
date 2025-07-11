@@ -54,5 +54,18 @@ npm run lint:markdown
 
 ## Commit Message Guidelines
 
-We follow the [Conventional Commits](https://conventionalcommits.org/)
-specification for commit messages.
+We follow the [Conventional Commits](https://conventionalcommits.org/). 
+When creating PR title you would need to use conventional commits format. 
+Individual commits do not matter. 
+
+## Commit Message Guidelines
+
+We follow [Conventional Commits](https://conventionalcommits.org/) for **PR titles only**. Individual commits are flexible.
+
+### Examples
+- `fix(ipa0110): remove explicit number for items per page`
+- `feat(ipa0210): add new IPA functionality`
+- `docs(readme): update installation instructions`
+
+### Common Types
+`feat`, `fix`, `docs`, `chore`
