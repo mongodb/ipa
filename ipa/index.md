@@ -61,3 +61,5 @@ principles that benefit this working mode, and resources are expected to meet a
 certain set of principles to be considered declarative-friendly ready. For
 example, always providing a method to validate the current state of a resource
 is a critical requirement and as such we have made Get operations mandatory.
+
+To learn more, see [IPA-127](0127.md).
