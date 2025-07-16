@@ -1,0 +1,154 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  /* MongoDB Brand Colors */
+  --mongodb-green: #00ed64;
+  --mongodb-dark-green: #023430;
+  --mongodb-forest-green: #116149;
+  --mongodb-sage-green: #39a05a;
+  --mongodb-slate: #001e2b;
+  --mongodb-charcoal: #3c4142;
+  --mongodb-white: #ffffff;
+  --mongodb-pearl: #f9fbfa;
+
+  /* Primary color palette using MongoDB green */
+  --ifm-color-primary: #00ed64;
+  --ifm-color-primary-dark: #00d65a;
+  --ifm-color-primary-darker: #00cb55;
+  --ifm-color-primary-darkest: #00a746;
+  --ifm-color-primary-light: #1aef72;
+  --ifm-color-primary-lighter: #26f077;
+  --ifm-color-primary-lightest: #4df386;
+
+  /* Secondary colors */
+  --ifm-color-secondary: #116149;
+  --ifm-color-secondary-dark: #0e5340;
+  --ifm-color-secondary-darker: #0d4f3c;
+  --ifm-color-secondary-darkest: #0a4131;
+  --ifm-color-secondary-light: #146f52;
+  --ifm-color-secondary-lighter: #157556;
+  --ifm-color-secondary-lightest: #188963;
+
+  /* Background colors */
+  --ifm-background-color: #f9fbfa;
+  --ifm-background-surface-color: #ffffff;
+
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 237, 100, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme="dark"] {
+  /* Dark theme using MongoDB's darker palette */
+  --ifm-color-primary: #00ed64;
+  --ifm-color-primary-dark: #00d65a;
+  --ifm-color-primary-darker: #00cb55;
+  --ifm-color-primary-darkest: #00a746;
+  --ifm-color-primary-light: #1aef72;
+  --ifm-color-primary-lighter: #26f077;
+  --ifm-color-primary-lightest: #4df386;
+
+  /* Dark background using MongoDB slate */
+  --ifm-background-color: #001e2b;
+  --ifm-background-surface-color: #023430;
+  --ifm-navbar-background-color: #001e2b;
+
+  /* Text colors for dark theme */
+  --ifm-font-color-base: #f9fbfa;
+  --ifm-color-content: #f9fbfa;
+
+  --docusaurus-highlighted-code-line-bg: rgba(0, 237, 100, 0.2);
+}
+
+/* Custom styles for IPA documentation */
+.hero__title {
+  font-size: 3rem;
+  color: var(--mongodb-dark-green);
+}
+
+.hero__subtitle {
+  font-size: 1.5rem;
+  color: var(--mongodb-forest-green);
+}
+
+/* MongoDB brand specific elements */
+.navbar__brand {
+  color: var(--mongodb-dark-green) !important;
+}
+
+.navbar__item--active {
+  color: var(--mongodb-green) !important;
+}
+
+/* Custom admonition styling for MongoDB brand */
+.alert--success {
+  background-color: rgba(0, 237, 100, 0.1);
+  border-color: var(--mongodb-green);
+}
+
+.alert--info {
+  background-color: rgba(17, 97, 73, 0.1);
+  border-color: var(--mongodb-forest-green);
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .hero__title {
+  color: var(--mongodb-green);
+}
+
+[data-theme="dark"] .hero__subtitle {
+  color: var(--ifm-color-primary-lighter);
+}
+
+[data-theme="dark"] .navbar__brand {
+  color: var(--mongodb-green) !important;
+}
+
+/* Search specific styles with MongoDB branding */
+.DocSearch {
+  --docsearch-primary-color: var(--mongodb-green);
+  --docsearch-text-color: var(--ifm-font-color-base);
+  --docsearch-muted-color: var(--mongodb-charcoal);
+  --docsearch-container-background: rgba(2, 52, 48, 0.8);
+  --docsearch-modal-background: var(--mongodb-pearl);
+  --docsearch-searchbox-background: var(--mongodb-white);
+  --docsearch-searchbox-focus-background: var(--mongodb-white);
+  --docsearch-key-gradient: linear-gradient(
+    -225deg,
+    var(--mongodb-green) 0%,
+    var(--mongodb-sage-green) 100%
+  );
+  --docsearch-key-shadow:
+    inset 0 -2px 0 0 var(--mongodb-forest-green),
+    inset 0 0 1px 1px var(--mongodb-sage-green),
+    0 2px 2px 0 rgba(2, 52, 48, 0.3);
+  --docsearch-footer-background: var(--mongodb-white);
+  --docsearch-footer-shadow:
+    inset 0 1px 0 0 var(--mongodb-sage-green),
+    0 -4px 8px 0 rgba(17, 97, 73, 0.06);
+  --docsearch-logo-color: var(--mongodb-forest-green);
+  --docsearch-highlight-color: var(--mongodb-green);
+}
+
+html[data-theme="dark"] .DocSearch {
+  --docsearch-text-color: var(--ifm-font-color-base);
+  --docsearch-muted-color: var(--mongodb-charcoal);
+  --docsearch-container-background: rgba(0, 30, 43, 0.9);
+  --docsearch-modal-background: var(--mongodb-slate);
+  --docsearch-searchbox-background: var(--mongodb-dark-green);
+  --docsearch-searchbox-focus-background: var(--mongodb-charcoal);
+  --docsearch-hit-color: var(--ifm-font-color-base);
+  --docsearch-hit-shadow: 0 1px 3px 0 var(--mongodb-dark-green);
+  --docsearch-footer-background: var(--mongodb-dark-green);
+  --docsearch-key-gradient: linear-gradient(
+    -26.5deg,
+    var(--mongodb-green) 0%,
+    var(--mongodb-sage-green) 100%
+  );
+  --docsearch-logo-color: var(--mongodb-green);
+}
