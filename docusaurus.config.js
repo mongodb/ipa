@@ -57,10 +57,6 @@ module.exports = {
     ({
       navbar: {
         title: "IPA - Improvement Proposal for APIs",
-        logo: {
-          alt: "IPA Logo",
-          src: "img/logo.svg",
-        },
         items: [
           {
             type: "doc",
