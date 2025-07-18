@@ -48,16 +48,3 @@ experience for clients and API producers.
   reusable components
 - Accelerated onboarding for new developers as knowledge transfer is applicable
   across APIs
-
-## Declarative-friendly Interfaces
-
-The concept of declarative-friendly interfaces aims to address the challenges
-some of our DevOps tools (Terraform Atlas Provider, Atlas Kubernetes Operator)
-have faced.
-
-Given DevOps tools are used to describe the desired end-state of a customer’s
-infrastructure, declarative-friendly interfaces aim to describe a minimum set of
-principles that benefit this working mode, and resources are expected to meet a
-certain set of principles to be considered declarative-friendly ready. For
-example, always providing a method to validate the current state of a resource
-is a critical requirement and as such we have made Get operations mandatory.
