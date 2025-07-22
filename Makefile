@@ -3,14 +3,16 @@
 .PHONY: setup
 setup: ## Install dev dependencies
 	go install github.com/client9/misspell/cmd/misspell@latest
+	npm install
 
 .PHONY: misspell
 misspell: ## Run misspell checks
 	misspell -i cancelled -locale US -source text -error ipa
 
-.PHONY: fix-misspell
-fix-misspell: ## Fix misspells
+.PHONY: fix-lint
+fix-lint: ## Fix lint
 	misspell -i cancelled -locale US -source text -w ipa
+	npx prettier . --write
 
 .PHONY: check
 check: misspell ## Run all checks
