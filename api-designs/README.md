@@ -17,7 +17,7 @@ This directory serves as a workspace for:
 
 Each API design should be organized in its own subdirectory:
 
-```
+```text
 api-designs/
 ├── <project-name>/
 │   ├── openapi.yaml              # OpenAPI 3.x specification
@@ -97,7 +97,7 @@ agent:
 
 ### Example Prompts
 
-```
+```text
 "Create a new API design for managing database backups in api-designs/backups/ following IPA guidelines"
 
 "Review my API design in api-designs/clusters/openapi.yaml against IPA-101 through IPA-108"
@@ -140,12 +140,12 @@ your design against relevant guidelines.
 
 ## Resources
 
-- **IPA Documentation**: https://mongodb.github.io/ipa/
+- **IPA Documentation**: <https://mongodb.github.io/ipa/>
 - **IPA Validation**:
   [docs/external/ipa-validation-README.md](../docs/external/ipa-validation-README.md)
 - **Agent Guidelines**: [agents.md](../agents.md)
-- **OpenAPI Specification**: https://spec.openapis.org/oas/latest.html
-- **Spectral Documentation**: https://docs.stoplight.io/docs/spectral/
+- **OpenAPI Specification**: <https://spec.openapis.org/oas/latest.html>
+- **Spectral Documentation**: <https://docs.stoplight.io/docs/spectral/>
 
 ## Questions?
 

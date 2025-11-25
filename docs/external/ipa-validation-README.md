@@ -38,7 +38,7 @@ To run the IPA validation locally, install necessary dependencies with
 `npm install` if you haven't already. Then (from
 `/openapi/tools/spectral/ipa/metrics/scripts/`), simply run:
 
-```
+```bash
 npm run ipa-validation
 ```
 
@@ -59,7 +59,7 @@ your repositories, you can follow these implementation approaches:
 
 Run:
 
-```
+```bash
 npm install @mongodb-js/ipa-validation-ruleset
 ```
 
@@ -77,9 +77,9 @@ clone the repo.
 
 Create a `.spectral.yaml` file that extends our ruleset:
 
-```
+```yaml
 extends:
-- "@mongodb/ipa-validation-ruleset"
+  - "@mongodb/ipa-validation-ruleset"
 ```
 
 For more information about how to extend rulesets, see the
@@ -90,7 +90,7 @@ For more information about how to extend rulesets, see the
 You can override specific rules from our ruleset by adding them to your local
 `.spectral.yaml`:
 
-```
+```yaml
 extends:
 - "@mongodb/ipa-validation-ruleset"
 
@@ -109,19 +109,19 @@ overrides:
 If you use GitHub Actions, you can define a workflow step to include IPA
 validation, such as
 
-```
+```yaml
 - name: IPA validation action
 run: npx spectral lint <openapi-spec-file> --ruleset=<spectral-ruleset-file>
 ```
 
 or
 
-```
-    - name: IPA validation - Spectral GitHub action
-      uses: stoplightio/spectral-action@2ad0b9302e32a77c1caccf474a9b2191a8060d83
-      with:
-        file_glob: <openapi-spec-file>
-        spectral_ruleset: <spectral-ruleset-file>
+```yaml
+- name: IPA validation - Spectral GitHub action
+  uses: stoplightio/spectral-action@2ad0b9302e32a77c1caccf474a9b2191a8060d83
+  with:
+    file_glob: <openapi-spec-file>
+    spectral_ruleset: <spectral-ruleset-file>
 ```
 
 `<spectral-ruleset-file>` is the ruleset file which extends the IPA Spectral
@@ -150,7 +150,7 @@ For more information on Spectral CLI, see the
 
 You can create a Bazel target using the shell script similar to:
 
-```
+```python
 sh_binary(
 name = "ipa_validation",
 srcs = ["ipa_validation.sh"],

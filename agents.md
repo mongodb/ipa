@@ -250,7 +250,7 @@ Always document exceptions using the format from IPA-5 (see
 
 Use this format when citing IPAs:
 
-```
+```text
 According to IPA-XXX ([Title]), [specific guidance].
 ```
 
@@ -344,7 +344,7 @@ When reviewing API designs, agents should:
 
 **Example Agent Response**:
 
-```
+```text
 I see Spectral is reporting a `xgen-IPA-101-resource-oriented-design` error. This relates to
 IPA-101 (Resource-Oriented Design), which requires APIs to be organized around resources
 rather than actions.
@@ -398,7 +398,7 @@ x-xgen-IPA-exception:
 For a complete list of implemented linting rules, see:
 
 - **Ruleset Documentation**:
-  https://github.com/mongodb/openapi/tree/main/tools/spectral/ipa/rulesets#readme
+  <https://github.com/mongodb/openapi/tree/main/tools/spectral/ipa/rulesets#readme>
 - **Local Copy**:
   [docs/external/ipa-validation-README.md](docs/external/ipa-validation-README.md)
 
@@ -417,7 +417,7 @@ Common linting rules include:
 
 Store API designs in the `api-designs/` folder with this structure:
 
-```
+```text
 api-designs/
 ├── <project-name>/
 │   ├── openapi.yaml              # OpenAPI 3.x specification
@@ -520,7 +520,7 @@ When working with API designs in the `api-designs/` folder:
 
 **Example Agent Workflow**:
 
-```
+```text
 User: "Review my cluster API design"
 
 Agent:
@@ -542,7 +542,7 @@ AI agents when working with IPA guidelines.
 
 **User Prompt**:
 
-```
+```text
 Review my API design in api-designs/clusters/openapi.yaml against IPA guidelines
 ```
 
@@ -550,7 +550,7 @@ Review my API design in api-designs/clusters/openapi.yaml against IPA guidelines
 
 1. **Load the OpenAPI specification**
 
-   ```
+   ```text
    I'll review your cluster API design against IPA guidelines.
    ```
 
@@ -565,7 +565,7 @@ Review my API design in api-designs/clusters/openapi.yaml against IPA guidelines
 
 3. **Provide specific feedback with IPA citations**
 
-   ```
+   ```text
    ✅ IPA-101 (Resource-Oriented Design): Good! Using /api/v1/clusters/{clusterId}
 
    ⚠️  IPA-105 (LIST): The LIST operation is missing pagination parameters.
@@ -596,8 +596,8 @@ Review my API design in api-designs/clusters/openapi.yaml against IPA guidelines
 
 5. **Note any required exceptions**
 
-   ```
-   If you need to deviate from IPA-110 for legacy reasons, document it:
+   ```yaml
+   ? If you need to deviate from IPA-110 for legacy reasons, document it
 
    x-xgen-IPA-exception:
      xgen-IPA-110-pagination: |
@@ -609,7 +609,7 @@ Review my API design in api-designs/clusters/openapi.yaml against IPA guidelines
 
 **User Prompt**:
 
-```
+```text
 Help me design a new API for managing database backups following IPA guidelines
 ```
 
@@ -617,7 +617,7 @@ Help me design a new API for managing database backups following IPA guidelines
 
 1. **Start with resource-oriented design (IPA-101)**
 
-   ```
+   ```text
    Let's design a backup API following IPA guidelines. First, let's identify the resource:
 
    Resource: "backup" (plural: "backups")
@@ -626,7 +626,7 @@ Help me design a new API for managing database backups following IPA guidelines
 
 2. **Define resource identifiers (IPA-102)**
 
-   ```
+   ```text
    Backup identifiers should be:
    - Opaque (not expose internal structure)
    - Immutable (never change)
@@ -637,7 +637,7 @@ Help me design a new API for managing database backups following IPA guidelines
 
 3. **Plan standard methods (IPA-103-108)**
 
-   ```
+   ```text
    Standard methods for backups:
    - GET /api/v1/backups/{backupId} - Retrieve a backup
    - GET /api/v1/backups - List all backups (with pagination)
@@ -648,7 +648,7 @@ Help me design a new API for managing database backups following IPA guidelines
 
 4. **Consider pagination (IPA-110)**
 
-   ```
+   ```text
    For the LIST operation, include pagination:
 
    GET /api/v1/backups?pageToken={token}&pageSize=20
@@ -662,7 +662,7 @@ Help me design a new API for managing database backups following IPA guidelines
 
 5. **Plan error responses (IPA-114)**
 
-   ```
+   ```json
    Error response structure:
    {
      "error": {
@@ -677,7 +677,7 @@ Help me design a new API for managing database backups following IPA guidelines
 
 6. **Create OpenAPI spec in api-designs/backups/**
 
-   ```
+   ```text
    I'll create the following files:
    - api-designs/backups/openapi.yaml
    - api-designs/backups/design-notes.md
@@ -685,7 +685,7 @@ Help me design a new API for managing database backups following IPA guidelines
    ```
 
 7. **Document IPA compliance**
-   ```
+   ```text
    I'll create an IPA compliance checklist tracking which guidelines
    are followed and any exceptions needed.
    ```
@@ -694,7 +694,7 @@ Help me design a new API for managing database backups following IPA guidelines
 
 **User Prompt**:
 
-```
+```text
 Check if my API follows IPA-104 (GET method) requirements
 ```
 
@@ -702,7 +702,7 @@ Check if my API follows IPA-104 (GET method) requirements
 
 1. **Reference IPA-104 specific requirements**
 
-   ```
+   ```text
    I'll check your API against IPA-104 (GET) requirements:
 
    IPA-104 requires:
@@ -716,25 +716,25 @@ Check if my API follows IPA-104 (GET method) requirements
 
 2. **Check operation ID naming**
 
-   ```
+   ```text
    ✅ Operation ID: "getCluster" (camelCase, starts with "get")
    ```
 
 3. **Verify HTTP method**
 
-   ```
+   ```text
    ✅ Using HTTP GET method
    ```
 
 4. **Ensure no request body**
 
-   ```
+   ```text
    ✅ No request body defined
    ```
 
 5. **Check response schema structure**
 
-   ```
+   ```json
    ✅ Returns single cluster object
 
    Response schema:
@@ -747,7 +747,7 @@ Check if my API follows IPA-104 (GET method) requirements
 
 6. **Validate error handling references IPA-114**
 
-   ```
+   ```yaml
    ⚠️  Missing 404 error response for when cluster is not found.
 
    Add this to your GET operation:
@@ -765,7 +765,7 @@ Check if my API follows IPA-104 (GET method) requirements
 
 **User Prompt**:
 
-```
+```text
 I need to deviate from IPA-105 for legacy reasons. How should I document this?
 ```
 
@@ -773,7 +773,7 @@ I need to deviate from IPA-105 for legacy reasons. How should I document this?
 
 1. **Reference IPA-5 (Documenting Exceptions)**
 
-   ```
+   ```text
    According to IPA-5 (Documenting Exceptions), you should document
    deviations using the x-xgen-IPA-exception extension.
    ```
@@ -795,7 +795,7 @@ I need to deviate from IPA-105 for legacy reasons. How should I document this?
 
 3. **Help write clear justification**
 
-   ```
+   ```text
    Your exception documentation should include:
    - **Reason**: Why the exception is necessary
    - **Impact**: What IPA principle is being violated and consequences
@@ -805,7 +805,7 @@ I need to deviate from IPA-105 for legacy reasons. How should I document this?
 
 4. **Suggest mitigation strategies**
 
-   ```
+   ```text
    Mitigation strategies for pagination exception:
    1. Document the limitation clearly in API documentation
    2. Set reasonable maximum page size (e.g., 100 items)
@@ -815,11 +815,13 @@ I need to deviate from IPA-105 for legacy reasons. How should I document this?
 
 5. **Update design documentation**
 
-   ```
+   ```markdown
    Also update api-designs/clusters/ipa-compliance.md:
 
    ## Exceptions
+
    ### IPA-105: LIST Method
+
    **Reason**: Legacy pagination uses offset/limit instead of pageToken
    **Mitigation**: Documented in API, will migrate to pageToken in v2
    **Timeline**: Q2 2024
@@ -829,7 +831,7 @@ I need to deviate from IPA-105 for legacy reasons. How should I document this?
 
 **User Prompt**:
 
-```
+```text
 I need to add a "restart cluster" operation. How should I design this following IPA guidelines?
 ```
 
@@ -837,14 +839,14 @@ I need to add a "restart cluster" operation. How should I design this following 
 
 1. **Reference IPA-109 (Custom Methods)**
 
-   ```
+   ```text
    This operation doesn't fit standard methods (GET, LIST, CREATE, UPDATE, DELETE),
    so we'll use a custom method per IPA-109 (Custom Methods).
    ```
 
 2. **Recommend custom method pattern**
 
-   ```
+   ```text
    According to IPA-109, custom methods should:
    - Use POST HTTP method
    - Use :verb suffix in URL
@@ -893,7 +895,7 @@ I need to add a "restart cluster" operation. How should I design this following 
    ```
 
 4. **Explain rationale**
-   ```
+   ```text
    Why this design follows IPA-109:
    - Uses POST (custom methods are not idempotent)
    - Uses :restart suffix (clear action verb)
@@ -1002,19 +1004,19 @@ When reviewing or designing APIs, these IPAs are most frequently applicable:
 
 ### Key Links
 
-| Resource                      | Link                                                                             |
-| ----------------------------- | -------------------------------------------------------------------------------- |
-| **IPA Documentation**         | https://mongodb.github.io/ipa/                                                   |
-| **IPA Validation (Spectral)** | [docs/external/ipa-validation-README.md](docs/external/ipa-validation-README.md) |
-| **Spectral Ruleset**          | https://github.com/mongodb/openapi/tree/main/tools/spectral/ipa/rulesets#readme  |
-| **API Designs Folder**        | [api-designs/](api-designs/)                                                     |
-| **Contributing**              | [CONTRIBUTING.md](CONTRIBUTING.md)                                               |
+| Resource                      | Link                                                                              |
+| ----------------------------- | --------------------------------------------------------------------------------- |
+| **IPA Documentation**         | <https://mongodb.github.io/ipa/>                                                  |
+| **IPA Validation (Spectral)** | [docs/external/ipa-validation-README.md](docs/external/ipa-validation-README.md)  |
+| **Spectral Ruleset**          | <https://github.com/mongodb/openapi/tree/main/tools/spectral/ipa/rulesets#readme> |
+| **API Designs Folder**        | [api-designs/](api-designs/)                                                      |
+| **Contributing**              | [CONTRIBUTING.md](CONTRIBUTING.md)                                                |
 
 ### Common IPA Patterns
 
 #### Resource URL Pattern
 
-```
+```text
 /api/v{majorVersion}/{resourcePlural}/{resourceId}
 ```
 
@@ -1026,7 +1028,7 @@ Examples:
 
 #### Standard Method URLs
 
-```
+```text
 GET    /api/v1/clusters/{clusterId}      # Get single resource
 GET    /api/v1/clusters                  # List resources
 POST   /api/v1/clusters                  # Create resource
@@ -1036,7 +1038,7 @@ DELETE /api/v1/clusters/{clusterId}      # Delete resource
 
 #### Custom Method URL
 
-```
+```text
 POST /api/v1/clusters/{clusterId}:restart
 POST /api/v1/backups/{backupId}:restore
 POST /api/v1/databases/{databaseId}:export
@@ -1044,7 +1046,7 @@ POST /api/v1/databases/{databaseId}:export
 
 #### Pagination Parameters
 
-```
+```text
 GET /api/v1/clusters?pageToken={token}&pageSize=20
 ```
 
@@ -1154,7 +1156,7 @@ Don't just enforce rules. Explain:
 
 **Example**:
 
-```
+```text
 IPA-110 (Pagination) requires using pageToken instead of offset/limit because:
 - Tokens are stable even when data changes
 - Prevents skipped or duplicate items during pagination
