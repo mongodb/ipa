@@ -1,8 +1,8 @@
 # API Designs
 
-This folder contains API design documents and OpenAPI specifications that are
-being developed or reviewed against MongoDB's IPA (Improvement Proposal for
-APIs) guidelines.
+This folder contains API design documents in markdown format that are being
+developed or reviewed against MongoDB's IPA (Improvement Proposal for APIs)
+guidelines.
 
 ## Purpose
 
@@ -20,20 +20,19 @@ Each API design should be organized in its own subdirectory:
 ```text
 api-designs/
 ├── <project-name>/
-│   ├── openapi.yaml              # OpenAPI 3.x specification
+│   ├── api-design.md             # API design document in markdown
 │   ├── design-notes.md           # Design rationale and decisions
-│   ├── ipa-compliance.md         # IPA compliance checklist
-│   └── .spectral.yaml            # (Optional) Spectral configuration
+│   └── ipa-compliance.md         # IPA compliance checklist
 └── README.md                     # This file
 ```
 
 ### File Descriptions
 
-#### `openapi.yaml` (Required)
+#### `api-design.md` (Required)
 
-Your OpenAPI 3.x specification file. This should follow the
-[OpenAPI Specification](https://spec.openapis.org/oas/latest.html) format and
-adhere to IPA guidelines.
+Your API design document in markdown format. This should describe your API
+endpoints, resources, request/response formats, and how they follow IPA
+guidelines. Use clear examples and structure.
 
 #### `design-notes.md` (Recommended)
 
@@ -68,19 +67,6 @@ Document any IPA exceptions using the format from IPA-5:
 - **IPA-XXX**: [Reason for exception and mitigation strategy]
 ```
 
-#### `.spectral.yaml` (Optional)
-
-If you want to run automated IPA validation, create a Spectral configuration:
-
-```yaml
-extends:
-  - "@mongodb/ipa-validation-ruleset"
-```
-
-See
-[docs/external/ipa-validation-README.md](../docs/external/ipa-validation-README.md)
-for details.
-
 ## Working with AI Agents
 
 This folder is designed to work seamlessly with AI agents. When working with an
@@ -88,8 +74,8 @@ agent:
 
 1. **Start a new design**: Ask the agent to create a new project folder with the
    recommended structure
-2. **Review existing designs**: Point the agent to your OpenAPI spec for IPA
-   compliance review
+2. **Review existing designs**: Point the agent to your API design document for
+   IPA compliance review
 3. **Iterate on designs**: Work with the agent to refine your API based on IPA
    feedback
 4. **Document exceptions**: Have the agent help document any necessary IPA
@@ -100,7 +86,7 @@ agent:
 ```text
 "Create a new API design for managing database backups in api-designs/backups/ following IPA guidelines"
 
-"Review my API design in api-designs/clusters/openapi.yaml against IPA-101 through IPA-108"
+"Review my API design in api-designs/clusters/api-design.md against IPA-101 through IPA-108"
 
 "Help me document an IPA-105 exception for my legacy pagination implementation"
 ```
@@ -108,26 +94,18 @@ agent:
 See [agents.md](../agents.md) for comprehensive guidance on working with AI
 agents and IPA guidelines.
 
-## Validation
+## Review Process
 
-### Automated Validation with Spectral
+Work with AI agents to review your API design against IPA guidelines. The agent
+will help you:
 
-Install the IPA validation ruleset:
+- Identify which IPAs apply to your design
+- Suggest improvements based on IPA best practices
+- Document any necessary exceptions
+- Ensure consistency with MongoDB API standards
 
-```bash
-npm install @mongodb-js/ipa-validation-ruleset
-```
-
-Run validation:
-
-```bash
-npx spectral lint api-designs/<project-name>/openapi.yaml --ruleset=.spectral.yaml
-```
-
-### Manual Review
-
-Use the [IPA documentation](https://mongodb.github.io/ipa/) to manually review
-your design against relevant guidelines.
+See [agents.md](../agents.md) for detailed guidance on working with AI agents
+for API design reviews.
 
 ## Best Practices
 
@@ -135,17 +113,16 @@ your design against relevant guidelines.
 2. **Iterate early**: Get feedback on your design early and often
 3. **Document decisions**: Capture your reasoning in design-notes.md
 4. **Track compliance**: Use the IPA compliance checklist
-5. **Validate automatically**: Run Spectral validation regularly
+5. **Work with AI agents**: Leverage AI agents to review designs against IPA
+   guidelines
 6. **Justify exceptions**: Document any IPA exceptions with clear rationale
 
 ## Resources
 
 - **IPA Documentation**: <https://mongodb.github.io/ipa/>
-- **IPA Validation**:
-  [docs/external/ipa-validation-README.md](../docs/external/ipa-validation-README.md)
 - **Agent Guidelines**: [agents.md](../agents.md)
-- **OpenAPI Specification**: <https://spec.openapis.org/oas/latest.html>
-- **Spectral Documentation**: <https://docs.stoplight.io/docs/spectral/>
+- **IPA Validation Reference**:
+  [docs/external/ipa-validation-README.md](../docs/external/ipa-validation-README.md)
 
 ## Questions?
 

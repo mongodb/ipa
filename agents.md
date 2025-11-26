@@ -309,52 +309,6 @@ MongoDB provides two complementary approaches to IPA compliance:
   [docs/external/ipa-validation-README.md](docs/external/ipa-validation-README.md)
   for complete linting documentation
 
-### Using Spectral for IPA Validation
-
-#### Installation
-
-```bash
-npm install @mongodb-js/ipa-validation-ruleset
-```
-
-#### Configuration
-
-Create a `.spectral.yaml` file in your project:
-
-```yaml
-extends:
-  - "@mongodb/ipa-validation-ruleset"
-```
-
-#### Running Validation
-
-```bash
-npx spectral lint path/to/openapi.yaml --ruleset=.spectral.yaml
-```
-
-#### Integration with AI Agent Workflows
-
-When reviewing API designs, agents should:
-
-1. **Suggest running Spectral validation** to catch automated issues
-2. **Interpret Spectral errors** and relate them back to IPA guidelines
-3. **Provide context** for why the linting rule exists
-4. **Suggest fixes** that address both the linting error and the underlying IPA
-   principle
-
-**Example Agent Response**:
-
-```text
-I see Spectral is reporting a `xgen-IPA-101-resource-oriented-design` error. This relates to
-IPA-101 (Resource-Oriented Design), which requires APIs to be organized around resources
-rather than actions.
-
-Current: POST /api/createCluster
-Suggested: POST /api/v1/clusters
-
-This change makes the API more intuitive and consistent with REST principles.
-```
-
 ### Documenting IPA Exceptions
 
 When an API must deviate from IPA guidelines, document the exception using the
@@ -420,25 +374,25 @@ Store API designs in the `api-designs/` folder with this structure:
 ```text
 api-designs/
 ├── <project-name>/
-│   ├── openapi.yaml              # OpenAPI 3.x specification
+│   ├── api-design.md             # API design document in markdown
 │   ├── design-notes.md           # Design rationale and decisions
-│   ├── ipa-compliance.md         # IPA compliance checklist
-│   └── .spectral.yaml            # (Optional) Spectral configuration
+│   └── ipa-compliance.md         # IPA compliance checklist
 └── README.md                     # Usage guide
 ```
 
 ### What to Include in API Design Documents
 
-#### openapi.yaml (Required)
+#### api-design.md (Required)
 
-The OpenAPI 3.x specification following IPA guidelines. Include:
+The API design document in markdown format following IPA guidelines. Include:
 
-- Complete resource definitions
-- All standard methods (GET, LIST, CREATE, UPDATE, DELETE)
+- Resource definitions and hierarchies
+- All standard methods (GET, LIST, CREATE, UPDATE, DELETE) with examples
 - Custom methods if needed
-- Error responses
-- Pagination parameters for LIST operations
-- Proper versioning in the URL path
+- Request and response formats
+- Error response structures
+- Pagination approach for LIST operations
+- Versioning strategy
 
 #### design-notes.md (Recommended)
 
@@ -511,12 +465,13 @@ When working with API designs in the `api-designs/` folder:
 
 1. **Check for existing designs first**: Before creating a new design, search
    for existing work
-2. **Load all relevant files**: Read openapi.yaml, design-notes.md, and
+2. **Load all relevant files**: Read api-design.md, design-notes.md, and
    ipa-compliance.md together
 3. **Suggest improvements**: Based on IPA guidelines, recommend specific changes
-4. **Update documentation**: When modifying openapi.yaml, also update
+4. **Update documentation**: When modifying api-design.md, also update
    design-notes.md and ipa-compliance.md
-5. **Run validation**: Suggest running Spectral validation after changes
+5. **Provide examples**: Show concrete examples of how to structure endpoints
+   and responses
 
 **Example Agent Workflow**:
 
@@ -524,13 +479,12 @@ When working with API designs in the `api-designs/` folder:
 User: "Review my cluster API design"
 
 Agent:
-1. Loads api-designs/clusters/openapi.yaml
+1. Loads api-designs/clusters/api-design.md
 2. Loads api-designs/clusters/ipa-compliance.md
 3. Reviews against relevant IPAs (101, 102, 103-108, 110, 114, 116, 120)
 4. Identifies issues: "Missing pagination on LIST operation (IPA-110)"
-5. Suggests fix with code example
+5. Suggests fix with markdown example
 6. Recommends updating ipa-compliance.md checklist
-7. Suggests running: npx spectral lint api-designs/clusters/openapi.yaml
 ```
 
 ## Example Workflows & Prompts
@@ -543,12 +497,12 @@ AI agents when working with IPA guidelines.
 **User Prompt**:
 
 ```text
-Review my API design in api-designs/clusters/openapi.yaml against IPA guidelines
+Review my API design in api-designs/clusters/api-design.md against IPA guidelines
 ```
 
 **Agent Response Pattern**:
 
-1. **Load the OpenAPI specification**
+1. **Load the API design document**
 
    ```text
    I'll review your cluster API design against IPA guidelines.
@@ -675,11 +629,11 @@ Help me design a new API for managing database backups following IPA guidelines
    }
    ```
 
-6. **Create OpenAPI spec in api-designs/backups/**
+6. **Create API design in api-designs/backups/**
 
    ```text
    I'll create the following files:
-   - api-designs/backups/openapi.yaml
+   - api-designs/backups/api-design.md
    - api-designs/backups/design-notes.md
    - api-designs/backups/ipa-compliance.md
    ```
@@ -1004,13 +958,12 @@ When reviewing or designing APIs, these IPAs are most frequently applicable:
 
 ### Key Links
 
-| Resource                      | Link                                                                              |
-| ----------------------------- | --------------------------------------------------------------------------------- |
-| **IPA Documentation**         | <https://mongodb.github.io/ipa/>                                                  |
-| **IPA Validation (Spectral)** | [docs/external/ipa-validation-README.md](docs/external/ipa-validation-README.md)  |
-| **Spectral Ruleset**          | <https://github.com/mongodb/openapi/tree/main/tools/spectral/ipa/rulesets#readme> |
-| **API Designs Folder**        | [api-designs/](api-designs/)                                                      |
-| **Contributing**              | [CONTRIBUTING.md](CONTRIBUTING.md)                                                |
+| Resource                     | Link                                                                             |
+| ---------------------------- | -------------------------------------------------------------------------------- |
+| **IPA Documentation**        | <https://mongodb.github.io/ipa/>                                                 |
+| **IPA Validation Reference** | [docs/external/ipa-validation-README.md](docs/external/ipa-validation-README.md) |
+| **API Designs Folder**       | [api-designs/](api-designs/)                                                     |
+| **Contributing**             | [CONTRIBUTING.md](CONTRIBUTING.md)                                               |
 
 ### Common IPA Patterns
 
@@ -1135,15 +1088,16 @@ Pay attention to IPA maturity:
 - **Deprecated**: Warn against use, suggest alternatives
 - **Retired**: Don't recommend, explain historical context if relevant
 
-### 7. Suggest Validation
+### 7. Provide Comprehensive Review
 
 After providing recommendations:
 
-- **Suggest Spectral validation**: "Run `npx spectral lint openapi.yaml` to
-  check for issues"
-- **Explain validation results**: Help interpret linting errors
-- **Provide fixes**: Show how to address validation failures
-- **Document exceptions**: Help write proper exception documentation
+- **Review against all relevant IPAs**: Check the design against applicable IPA
+  guidelines
+- **Explain findings**: Help developers understand why certain patterns are
+  recommended
+- **Provide concrete examples**: Show how to implement IPA-compliant designs
+- **Document exceptions**: Help write proper exception documentation when needed
 
 ### 8. Help Developers Understand "Why"
 
