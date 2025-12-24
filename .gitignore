@@ -22,3 +22,8 @@ Thumbs.db
 # Logs
 logs/
 *.log
+
+# API Designs - local workspace only
+api-designs/*
+!api-designs/README.md
+!api-designs/.gitkeep
