@@ -1,0 +1,27 @@
+.rulesSection {
+  margin: 2rem 0;
+  /* CSS counter: each .rule increments this automatically */
+  counter-reset: rule-counter;
+}
+
+.rulesSectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.rulesSectionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  background: var(--ifm-color-primary);
+  color: var(--mongodb-slate, #001e2b);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: monospace;
+}

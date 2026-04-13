@@ -1,0 +1,29 @@
+.example {
+  margin-bottom: 1rem;
+}
+.example:last-child {
+  margin-bottom: 0;
+}
+
+.exampleHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.exampleBody pre {
+  margin-bottom: 0.5rem;
+}
+
+.correctIcon,
+.correctLabel {
+  color: #007a35;
+}
+[data-theme="dark"] .correctIcon,
+[data-theme="dark"] .correctLabel {
+  color: var(--ifm-color-primary);
+}
+.correctIcon { font-size: 1rem; }

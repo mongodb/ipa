@@ -1,0 +1,136 @@
+---
+id: 100
+slug: /100
+state: adopt
+---
+
+import { RulesSection, Rule, Examples, Correct, Incorrect, Reason, Workflow } from '@site/src/components/ipa';
+
+# IPA-100: Language
+
+Developers worldwide use MongoDB, and many customers who don't speak English as
+their first language consume our APIs. It is important to avoid any possible
+confusion across different idioms and colloquialisms unifying to a common
+language.
+
+## Guidance
+
+<RulesSection state="adopt">
+  <Rule
+    id="IPA-0100-must-use-american-english"
+    given="$"
+    effort="check"
+  >
+
+API producers **must** use American English across the API.
+
+This includes but is not limited to:
+
+- Resource names
+- Field names
+- Descriptions
+- Enum values
+
+<Examples>
+  <Correct>
+
+```yaml
+# Field uses American English spelling
+canceledAt:
+  type: string
+  format: date-time
+```
+
+  <Reason>
+
+"canceled" is the American English spelling.
+
+  </Reason>
+  </Correct>
+
+  <Incorrect>
+
+```yaml
+# Field uses British English spelling
+cancelledAt:
+  type: string
+  format: date-time
+```
+
+  <Reason>
+
+"cancelled" is the British English spelling. Use "canceled" instead.
+
+  </Reason>
+  </Incorrect>
+</Examples>
+
+<Workflow>
+
+1. Inspect all field names, resource names, descriptions, and enum values in the spec fragment.
+2. Check for British English spellings (e.g., "cancelled", "colour", "organisation", "favourite").
+3. Compare against Merriam-Webster's Collegiate Dictionary for the American English form.
+4. Report any non-American English spellings found.
+
+</Workflow>
+
+**Reference**
+
+> The MongoDB Style Guide uses the Merriam-Webster's Collegiate Dictionary. 11th
+> ed. Springfield, MA: Merriam-Webster, 2003. Continually updated at
+> [https://www.merriam-webster.com/](https://www.merriam-webster.com/).
+
+  </Rule>
+
+  <Rule
+    id="IPA-0100-must-use-american-english-spelling"
+    given={["$.components.schemas..properties", "$.paths"]}
+    lintable
+  >
+
+Resource and field names **must** use American English spelling exclusively.
+
+<Examples>
+  <Correct>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      properties:
+        canceled: { type: boolean }
+        color: { type: string }
+```
+
+  <Reason>
+
+Uses American English: "canceled", "color".
+
+  </Reason>
+  </Correct>
+
+  <Incorrect>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      properties:
+        cancelled: { type: boolean }
+        colour: { type: string }
+```
+
+  <Reason>
+
+Uses British English: "cancelled", "colour".
+
+  </Reason>
+  </Incorrect>
+</Examples>
+
+  </Rule>
+</RulesSection>
+
+## Further Reading
+
+[MongoDB Meta Documentation](https://www.mongodb.com/docs/meta/style-guide/terminology/general-term-guidelines/use-consistent-terms/#use-consistent-terminology)
