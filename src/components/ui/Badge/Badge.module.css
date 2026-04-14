@@ -27,7 +27,9 @@
   color: #007a35;
   border-color: rgba(0, 237, 100, 0.4);
 }
-[data-theme="dark"] .tag_green { color: var(--ifm-color-primary); }
+[data-theme="dark"] .tag_green {
+  color: var(--ifm-color-primary);
+}
 
 /* amber — experimental, not-lintable */
 .tag_amber {
@@ -35,7 +37,9 @@
   color: #8a6800;
   border-color: rgba(230, 172, 0, 0.4);
 }
-[data-theme="dark"] .tag_amber { color: #e6ac00; }
+[data-theme="dark"] .tag_amber {
+  color: #e6ac00;
+}
 
 /* blue — informational */
 .tag_blue {
@@ -43,7 +47,9 @@
   color: #2f5db8;
   border-color: rgba(100, 149, 237, 0.4);
 }
-[data-theme="dark"] .tag_blue { color: #6495ed; }
+[data-theme="dark"] .tag_blue {
+  color: #6495ed;
+}
 
 /* orange — deprecated */
 .tag_orange {
@@ -51,7 +57,9 @@
   color: #904000;
   border-color: rgba(255, 140, 0, 0.4);
 }
-[data-theme="dark"] .tag_orange { color: #ff8c00; }
+[data-theme="dark"] .tag_orange {
+  color: #ff8c00;
+}
 
 /* red — explore effort */
 .tag_red {
@@ -59,7 +67,9 @@
   color: #b52222;
   border-color: rgba(255, 100, 100, 0.4);
 }
-[data-theme="dark"] .tag_red { color: #ff6464; }
+[data-theme="dark"] .tag_red {
+  color: #ff6464;
+}
 
 /* muted — retired, implementation, neutral */
 .tag_muted {
@@ -67,4 +77,6 @@
   color: var(--ifm-color-emphasis-600);
   border-color: rgba(150, 150, 150, 0.4);
 }
-[data-theme="dark"] .tag_muted { color: var(--ifm-color-emphasis-500); }
+[data-theme="dark"] .tag_muted {
+  color: var(--ifm-color-emphasis-500);
+}
