@@ -4,7 +4,7 @@ import type {
   ThemeConfig,
 } from "@docusaurus/preset-classic";
 import { themes } from "prism-react-renderer";
-import validateIpaFrontmatter from "./src/plugins/validateIpaFrontmatter";
+import parseFrontMatter from "./src/plugins/parseIpaFrontMatter";
 
 const config: Config = {
   title: "IPA - Improvement Proposal for APIs",
@@ -24,13 +24,16 @@ const config: Config = {
           routeBasePath: "/", // Serve docs at site root
           sidebarPath: require.resolve("./sidebars.ts"),
           editUrl: undefined,
-          remarkPlugins: [validateIpaFrontmatter],
         },
         blog: false,
         theme: {},
       } satisfies PresetClassicOptions,
     ],
   ],
+
+  markdown: {
+    parseFrontMatter,
+  },
 
   plugins: [
     [

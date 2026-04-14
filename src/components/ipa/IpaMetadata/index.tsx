@@ -2,8 +2,7 @@ import React from "react";
 import { useDoc } from "@docusaurus/plugin-content-docs/client";
 import styles from "./IpaMetadata.module.css";
 import Badge, { type BadgeColor } from "../../ui/Badge";
-
-type IpaState = "adopt" | "experimental" | "deprecated" | "retired";
+import type { IpaState } from "../../../types/ipa";
 
 const STATE_CONFIG: Record<IpaState, { label: string; color: BadgeColor }> = {
   adopt: { label: "Adopt", color: "green" },
@@ -15,12 +14,12 @@ const STATE_CONFIG: Record<IpaState, { label: string; color: BadgeColor }> = {
 export default function IpaMetadata(): React.ReactElement | null {
   const { frontMatter } = useDoc();
 
-  const raw = (frontMatter as Record<string, unknown>).state;
-  const state =
-    typeof raw === "string" ? (raw.toLowerCase() as IpaState) : undefined;
-  const stateConfig = state ? STATE_CONFIG[state] : null;
+  const state = (frontMatter as Record<string, unknown>).state as
+    | IpaState
+    | undefined;
+  if (!state || !(state in STATE_CONFIG)) return null;
 
-  if (!stateConfig) return null;
+  const stateConfig = STATE_CONFIG[state];
 
   return (
     <div className={styles.pageMeta}>
