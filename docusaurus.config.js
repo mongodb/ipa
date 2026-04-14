@@ -1,4 +1,5 @@
 const { themes } = require("prism-react-renderer");
+const validateIpaFrontmatter = require("./src/plugins/validateIpaFrontmatter");
 
 // With JSDoc @type annotations, IDEs can provide config autocompletion
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
@@ -21,6 +22,7 @@ module.exports = {
           routeBasePath: "/", // Serve docs at site root
           sidebarPath: require.resolve("./sidebars.js"),
           editUrl: undefined,
+          remarkPlugins: [validateIpaFrontmatter],
         },
         blog: false,
         theme: {},
