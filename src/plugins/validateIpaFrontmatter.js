@@ -1,14 +1,5 @@
 // @ts-check
 
-/**
- * Remark plugin that validates the `state` frontmatter field on IPA documents.
- *
- * Runs at build/start time during markdown compilation. Any invalid value
- * causes a hard build error attributed to the offending file.
- *
- * Valid values: adopt | experimental | deprecated | retired
- */
-
 "use strict";
 
 const VALID_STATES = ["adopt", "experimental", "deprecated", "retired"];
