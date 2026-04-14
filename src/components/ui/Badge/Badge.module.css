@@ -41,16 +41,6 @@
   color: #e6ac00;
 }
 
-/* blue — informational */
-.tag_blue {
-  background: rgba(100, 149, 237, 0.12);
-  color: #2f5db8;
-  border-color: rgba(100, 149, 237, 0.4);
-}
-[data-theme="dark"] .tag_blue {
-  color: #6495ed;
-}
-
 /* orange — deprecated */
 .tag_orange {
   background: rgba(255, 140, 0, 0.1);
@@ -59,16 +49,6 @@
 }
 [data-theme="dark"] .tag_orange {
   color: #ff8c00;
-}
-
-/* red — explore effort */
-.tag_red {
-  background: rgba(255, 100, 100, 0.12);
-  color: #b52222;
-  border-color: rgba(255, 100, 100, 0.4);
-}
-[data-theme="dark"] .tag_red {
-  color: #ff6464;
 }
 
 /* muted — retired, implementation, neutral */

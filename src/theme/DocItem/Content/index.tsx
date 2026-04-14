@@ -5,7 +5,9 @@ import IpaMetadata from "@site/src/components/ipa/IpaMetadata";
 
 type Props = WrapperProps<typeof Content>;
 
-export default function ContentWrapper(props: Props): React.ReactElement {
+export default function ContentWithIpaMetadata(
+  props: Props,
+): React.ReactElement {
   return (
     <>
       <IpaMetadata />

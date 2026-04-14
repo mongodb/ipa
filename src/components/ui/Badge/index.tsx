@@ -4,9 +4,7 @@ import styles from "./Badge.module.css";
 export type BadgeColor =
   | "green"
   | "amber"
-  | "blue"
   | "orange"
-  | "red"
   | "muted";
 
 interface BadgeProps {
