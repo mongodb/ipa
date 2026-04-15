@@ -7,7 +7,7 @@ import type { IpaState } from "../../../types/ipa";
 const STATE_CONFIG: Record<IpaState, { label: string; color: BadgeColor }> = {
   adopt: { label: "Adopt", color: "green" },
   experimental: { label: "Experimental", color: "amber" },
-  deprecated: { label: "Deprecated", color: "orange" },
+  deprecated: { label: "Deprecated", color: "red" },
   retired: { label: "Retired", color: "muted" },
 };
 

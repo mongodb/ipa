@@ -1,7 +1,7 @@
 import React from "react";
 import styles from "./Badge.module.css";
 
-export type BadgeColor = "green" | "amber" | "orange" | "muted";
+export type BadgeColor = "green" | "amber" | "red" | "muted";
 
 interface BadgeProps {
   color?: BadgeColor;

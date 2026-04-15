@@ -41,14 +41,14 @@
   color: #e6ac00;
 }
 
-/* orange — deprecated */
-.tag_orange {
-  background: rgba(255, 140, 0, 0.1);
-  color: #904000;
-  border-color: rgba(255, 140, 0, 0.4);
+/* red — deprecated */
+.tag_red {
+  background: rgba(255, 100, 100, 0.12);
+  color: #b52222;
+  border-color: rgba(255, 100, 100, 0.4);
 }
-[data-theme="dark"] .tag_orange {
-  color: #ff8c00;
+[data-theme="dark"] .tag_red {
+  color: #ff6464;
 }
 
 /* muted — retired, implementation, neutral */
