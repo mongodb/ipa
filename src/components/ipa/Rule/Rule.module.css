@@ -100,3 +100,28 @@
   padding-left: 2.5rem;
   margin-top: 0.75rem;
 }
+
+.ruleDependencies {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0 0 2.5rem;
+  font-size: 0.78rem;
+}
+
+.dependencyLabel {
+  color: var(--ifm-color-emphasis-600);
+  font-weight: 500;
+}
+
+.dependencyLink {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.74rem;
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.dependencyLink:hover {
+  text-decoration: underline;
+}

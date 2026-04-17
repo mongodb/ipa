@@ -140,6 +140,17 @@ export default function Rule({
           </Badge>
         </div>
       )}
+
+      {dependsOn && dependsOn.length > 0 && (
+        <div className={styles.ruleDependencies}>
+          <span className={styles.dependencyLabel}>Depends on:</span>
+          {dependsOn.map((depId) => (
+            <a key={depId} href={`#${depId}`} className={styles.dependencyLink}>
+              {depId}
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
