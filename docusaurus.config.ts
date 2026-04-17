@@ -5,6 +5,7 @@ import type {
 } from "@docusaurus/preset-classic";
 import { themes } from "prism-react-renderer";
 import parseFrontMatter from "./src/plugins/parseIpaFrontMatter";
+import validateIpaRules from "./src/plugins/validateIpaRules";
 
 const config: Config = {
   title: "IPA - Improvement Proposal for APIs",
@@ -36,6 +37,7 @@ const config: Config = {
   },
 
   plugins: [
+    validateIpaRules,
     [
       require.resolve("@easyops-cn/docusaurus-search-local"),
       {
