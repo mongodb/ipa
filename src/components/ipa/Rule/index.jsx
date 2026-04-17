@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { useRulesSection } from "../RulesSection";
+import { rulePropsSchema } from "@site/src/types/ipa";
 import styles from "./Rule.module.css";
 import Badge from "../../ui/Badge";
 
@@ -48,6 +49,18 @@ export default function Rule({
   dependsOn,
   children,
 }) {
+  // Validate props with Zod — throws during SSR to fail the build on invalid props
+  const validated = rulePropsSchema.safeParse({
+    id, given, lintable, informational, implementation, effort,
+    state: explicitState, dependsOn,
+  });
+  if (!validated.success) {
+    const issues = validated.error.issues
+      .map((i) => `${i.path.join(".")}: ${i.message}`)
+      .join("; ");
+    throw new Error(`<Rule id="${id}">: invalid props — ${issues}`);
+  }
+
   const { state: sectionState } = useRulesSection();
 
   const effectiveState = explicitState || sectionState || "experimental";
