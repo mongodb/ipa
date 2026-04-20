@@ -3,13 +3,22 @@ import { rulePropsSchema, givenValueSchema, ruleIdSchema } from "./ipa";
 
 describe("ruleIdSchema", () => {
   it("accepts valid IDs", () => {
-    expect(ruleIdSchema.safeParse("IPA-0108-must-use-http-delete").success).toBe(true);
-    expect(ruleIdSchema.safeParse("IPA-0101-should-not-mirror-database-schema").success).toBe(true);
-    expect(ruleIdSchema.safeParse("IPA-0101-may-have-sub-resources").success).toBe(true);
+    expect(
+      ruleIdSchema.safeParse("IPA-0108-must-use-http-delete").success,
+    ).toBe(true);
+    expect(
+      ruleIdSchema.safeParse("IPA-0101-should-not-mirror-database-schema")
+        .success,
+    ).toBe(true);
+    expect(
+      ruleIdSchema.safeParse("IPA-0101-may-have-sub-resources").success,
+    ).toBe(true);
   });
 
   it("rejects IDs without severity keyword", () => {
-    expect(ruleIdSchema.safeParse("IPA-0108-use-http-delete").success).toBe(false);
+    expect(ruleIdSchema.safeParse("IPA-0108-use-http-delete").success).toBe(
+      false,
+    );
   });
 
   it("rejects IDs with wrong format", () => {
@@ -27,7 +36,9 @@ describe("givenValueSchema", () => {
 
   it("accepts raw JSONPaths starting with $", () => {
     expect(givenValueSchema.safeParse("$.paths[*].get").success).toBe(true);
-    expect(givenValueSchema.safeParse("$.components.schemas..properties").success).toBe(true);
+    expect(
+      givenValueSchema.safeParse("$.components.schemas..properties").success,
+    ).toBe(true);
   });
 
   it("rejects unknown strings that are not JSONPaths", () => {

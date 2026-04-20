@@ -26,4 +26,6 @@
 [data-theme="dark"] .incorrectLabel {
   color: #ff6464;
 }
-.incorrectIcon { font-size: 1rem; }
+.incorrectIcon {
+  font-size: 1rem;
+}

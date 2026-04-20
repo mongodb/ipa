@@ -37,10 +37,12 @@ export const givenSchema = z.union([
 ]);
 
 /** Rule ID format: IPA-{nnnn}-{must|should|may}-{slug} */
-export const ruleIdSchema = z.string().regex(
-  /^IPA-\d{4}-(must|should|may)-.+$/,
-  "Rule ID must match IPA-{nnnn}-{must|should|may}-{slug}",
-);
+export const ruleIdSchema = z
+  .string()
+  .regex(
+    /^IPA-\d{4}-(must|should|may)-.+$/,
+    "Rule ID must match IPA-{nnnn}-{must|should|may}-{slug}",
+  );
 
 /** Effort level */
 export const effortSchema = z.enum(["check", "reason", "explore"]);

@@ -98,7 +98,9 @@ describe("checkReferences", () => {
     const rules = [
       { id: "IPA-0100-must-a", file: "a.mdx", dependsOn: ["IPA-0100-must-z"] },
     ];
-    expect(() => checkReferences(rules)).toThrow(/unresolved.*IPA-0100-must-z/i);
+    expect(() => checkReferences(rules)).toThrow(
+      /unresolved.*IPA-0100-must-z/i,
+    );
   });
 });
 

@@ -10,10 +10,10 @@ import Badge from "../../ui/Badge";
 
 /** @type {Record<IpaState, { label: string, color: TagColor }>} */
 const STATE_CONFIG = {
-  adopt:        { label: "Adopt",        color: "green"  },
-  experimental: { label: "Experimental", color: "amber"  },
-  deprecated:   { label: "Deprecated",   color: "orange" },
-  retired:      { label: "Retired",      color: "muted"  },
+  adopt: { label: "Adopt", color: "green" },
+  experimental: { label: "Experimental", color: "amber" },
+  deprecated: { label: "Deprecated", color: "orange" },
+  retired: { label: "Retired", color: "muted" },
 };
 
 /**
@@ -34,7 +34,9 @@ export default function IpaMetadata() {
 
   return (
     <div className={styles.pageMeta}>
-      <Badge color={stateConfig.color} dot>{stateConfig.label}</Badge>
+      <Badge color={stateConfig.color} dot>
+        {stateConfig.label}
+      </Badge>
     </div>
   );
 }

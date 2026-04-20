@@ -10,8 +10,8 @@ const SPECTRAL_BASE_URL =
 /** Tag color for each rule-level state badge. */
 const STATE_TAG_COLOR = {
   experimental: "amber",
-  deprecated:   "orange",
-  retired:      "muted",
+  deprecated: "orange",
+  retired: "muted",
 };
 
 function deriveSeverity(id) {
@@ -51,8 +51,14 @@ export default function Rule({
 }) {
   // Validate props with Zod — throws during SSR to fail the build on invalid props
   const validated = rulePropsSchema.safeParse({
-    id, given, lintable, informational, implementation, effort,
-    state: explicitState, dependsOn,
+    id,
+    given,
+    lintable,
+    informational,
+    implementation,
+    effort,
+    state: explicitState,
+    dependsOn,
   });
   if (!validated.success) {
     const issues = validated.error.issues
@@ -69,7 +75,9 @@ export default function Rule({
   const spectralRuleId = lintable ? deriveSpectralRuleId(id) : null;
 
   // Only show a state badge when the rule diverges from its section's state
-  const showStateBadge = Boolean(explicitState && explicitState !== sectionState);
+  const showStateBadge = Boolean(
+    explicitState && explicitState !== sectionState,
+  );
 
   const evaluationType = informational
     ? "Informational"
@@ -96,12 +104,16 @@ export default function Rule({
             <Badge color="amber">Not Lintable</Badge>
           )}
 
-          <span className={styles.badgeSeparator} aria-hidden="true">·</span>
+          <span className={styles.badgeSeparator} aria-hidden="true">
+            ·
+          </span>
           <span className={styles.badgeType}>{evaluationType}</span>
 
           {lintable && spectralRuleId && (
             <>
-              <span className={styles.badgeSeparator} aria-hidden="true">·</span>
+              <span className={styles.badgeSeparator} aria-hidden="true">
+                ·
+              </span>
               <a
                 href={SPECTRAL_BASE_URL}
                 target="_blank"
@@ -115,14 +127,18 @@ export default function Rule({
 
           {implementation && !informational && (
             <>
-              <span className={styles.badgeSeparator} aria-hidden="true">·</span>
+              <span className={styles.badgeSeparator} aria-hidden="true">
+                ·
+              </span>
               <Badge color="muted">+ Code</Badge>
             </>
           )}
 
           {showStateBadge && (
             <>
-              <span className={styles.badgeSeparator} aria-hidden="true">·</span>
+              <span className={styles.badgeSeparator} aria-hidden="true">
+                ·
+              </span>
               <Badge color={STATE_TAG_COLOR[effectiveState] ?? "muted"}>
                 {effectiveState}
               </Badge>

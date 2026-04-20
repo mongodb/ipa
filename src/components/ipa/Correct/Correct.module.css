@@ -26,4 +26,6 @@
 [data-theme="dark"] .correctLabel {
   color: var(--ifm-color-primary);
 }
-.correctIcon { font-size: 1rem; }
+.correctIcon {
+  font-size: 1rem;
+}

@@ -8,7 +8,9 @@ import styles from "./RulesSection.module.css";
  * @property {RuleState} state - Inherited lifecycle state for child Rules.
  */
 
-const RulesSectionContext = createContext(/** @type {RulesSectionContextValue} */ ({ state: "adopt" }));
+const RulesSectionContext = createContext(
+  /** @type {RulesSectionContextValue} */ ({ state: "adopt" }),
+);
 
 export function useRulesSection() {
   return useContext(RulesSectionContext);
@@ -26,8 +28,10 @@ export default function RulesSection({ state = "adopt", children }) {
     <RulesSectionContext.Provider value={{ state }}>
       <div className={styles.rulesSection}>
         <h2 className={styles.rulesSectionTitle}>
-          <span className={styles.rulesSectionIcon} aria-hidden="true">{"<>"}</span>
-          {" "}Rules
+          <span className={styles.rulesSectionIcon} aria-hidden="true">
+            {"<>"}
+          </span>{" "}
+          Rules
         </h2>
         {children}
       </div>

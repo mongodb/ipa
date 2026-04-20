@@ -101,7 +101,9 @@ export function checkUniqueness(rules: RuleEntry[]): void {
   const dupes = [...seen.entries()].filter(([, files]) => files.length > 1);
   if (dupes.length > 0) {
     const msg = dupes
-      .map(([id, files]) => `  Duplicate rule ID "${id}" in: ${files.join(", ")}`)
+      .map(
+        ([id, files]) => `  Duplicate rule ID "${id}" in: ${files.join(", ")}`,
+      )
       .join("\n");
     throw new Error(`Duplicate rule IDs found:\n${msg}`);
   }
