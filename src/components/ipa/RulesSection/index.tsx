@@ -1,29 +1,30 @@
 import React, { createContext, useContext } from "react";
+import type { IpaState } from "@site/src/types/ipa";
 import styles from "./RulesSection.module.css";
 
-/** @typedef {"experimental" | "adopt" | "deprecated" | "retired"} RuleState */
+interface RulesSectionContextValue {
+  state: IpaState;
+}
 
-/**
- * @typedef {Object} RulesSectionContextValue
- * @property {RuleState} state - Inherited lifecycle state for child Rules.
- */
+const RulesSectionContext = createContext<RulesSectionContextValue>({
+  state: "adopt",
+});
 
-const RulesSectionContext = createContext(
-  /** @type {RulesSectionContextValue} */ ({ state: "adopt" }),
-);
-
-export function useRulesSection() {
+export function useRulesSection(): RulesSectionContextValue {
   return useContext(RulesSectionContext);
+}
+
+interface RulesSectionProps {
+  state?: IpaState;
+  children: React.ReactNode;
 }
 
 /**
  * Groups all Rules belonging to one logical section of an IPA document.
  * Provides the section-level `state` via React context so individual
  * `<Rule>` components can inherit it without repeating the prop.
- *
- * @param {{ state?: RuleState, children: React.ReactNode }} props
  */
-export default function RulesSection({ state = "adopt", children }) {
+export default function RulesSection({ state = "adopt", children }: RulesSectionProps) {
   return (
     <RulesSectionContext.Provider value={{ state }}>
       <div className={styles.rulesSection}>

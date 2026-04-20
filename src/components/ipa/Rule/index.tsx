@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { useRulesSection } from "../RulesSection";
 import { rulePropsSchema } from "@site/src/types/ipa";
+import type { IpaState, RuleProps } from "@site/src/types/ipa";
 import styles from "./Rule.module.css";
 import Badge from "../../ui/Badge";
 
@@ -8,35 +9,27 @@ const SPECTRAL_BASE_URL =
   "https://github.com/mongodb/openapi/tree/main/tools/spectral";
 
 /** Tag color for each rule-level state badge. */
-const STATE_TAG_COLOR = {
+const STATE_TAG_COLOR: Record<string, string> = {
   experimental: "amber",
   deprecated: "orange",
   retired: "muted",
 };
 
-function deriveSeverity(id) {
+function deriveSeverity(id: string): string | null {
   const match = id.match(/-(must|should|may)-/);
   return match ? match[1].toLowerCase() : null;
 }
 
-function deriveSpectralRuleId(id) {
+function deriveSpectralRuleId(id: string): string {
   return `xgen-${id}`;
+}
+
+interface RuleComponentProps extends RuleProps {
+  children: React.ReactNode;
 }
 
 /**
  * One atomic API design rule with machine-readable metadata.
- *
- * @param {{
- *   id: string,
- *   given: string | string[],
- *   lintable?: boolean,
- *   informational?: boolean,
- *   implementation?: boolean,
- *   effort?: "check" | "reason" | "explore",
- *   state?: "experimental" | "adopt" | "deprecated" | "retired",
- *   dependsOn?: string[],
- *   children: React.ReactNode,
- * }} props
  */
 export default function Rule({
   id,
@@ -48,7 +41,7 @@ export default function Rule({
   state: explicitState,
   dependsOn,
   children,
-}) {
+}: RuleComponentProps) {
   const { state: sectionState } = useRulesSection();
 
   // Validate props with Zod — throws during SSR to fail the build on invalid props
@@ -71,7 +64,7 @@ export default function Rule({
     }
   }
 
-  const effectiveState = explicitState || sectionState || "experimental";
+  const effectiveState: IpaState = explicitState || sectionState || "experimental";
   // severity is derived from the rule ID slug (must / should / may)
   const severity = useMemo(() => deriveSeverity(id), [id]);
   const spectralRuleId = lintable ? deriveSpectralRuleId(id) : null;

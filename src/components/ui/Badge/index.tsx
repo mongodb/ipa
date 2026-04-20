@@ -1,7 +1,7 @@
 import React from "react";
 import styles from "./Badge.module.css";
 
-export type BadgeColor = "green" | "amber" | "red" | "muted";
+export type BadgeColor = "green" | "amber" | "blue" | "orange" | "red" | "muted";
 
 interface BadgeProps {
   color?: BadgeColor;
@@ -9,6 +9,9 @@ interface BadgeProps {
   children: React.ReactNode;
 }
 
+/**
+ * A pill-shaped tag badge for displaying metadata like state, lintability, effort, etc.
+ */
 export default function Badge({
   color = "muted",
   dot = false,

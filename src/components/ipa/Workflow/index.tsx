@@ -1,8 +1,12 @@
 import React, { useState } from "react";
-import styles from "./Examples.module.css";
+import styles from "./Workflow.module.css";
 
-/** Collapsible accordion containing Correct and Incorrect example blocks. */
-export default function Examples({ children }) {
+interface WorkflowProps {
+  children: React.ReactNode;
+}
+
+/** Collapsible accordion containing numbered evaluation steps for the rule. */
+export default function Workflow({ children }: WorkflowProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -13,7 +17,7 @@ export default function Examples({ children }) {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
       >
-        Examples
+        Evaluation workflow
         <span
           className={`${styles.accordionChevron} ${open ? styles.accordionChevronOpen : ""}`}
           aria-hidden="true"

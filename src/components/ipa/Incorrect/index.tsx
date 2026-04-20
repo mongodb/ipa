@@ -1,8 +1,12 @@
 import React from "react";
 import styles from "./Incorrect.module.css";
 
+interface IncorrectProps {
+  children: React.ReactNode;
+}
+
 /** A violating example — code block plus an optional Reason child. */
-export default function Incorrect({ children }) {
+export default function Incorrect({ children }: IncorrectProps) {
   return (
     <div className={styles.example}>
       <div className={styles.exampleHeader}>
