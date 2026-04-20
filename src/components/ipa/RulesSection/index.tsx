@@ -6,12 +6,14 @@ interface RulesSectionContextValue {
   state: IpaState;
 }
 
-const RulesSectionContext = createContext<RulesSectionContextValue>({
-  state: "adopt",
-});
+const RulesSectionContext = createContext<RulesSectionContextValue | null>(null);
 
 export function useRulesSection(): RulesSectionContextValue {
-  return useContext(RulesSectionContext);
+  const ctx = useContext(RulesSectionContext);
+  if (!ctx) {
+    throw new Error("<Rule> must be rendered inside a <RulesSection>");
+  }
+  return ctx;
 }
 
 interface RulesSectionProps {

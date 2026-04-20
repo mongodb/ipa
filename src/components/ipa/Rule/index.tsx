@@ -1,15 +1,15 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { useRulesSection } from "../RulesSection";
 import { rulePropsSchema } from "@site/src/types/ipa";
 import type { IpaState, RuleProps } from "@site/src/types/ipa";
 import styles from "./Rule.module.css";
-import Badge from "../../ui/Badge";
+import Badge, { type BadgeColor } from "../../ui/Badge";
 
 const SPECTRAL_BASE_URL =
   "https://github.com/mongodb/openapi/tree/main/tools/spectral";
 
 /** Tag color for each rule-level state badge. */
-const STATE_TAG_COLOR: Record<string, string> = {
+const STATE_TAG_COLOR: Partial<Record<IpaState, BadgeColor>> = {
   experimental: "amber",
   deprecated: "orange",
   retired: "muted",
@@ -66,7 +66,7 @@ export default function Rule({
 
   const effectiveState: IpaState = explicitState || sectionState || "experimental";
   // severity is derived from the rule ID slug (must / should / may)
-  const severity = useMemo(() => deriveSeverity(id), [id]);
+  const severity = deriveSeverity(id);
   const spectralRuleId = lintable ? deriveSpectralRuleId(id) : null;
 
   // Only show a state badge when the rule diverges from its section's state

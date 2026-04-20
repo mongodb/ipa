@@ -82,6 +82,20 @@ Some text before.
     expect(rules[0].lintable).toBe(false);
   });
 
+  it("extracts self-closing Rule tags", () => {
+    const mdx = `<Rule id="IPA-0100-must-foo" given="spec" />`;
+    const rules = extractRuleProps(mdx);
+    expect(rules).toHaveLength(1);
+    expect(rules[0].id).toBe("IPA-0100-must-foo");
+    expect(rules[0].given).toBe("spec");
+  });
+
+  it("ignores Rule tags inside JSX comments", () => {
+    const mdx = `{/* <Rule id="IPA-0100-must-foo" given="spec"> */}`;
+    const rules = extractRuleProps(mdx);
+    expect(rules).toHaveLength(0);
+  });
+
   it("handles multiline Rule tags", () => {
     const mdx = `<Rule
     id="IPA-0100-must-foo"

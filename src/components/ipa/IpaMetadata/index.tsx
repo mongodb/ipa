@@ -1,6 +1,7 @@
 import React from "react";
 import { useDoc } from "@docusaurus/plugin-content-docs/client";
 import type { IpaState } from "@site/src/types/ipa";
+import { ipaStateSchema } from "@site/src/types/ipa";
 import styles from "./IpaMetadata.module.css";
 import Badge, { type BadgeColor } from "../../ui/Badge";
 
@@ -18,9 +19,11 @@ const STATE_CONFIG: Record<IpaState, { label: string; color: BadgeColor }> = {
 export default function IpaMetadata(): React.ReactElement | null {
   const { frontMatter } = useDoc();
 
-  const state = (frontMatter as Record<string, unknown>).state as string | undefined;
-  const normalizedState = state?.toLowerCase() as IpaState | undefined;
-  const stateConfig = normalizedState ? STATE_CONFIG[normalizedState] : null;
+  const raw = (frontMatter as Record<string, unknown>).state;
+  const parsed = ipaStateSchema.safeParse(typeof raw === "string" ? raw.toLowerCase() : raw);
+  if (!parsed.success) return null;
+  const normalizedState = parsed.data;
+  const stateConfig = STATE_CONFIG[normalizedState];
 
   if (!stateConfig) return null;
 

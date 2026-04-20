@@ -57,7 +57,11 @@ export const rulePropsSchema = z
     implementation: z.boolean().default(false),
     effort: effortSchema.default("check"),
     state: ipaStateSchema.optional(),
-    dependsOn: z.array(ruleIdSchema).optional(),
+    dependsOn: z.array(ruleIdSchema).optional().check(
+      z.refine((arr) => !arr || new Set(arr).size === arr.length, {
+        message: "dependsOn must not contain duplicate rule IDs",
+      }),
+    ),
   })
   .check(
     z.refine((data) => data.informational || data.given !== undefined, {

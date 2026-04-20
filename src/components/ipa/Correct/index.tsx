@@ -1,4 +1,5 @@
 import React from "react";
+import shared from "../ExampleBlock.module.css";
 import styles from "./Correct.module.css";
 
 interface CorrectProps {
@@ -8,14 +9,14 @@ interface CorrectProps {
 /** A compliant example — code block plus an optional Reason child. */
 export default function Correct({ children }: CorrectProps) {
   return (
-    <div className={styles.example}>
-      <div className={styles.exampleHeader}>
+    <div className={shared.example}>
+      <div className={shared.exampleHeader}>
         <span className={styles.correctIcon} aria-hidden="true">
           ✓
         </span>
         <span className={styles.correctLabel}>Correct</span>
       </div>
-      <div className={styles.exampleBody}>{children}</div>
+      <div className={shared.exampleBody}>{children}</div>
     </div>
   );
 }

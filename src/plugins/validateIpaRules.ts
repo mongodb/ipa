@@ -6,7 +6,7 @@ import { rulePropsSchema } from "../types/ipa";
 // ---- Regex extractors for <Rule> props from MDX ----
 
 /** Match each <Rule ...> opening tag (multiline). */
-const RULE_TAG_RE = /<Rule\s([\s\S]*?)>/g;
+const RULE_TAG_RE = /<Rule\s([\s\S]*?)\/?\s*>/g;
 
 const PROP_EXTRACTORS = {
   id: /id="([^"]+)"/,
@@ -43,12 +43,14 @@ export interface ExtractedRule {
 export function extractRuleProps(content: string): ExtractedRule[] {
   // Strip fenced code blocks so we don't extract <Rule> from examples.
   const stripped = content.replace(/```[\s\S]*?```/g, '');
+  // Strip JSX comments so we don't extract commented-out <Rule> tags.
+  const withoutComments = stripped.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
 
   const rules: ExtractedRule[] = [];
   let match: RegExpExecArray | null;
 
   RULE_TAG_RE.lastIndex = 0;
-  while ((match = RULE_TAG_RE.exec(stripped)) !== null) {
+  while ((match = RULE_TAG_RE.exec(withoutComments)) !== null) {
     const attrs = match[1];
     const props: ExtractedRule = { id: "" };
 

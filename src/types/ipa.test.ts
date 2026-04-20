@@ -118,6 +118,14 @@ describe("rulePropsSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("rejects duplicate dependsOn entries", () => {
+    const result = rulePropsSchema.safeParse({
+      ...validBase,
+      dependsOn: ["IPA-0108-must-use-http-delete", "IPA-0108-must-use-http-delete"],
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("rejects invalid dependsOn format", () => {
     const result = rulePropsSchema.safeParse({
       ...validBase,
