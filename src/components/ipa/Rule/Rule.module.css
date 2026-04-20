@@ -1,38 +1,13 @@
 .rule {
   border: 1px solid var(--ifm-color-emphasis-200);
-  /* Left accent defaults to emphasis; overridden per severity below */
-  border-left: 3px solid var(--ifm-color-emphasis-300);
   border-radius: 8px;
   padding: 1.25rem 1.5rem;
   margin-bottom: 1.25rem;
   background: var(--ifm-background-surface-color);
   counter-increment: rule-counter;
-  transition: border-color 0.15s ease;
-}
-
-/* Severity-based left border accent */
-.rule[data-severity="must"] {
-  border-left-color: #e05252;
-}
-.rule[data-severity="should"] {
-  border-left-color: #c99000;
-}
-.rule[data-severity="may"] {
-  border-left-color: #5b87d4;
-}
-
-[data-theme="dark"] .rule[data-severity="must"] {
-  border-left-color: #ff6464;
-}
-[data-theme="dark"] .rule[data-severity="should"] {
-  border-left-color: #e6ac00;
-}
-[data-theme="dark"] .rule[data-severity="may"] {
-  border-left-color: #6495ed;
 }
 
 .ruleInformational {
-  border-left-color: var(--ifm-color-emphasis-200) !important;
   opacity: 0.8;
 }
 

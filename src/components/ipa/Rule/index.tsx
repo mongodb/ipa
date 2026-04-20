@@ -15,11 +15,6 @@ const STATE_TAG_COLOR: Partial<Record<IpaState, BadgeColor>> = {
   retired: "muted",
 };
 
-function deriveSeverity(id: string): string | null {
-  const match = id.match(/-(must|should|may)-/);
-  return match ? match[1].toLowerCase() : null;
-}
-
 function deriveSpectralRuleId(id: string): string {
   return `xgen-${id}`;
 }
@@ -65,8 +60,6 @@ export default function Rule({
   }
 
   const effectiveState: IpaState = explicitState || sectionState || "experimental";
-  // severity is derived from the rule ID slug (must / should / may)
-  const severity = deriveSeverity(id);
   const spectralRuleId = lintable ? deriveSpectralRuleId(id) : null;
 
   // Only show a state badge when the rule diverges from its section's state
@@ -84,7 +77,6 @@ export default function Rule({
     <div
       className={`${styles.rule} ${informational ? styles.ruleInformational : ""}`}
       id={id}
-      data-severity={severity ?? undefined}
     >
       <div className={styles.ruleHeader}>
         {/* Number is rendered by CSS counter(rule-counter) — no JS needed */}
