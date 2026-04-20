@@ -41,11 +41,14 @@ export interface ExtractedRule {
 
 /** Extract Rule props from MDX content using regex. */
 export function extractRuleProps(content: string): ExtractedRule[] {
+  // Strip fenced code blocks so we don't extract <Rule> from examples.
+  const stripped = content.replace(/```[\s\S]*?```/g, '');
+
   const rules: ExtractedRule[] = [];
   let match: RegExpExecArray | null;
 
   RULE_TAG_RE.lastIndex = 0;
-  while ((match = RULE_TAG_RE.exec(content)) !== null) {
+  while ((match = RULE_TAG_RE.exec(stripped)) !== null) {
     const attrs = match[1];
     const props: ExtractedRule = { id: "" };
 
@@ -70,10 +73,16 @@ export function extractRuleProps(content: string): ExtractedRule[] {
     const depsMatch = attrs.match(PROP_EXTRACTORS.dependsOn);
     if (depsMatch) props.dependsOn = parseStringArray(depsMatch[1]);
 
-    // boolean props (bare attribute = true)
+    // boolean props: bare attribute, ={true}, or ={false}
     for (const boolProp of BOOL_PROPS) {
-      const boolRe = new RegExp(`(?:^|\\s)${boolProp}(?:\\s|$)`);
-      if (boolRe.test(attrs)) props[boolProp] = true;
+      const explicitRe = new RegExp(`(?:^|\\s)${boolProp}=\\{(true|false)\\}`);
+      const explicitMatch = attrs.match(explicitRe);
+      if (explicitMatch) {
+        props[boolProp] = explicitMatch[1] === "true";
+      } else {
+        const bareRe = new RegExp(`(?:^|\\s)${boolProp}(?:\\s|$)`);
+        if (bareRe.test(attrs)) props[boolProp] = true;
+      }
     }
 
     if (props.id) rules.push(props);

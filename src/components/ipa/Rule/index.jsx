@@ -15,7 +15,7 @@ const STATE_TAG_COLOR = {
 };
 
 function deriveSeverity(id) {
-  const match = id.match(/-(must|should|may)-/i);
+  const match = id.match(/-(must|should|may)-/);
   return match ? match[1].toLowerCase() : null;
 }
 
@@ -49,25 +49,27 @@ export default function Rule({
   dependsOn,
   children,
 }) {
-  // Validate props with Zod — throws during SSR to fail the build on invalid props
-  const validated = rulePropsSchema.safeParse({
-    id,
-    given,
-    lintable,
-    informational,
-    implementation,
-    effort,
-    state: explicitState,
-    dependsOn,
-  });
-  if (!validated.success) {
-    const issues = validated.error.issues
-      .map((i) => `${i.path.join(".")}: ${i.message}`)
-      .join("; ");
-    throw new Error(`<Rule id="${id}">: invalid props — ${issues}`);
-  }
-
   const { state: sectionState } = useRulesSection();
+
+  // Validate props with Zod — throws during SSR to fail the build on invalid props
+  if (typeof window === "undefined") {
+    const validated = rulePropsSchema.safeParse({
+      id,
+      given,
+      lintable,
+      informational,
+      implementation,
+      effort,
+      state: explicitState,
+      dependsOn,
+    });
+    if (!validated.success) {
+      const issues = validated.error.issues
+        .map((i) => `${i.path.join(".")}: ${i.message}`)
+        .join("; ");
+      throw new Error(`<Rule id="${id}">: invalid props — ${issues}`);
+    }
+  }
 
   const effectiveState = explicitState || sectionState || "experimental";
   // severity is derived from the rule ID slug (must / should / may)

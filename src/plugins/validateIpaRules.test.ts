@@ -55,6 +55,33 @@ describe("extractRuleProps", () => {
     expect(rules).toHaveLength(2);
   });
 
+  it("ignores Rule tags inside fenced code blocks", () => {
+    const mdx = `
+Some text before.
+
+\`\`\`mdx
+<Rule id="IPA-0100-must-example" given="spec">
+\`\`\`
+
+<Rule id="IPA-0100-must-real" given="spec">
+    `;
+    const rules = extractRuleProps(mdx);
+    expect(rules).toHaveLength(1);
+    expect(rules[0].id).toBe("IPA-0100-must-real");
+  });
+
+  it("extracts lintable={true} explicit syntax", () => {
+    const mdx = `<Rule id="IPA-0100-must-foo" given="spec" lintable={true}>`;
+    const rules = extractRuleProps(mdx);
+    expect(rules[0].lintable).toBe(true);
+  });
+
+  it("extracts lintable={false} explicit syntax", () => {
+    const mdx = `<Rule id="IPA-0100-must-foo" given="spec" lintable={false}>`;
+    const rules = extractRuleProps(mdx);
+    expect(rules[0].lintable).toBe(false);
+  });
+
   it("handles multiline Rule tags", () => {
     const mdx = `<Rule
     id="IPA-0100-must-foo"

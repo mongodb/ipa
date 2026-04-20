@@ -1,0 +1,146 @@
+---
+id: 100
+state: adopt
+---
+
+import { RulesSection, Rule, Examples, Correct, Incorrect, Reason, Workflow } from '@site/src/components/ipa';
+
+# IPA-100: Language
+
+Developers worldwide use MongoDB, and many customers who don't speak English as
+their first language consume our APIs. It is important to avoid any possible
+confusion across different idioms and colloquialisms unifying to a common
+language.
+
+## Guidance
+
+API producers **must** use American English across the API.
+
+This includes but is not limited to:
+
+- Resource names
+- Field names
+- Descriptions
+- Enum values
+
+**Example:** "canceled" over
+[cancelled](https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag/Cloud-Backups/operation/createBackupExportJob).
+
+The MongoDB Style Guide uses the Merriam-Webster's Collegiate Dictionary. 11th
+ed. Springfield, MA: Merriam-Webster, 2003. Continually updated at
+[https://www.merriam-webster.com/](https://www.merriam-webster.com/).
+
+## Further Reading
+
+[MongoDB Meta Documentation](https://www.mongodb.com/docs/meta/style-guide/terminology/general-term-guidelines/use-consistent-terms/#use-consistent-terminology)
+
+<RulesSection state="adopt">
+
+<Rule
+  id="IPA-0100-must-use-american-english"
+  given="spec"
+  effort="check"
+>
+
+API producers must use American English for all user-facing text in the API specification, including resource names, field names, descriptions, and enum values.
+
+<Examples>
+<Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}/backup/exports:
+    post:
+      summary: Create One Backup Export Job
+      operationId: createBackupExportJob
+      description: >-
+        Creates one export job for the specified backup snapshot.
+        The job is canceled if it does not complete within 24 hours.
+      responses:
+        "200":
+          description: OK
+```
+
+<Reason>Uses American English spelling "canceled" (one "l").</Reason>
+</Correct>
+<Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}/backup/exports:
+    post:
+      summary: Create One Backup Export Job
+      operationId: createBackupExportJob
+      description: >-
+        Creates one export job for the specified backup snapshot.
+        The job is cancelled if it does not complete within 24 hours.
+      responses:
+        "200":
+          description: OK
+```
+
+<Reason>Uses British English spelling "cancelled" (double "l"). American English uses "canceled".</Reason>
+</Incorrect>
+</Examples>
+
+<Workflow>
+
+1. Scan every user-facing string in the specification (descriptions, summaries, enum values, field names).
+2. For each string, check for common British English spellings (e.g., "cancelled", "colour", "authorise", "behaviour", "organisation").
+3. Consult Merriam-Webster's dictionary for the preferred American English form.
+4. Flag any non-American spelling as a violation.
+
+</Workflow>
+
+</Rule>
+
+<Rule
+  id="IPA-0100-must-use-american-english-spelling"
+  given={["$.components.schemas..properties", "paths"]}
+  lintable
+>
+
+Schema property names and path segments must use American English spelling. This rule is lintable because property names and path segments can be checked against a dictionary of known British-to-American spelling differences.
+
+<Examples>
+<Correct>
+
+```yaml
+components:
+  schemas:
+    BackupExportJob:
+      type: object
+      properties:
+        canceled:
+          type: boolean
+          description: Whether the export job was canceled.
+        color:
+          type: string
+          description: The color label assigned to the resource.
+```
+
+<Reason>Uses American English spellings "canceled" and "color" for property names.</Reason>
+</Correct>
+<Incorrect>
+
+```yaml
+components:
+  schemas:
+    BackupExportJob:
+      type: object
+      properties:
+        cancelled:
+          type: boolean
+          description: Whether the export job was cancelled.
+        colour:
+          type: string
+          description: The colour label assigned to the resource.
+```
+
+<Reason>Uses British English spellings "cancelled" and "colour". Use "canceled" and "color" instead.</Reason>
+</Incorrect>
+</Examples>
+
+</Rule>
+
+</RulesSection>
