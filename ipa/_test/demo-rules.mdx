@@ -1,0 +1,88 @@
+---
+id: 9999
+state: adopt
+draft: true
+---
+
+import { RulesSection, Rule } from '@site/src/components/ipa';
+
+# Demo: Rule Component
+
+This is a test page to demonstrate the Rule component framework. It is not a real IPA document.
+
+## Guidance
+
+This page showcases the different Rule component configurations: lintable vs not-lintable, informational, effort levels, dependencies, and state overrides.
+
+<RulesSection state="adopt">
+
+<Rule
+  id="IPA-9999-must-demo-lintable"
+  given="spec"
+  lintable
+>
+
+A lintable rule targeting the full spec. Lintable rules can be enforced automatically by Spectral.
+
+</Rule>
+
+<Rule
+  id="IPA-9999-must-demo-semantic"
+  given="schema"
+>
+
+A semantic (not lintable) rule targeting schemas. These require human review because the evaluation involves judgement.
+
+</Rule>
+
+<Rule
+  id="IPA-9999-should-demo-effort-reason"
+  given="operation"
+  effort="reason"
+>
+
+A rule with "reason" effort level, meaning it requires reasoning about the API design to evaluate.
+
+</Rule>
+
+<Rule
+  id="IPA-9999-may-demo-informational"
+  informational
+>
+
+An informational rule — no `given` is required because it provides guidance rather than a checkable constraint.
+
+</Rule>
+
+<Rule
+  id="IPA-9999-must-demo-array-given"
+  given={["delete-operation", "$.components.schemas..properties"]}
+  lintable
+  implementation
+>
+
+A lintable rule with multiple `given` targets (alias + JSONPath) and an implementation flag.
+
+</Rule>
+
+<Rule
+  id="IPA-9999-must-demo-dependency"
+  given="paths"
+  dependsOn={["IPA-9999-must-demo-lintable"]}
+>
+
+A rule that depends on another rule, showing the dependency link footer.
+
+</Rule>
+
+<Rule
+  id="IPA-9999-should-demo-state-override"
+  given="resource"
+  state="experimental"
+>
+
+A rule with an explicit state override — shows an extra state badge because it differs from the section's "adopt" state.
+
+</Rule>
+
+</RulesSection>
