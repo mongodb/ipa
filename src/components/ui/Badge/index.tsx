@@ -1,7 +1,7 @@
 import React from "react";
 import styles from "./Badge.module.css";
 
-export type BadgeColor = "green" | "amber" | "red" | "muted";
+export type BadgeColor = "green" | "amber" | "blue" | "orange" | "red" | "muted";
 
 interface BadgeProps {
   color?: BadgeColor;
@@ -9,14 +9,24 @@ interface BadgeProps {
   children: React.ReactNode;
 }
 
+/**
+ * A pill-shaped tag badge for displaying metadata like state, lintability, effort, etc.
+ */
 export default function Badge({
   color = "muted",
   dot = false,
   children,
 }: BadgeProps): React.ReactElement {
-  const colorClass = styles[`tag_${color}`] ?? styles.tag_muted;
+  const COLOR_CLASSES: Record<BadgeColor, string> = {
+    green: styles.tag_green,
+    amber: styles.tag_amber,
+    blue: styles.tag_blue,
+    orange: styles.tag_orange,
+    red: styles.tag_red,
+    muted: styles.tag_muted,
+  };
   return (
-    <span className={`${styles.tag} ${colorClass}`}>
+    <span className={`${styles.tag} ${COLOR_CLASSES[color]}`}>
       {dot && <span className={styles.tagDot} aria-hidden="true" />}
       {children}
     </span>

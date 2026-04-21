@@ -1,0 +1,114 @@
+.rule {
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  background: var(--ifm-background-surface-color);
+  counter-increment: rule-counter;
+}
+
+.ruleInformational {
+  opacity: 0.8;
+}
+
+.ruleHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+/* Rule number circle — filled by CSS counter, no JS needed */
+.ruleNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--ifm-color-primary);
+  color: var(--mongodb-slate, #001e2b);
+  font-size: 0.8rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.ruleNumber::before {
+  content: counter(rule-counter);
+}
+
+.ruleBadges {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.badgeSeparator {
+  color: var(--ifm-color-emphasis-400);
+  font-size: 0.7rem;
+  user-select: none;
+}
+
+.badgeType {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.spectralLink {
+  font-size: 0.7rem;
+  color: var(--ifm-color-emphasis-600);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  transition: color 0.15s ease;
+}
+.spectralLink:hover {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.ruleBody {
+  padding-left: 2.5rem;
+}
+
+.ruleBody p:first-child {
+  margin-top: 0;
+}
+
+.ruleFooter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 2.5rem;
+  margin-top: 0.75rem;
+}
+
+.ruleDependencies {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0 0 2.5rem;
+  font-size: 0.78rem;
+}
+
+.dependencyLabel {
+  color: var(--ifm-color-emphasis-600);
+  font-weight: 500;
+}
+
+.dependencyLink {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 0.74rem;
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}
+
+.dependencyLink:hover {
+  text-decoration: underline;
+}

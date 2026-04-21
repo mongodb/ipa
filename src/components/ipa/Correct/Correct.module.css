@@ -1,0 +1,11 @@
+.correctIcon,
+.correctLabel {
+  color: #007a35;
+}
+[data-theme="dark"] .correctIcon,
+[data-theme="dark"] .correctLabel {
+  color: var(--ifm-color-primary);
+}
+.correctIcon {
+  font-size: 1rem;
+}

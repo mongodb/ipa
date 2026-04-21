@@ -1,0 +1,17 @@
+.reason {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem 0.5rem 0.875rem;
+  border-left: 3px solid var(--ifm-color-emphasis-300);
+  background: var(--ifm-color-emphasis-100);
+  border-radius: 0 4px 4px 0;
+  font-size: 0.85rem;
+  color: var(--ifm-color-emphasis-800);
+}
+
+.reason p {
+  margin: 0;
+}
+
+.reasonContent p:last-child {
+  margin-bottom: 0;
+}
