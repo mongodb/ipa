@@ -5,15 +5,14 @@ interface GuidelinesProps {
   children: React.ReactNode;
 }
 
-/**
- * Visual container that groups all <Guideline> components belonging to one
- * logical section of an IPA document. Pure presentation: renders a
- * card-like wrapper with separators between children.
- *
- * Each <Guideline> resolves its own `state` independently — defaulting to
- * the document's frontmatter `state` and overridable via an explicit
- * `state` prop on the guideline itself.
- */
-export default function Guidelines({ children }: GuidelinesProps) {
-  return <section className={styles.root}>{children}</section>;
+// Pure visual container for a group of <Guideline> components within one
+// logical section of an IPA document. Renders a card-like wrapper with
+// separators between children. Each <Guideline> resolves its own `state`
+// independently (defaulting to the document's frontmatter `state`).
+export function Guidelines({ children }: GuidelinesProps) {
+  return (
+    <div className={styles.root} data-testid="guidelines">
+      {children}
+    </div>
+  );
 }

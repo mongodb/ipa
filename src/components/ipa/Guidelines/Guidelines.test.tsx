@@ -1,7 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 
-import Guidelines from "./index";
+import { Guidelines } from "./index";
+import styles from "./Guidelines.module.css";
 
 describe("<Guidelines>", () => {
   it("renders its children unchanged", () => {
@@ -15,7 +16,7 @@ describe("<Guidelines>", () => {
     expect(screen.getByTestId("child")).toHaveTextContent("hello");
   });
 
-  it("wraps children in a section element", () => {
+  it("wraps children in a styled container", () => {
     render(
       <Guidelines>
         <p data-testid="first">one</p>
@@ -23,9 +24,8 @@ describe("<Guidelines>", () => {
       </Guidelines>,
     );
 
-    // Both children rendered, scoped under a single <section> wrapper.
-    const wrapper = screen.getByTestId("first").closest("section");
-    expect(wrapper).not.toBeNull();
+    const wrapper = screen.getByTestId("guidelines");
+    expect(wrapper).toHaveClass(styles.root);
     expect(wrapper).toContainElement(screen.getByTestId("first"));
     expect(wrapper).toContainElement(screen.getByTestId("second"));
   });

@@ -8,8 +8,11 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   test: {
-    include: ["src/**/*.test.{ts,tsx}"],
+    include: ["src/**/*.test.{js,jsx,ts,tsx}"],
     environment: "jsdom",
+    // Enables vitest's `afterEach` global so React Testing Library's
+    // automatic DOM cleanup between tests fires.
+    globals: true,
     setupFiles: ["./vitest.setup.ts"],
     // Docusaurus CSS modules don't carry meaning in unit tests; skip
     // CSS processing so tests stay fast and focus on behaviour.

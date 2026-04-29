@@ -5,5 +5,5 @@
  *   - Guidelines: this PR.
  *   - Rule, Correct, Incorrect, Reason, Examples, Workflow: follow-ups.
  */
-export { default as Guidelines } from "./Guidelines";
+export { Guidelines } from "./Guidelines";
 export { default as IpaMetadata } from "./IpaMetadata";
