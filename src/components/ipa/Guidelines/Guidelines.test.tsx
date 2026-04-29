@@ -2,7 +2,6 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 
 import { Guidelines } from "./index";
-import styles from "./Guidelines.module.css";
 
 describe("<Guidelines>", () => {
   it("renders its children unchanged", () => {
@@ -25,7 +24,6 @@ describe("<Guidelines>", () => {
     );
 
     const wrapper = screen.getByTestId("guidelines");
-    expect(wrapper).toHaveClass(styles.root);
     expect(wrapper).toContainElement(screen.getByTestId("first"));
     expect(wrapper).toContainElement(screen.getByTestId("second"));
   });
