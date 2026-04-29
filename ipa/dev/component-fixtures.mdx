@@ -2,7 +2,9 @@
 title: "Component fixtures (dev only)"
 sidebar_label: "Dev fixtures"
 draft: true
-description: "Visual smoke-test fixtures for the merged IPA UI components. Excluded from production builds."
+description:
+  "Visual smoke-test fixtures for the merged IPA UI components. Excluded from
+  production builds."
 ---
 
 import { Guidelines } from "@site/src/components/ipa";
@@ -14,15 +16,17 @@ component-merge PR adds a section here.
 
 ## `<Guidelines>`
 
-`<Guidelines>` is a pure visual container: a card-like wrapper that
-draws separators between its children. It carries no state and imposes
-no semantics on its descendants — `<Guideline>` components inside
-resolve their own `state` independently.
+`<Guidelines>` is a pure visual container: a card-like wrapper that draws
+separators between its children. It carries no state and imposes no semantics on
+its descendants — `<Guideline>` components inside resolve their own `state`
+independently.
 
 ### Single child
 
 <Guidelines>
-  <p>Child content rendered inside a <code>Guidelines</code>.</p>
+  <p>
+    Child content rendered inside a <code>Guidelines</code>.
+  </p>
 </Guidelines>
 
 ### Multiple children (separator styling)

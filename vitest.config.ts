@@ -1,13 +1,11 @@
 import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
 
+// The repo's tsconfig uses `jsx: preserve` for Docusaurus' build pipeline.
+// Vitest doesn't go through that pipeline, so it needs the canonical
+// React + Vite plugin to transform JSX in `.tsx` test files.
 export default defineConfig({
-  // The repo's tsconfig uses `jsx: preserve` for Docusaurus, so vitest /
-  // oxc needs to be told how to transform JSX in `.tsx` test files.
-  oxc: {
-    jsx: {
-      runtime: "automatic",
-    },
-  },
+  plugins: [react()],
   test: {
     include: ["src/**/*.test.{ts,tsx}"],
   },
