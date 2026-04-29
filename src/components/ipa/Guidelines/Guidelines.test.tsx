@@ -1,31 +1,32 @@
-import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { render, screen } from "@testing-library/react";
 import { describe, it, expect } from "vitest";
 
 import Guidelines from "./index";
 
 describe("<Guidelines>", () => {
   it("renders its children unchanged", () => {
-    const html = renderToStaticMarkup(
+    render(
       <Guidelines>
         <p data-testid="child">hello</p>
       </Guidelines>,
     );
 
-    expect(html).toContain('data-testid="child"');
-    expect(html).toContain("hello");
+    expect(screen.getByTestId("child")).toBeInTheDocument();
+    expect(screen.getByTestId("child")).toHaveTextContent("hello");
   });
 
   it("wraps children in a section element", () => {
-    const html = renderToStaticMarkup(
+    render(
       <Guidelines>
-        <p>one</p>
-        <p>two</p>
+        <p data-testid="first">one</p>
+        <p data-testid="second">two</p>
       </Guidelines>,
     );
 
-    expect(html).toMatch(/^<section /);
-    expect(html).toContain("one");
-    expect(html).toContain("two");
+    // Both children rendered, scoped under a single <section> wrapper.
+    const wrapper = screen.getByTestId("first").closest("section");
+    expect(wrapper).not.toBeNull();
+    expect(wrapper).toContainElement(screen.getByTestId("first"));
+    expect(wrapper).toContainElement(screen.getByTestId("second"));
   });
 });
