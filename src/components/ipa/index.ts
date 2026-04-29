@@ -6,4 +6,4 @@
  *   - Rule, Correct, Incorrect, Reason, Examples, Workflow: follow-ups.
  */
 export { Guidelines } from "./Guidelines";
-export { default as IpaMetadata } from "./IpaMetadata";
+export { IpaMetadata } from "./IpaMetadata";

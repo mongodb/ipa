@@ -1,7 +1,7 @@
 import React from "react";
 import Content from "@theme-original/DocItem/Content";
 import type { WrapperProps } from "@docusaurus/types";
-import IpaMetadata from "@site/src/components/ipa/IpaMetadata";
+import { IpaMetadata } from "@site/src/components/ipa";
 
 type Props = WrapperProps<typeof Content>;
 
