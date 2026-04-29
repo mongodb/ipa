@@ -14,9 +14,8 @@ export default function Badge({
   dot = false,
   children,
 }: BadgeProps): React.ReactElement {
-  const colorClass = styles[`tag_${color}`] ?? styles.tag_muted;
   return (
-    <span className={`${styles.tag} ${colorClass}`}>
+    <span className={styles.tag} data-color={color}>
       {dot && <span className={styles.tagDot} aria-hidden="true" />}
       {children}
     </span>
