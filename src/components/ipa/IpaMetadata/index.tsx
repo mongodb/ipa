@@ -11,7 +11,7 @@ const STATE_CONFIG: Record<IpaState, { label: string; color: BadgeColor }> = {
   retired: { label: "Retired", color: "muted" },
 };
 
-export default function IpaMetadata(): React.ReactElement | null {
+export function IpaMetadata(): React.ReactElement | null {
   const { frontMatter } = useDoc();
 
   const state = (frontMatter as Record<string, unknown>).state as
