@@ -11,26 +11,262 @@ collection.
 
 ## Guidance
 
-- APIs **should** provide a create method for resources unless it is not
-  valuable for users to do so
-  - [Read-only resources](0101.mdx#read-only-resources) **must not** have a
-    Create method
-  - [Singleton resources](0113.mdx) **must not** have a Create method
-  - The purpose of the create method is to create a new resource in a collection
-- The HTTP verb **must** be
-  [`POST`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST)
-- The resource **must** be the request body
-  - API producers **should** implement as a `Request` suffixed object
-    - A `Request` object **must** include only input fields
-      - In OpenAPI, this means that the `Request` object **must not** include
-        fields with `readOnly: true`
-- The response body **should** be the same resource returned by the
-  [Get](0104.mdx) method
-- Create operations **must not** accept query parameters
-  - Query parameters are usually a sign of a side effect that standard methods
-    **must not** cause
-- The response status code **must** be
-  [201 Created](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/201)
+<Guidelines>
+
+<Guideline id="IPA-106-should-provide-create-method" given="resource" enforcement="review" effort="reason">
+
+APIs **should** provide a create method for resources unless it is not valuable
+for users to do so
+
+- [Read-only resources](0101.mdx#read-only-resources) **must not** have a Create
+  method
+- [Singleton resources](0113.mdx) **must not** have a Create method
+- The purpose of the create method is to create a new resource in a collection
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    post:
+      operationId: createGroupCluster
+      responses:
+        "201":
+          description: The created cluster.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cluster"
+```
+
+<Example.Reason>
+  The `clusters` collection lets users create new clusters, so it exposes a
+  Create method via `POST` on the collection URI.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    For each resource collection in the spec, determine whether users need to
+    create new resources within it.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the resource is neither read-only nor a singleton — both **must
+    not** have a Create method.
+  </Workflow.Step>
+  <Workflow.Step>
+    If creating a resource is valuable for users, confirm the collection exposes
+    a `POST` create method. Flag collections that omit it without a clear
+    reason.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-must-use-post" given="create-operation" enforcement="automatable">
+
+The HTTP verb **must** be
+[`POST`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST)
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    post:
+      operationId: createGroupCluster
+      responses:
+        "201":
+          description: The created cluster.
+```
+
+<Example.Reason>
+  The create operation uses `POST` on the collection URI, the HTTP verb defined
+  for creating a new resource within a collection.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-must-have-resource-request-body" given="create-operation" enforcement="automatable">
+
+The resource **must** be the request body
+
+- API producers **should** implement as a `Request` suffixed object
+  - A `Request` object **must** include only input fields
+    - In OpenAPI, this means that the `Request` object **must not** include
+      fields with `readOnly: true`
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    post:
+      operationId: createGroupCluster
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClusterRequest"
+components:
+  schemas:
+    ClusterRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        instanceSize:
+          type: string
+```
+
+<Example.Reason>
+  The request body is the resource, modeled as a `Request`-suffixed object that
+  carries only input fields and omits server-owned `readOnly` fields.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-should-return-get-resource" given="create-operation" enforcement="review" effort="reason">
+
+The response body **should** be the same resource returned by the
+[Get](0104.mdx) method
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    post:
+      operationId: createGroupCluster
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cluster"
+  /groups/{groupId}/clusters/{clusterId}:
+    get:
+      operationId: getGroupCluster
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cluster"
+```
+
+<Example.Reason>
+  Create and Get both return `#/components/schemas/Cluster`, so the resource a
+  client receives on creation matches what it reads back later.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    For the create operation, find the response body schema for `201`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Find the response body schema for the resource's [Get](0104.mdx) method.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any case where the two schemas differ; the create response should
+    return the same resource as Get.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-must-not-accept-query-parameters" given="create-operation" enforcement="automatable">
+
+Create operations **must not** accept query parameters
+
+- Query parameters are usually a sign of a side effect that standard methods
+  **must not** cause
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    post:
+      operationId: createGroupCluster
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "201":
+          description: The created cluster.
+```
+
+<Example.Reason>
+  The only parameter is the `groupId` path parameter; there are no query
+  parameters that would signal a side effect on a standard method.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-must-return-201" given="create-operation" enforcement="automatable">
+
+The response status code **must** be
+[201 Created](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/201)
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    post:
+      operationId: createGroupCluster
+      responses:
+        "201":
+          description: The created cluster.
+```
+
+<Example.Reason>
+  The create operation defines a `201` response, the status code for a
+  successfully created resource.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Example
 
@@ -45,12 +281,141 @@ documentation.
 
 ### Naming
 
-- Operation ID **must** be unique
-- Operation ID **must** be in `camelCase`
-- Operation ID **must** start with the verb “create”
-- Operation ID **should** be followed by a noun or compound noun
-- The noun(s) in the Operation ID **should** be the collection identifiers from
-  the resource identifier in singular form
+<Guidelines>
+
+<Guideline id="IPA-106-must-unique-operation-id" given="create-operation" enforcement="automatable">
+
+Operation ID **must** be unique
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    post:
+      operationId: createGroupCluster
+```
+
+<Example.Reason>
+  `createGroupCluster` is not reused by any other operation, so each operation
+  in the spec has a distinct identifier.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-must-camel-case-operation-id" given="create-operation" enforcement="automatable">
+
+Operation ID **must** be in `camelCase`
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    post:
+      operationId: createGroupCluster
+```
+
+<Example.Reason>
+  `createGroupCluster` is `camelCase`: lowercase first word, each subsequent
+  word capitalized, no separators.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-must-start-with-create" given="create-operation" enforcement="automatable">
+
+Operation ID **must** start with the verb "create"
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    post:
+      operationId: createGroupCluster
+```
+
+<Example.Reason>
+  The operation ID begins with the verb `create`, identifying it as a create
+  method.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-should-follow-with-noun" given="create-operation" enforcement="review" effort="reason">
+
+Operation ID **should** be followed by a noun or compound noun
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    post:
+      operationId: createGroupCluster
+```
+
+<Example.Reason>
+  The verb `create` is followed by the compound noun `GroupCluster`, naming the
+  resource being created.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-should-use-singular-collection-identifiers" given="create-operation" enforcement="review" effort="reason">
+
+The noun(s) in the Operation ID **should** be the collection identifiers from
+the resource identifier in singular form
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    post:
+      operationId: createGroupCluster
+```
+
+<Example.Reason>
+  The resource identifier `/groups/${groupId}/clusters` has collection
+  identifiers `groups` and `clusters`; the operation ID uses their singular
+  forms, `Group` and `Cluster`.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Examples:
 
