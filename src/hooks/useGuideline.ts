@@ -5,7 +5,8 @@ interface GuidelineContextValue {
   guideline: Guideline;
 }
 
-export const GuidelineContext = React.createContext<GuidelineContextValue | null>(null);
+export const GuidelineContext =
+  React.createContext<GuidelineContextValue | null>(null);
 
 // Must be called within a <Guideline> component tree.
 export function useGuideline(): Guideline {

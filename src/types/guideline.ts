@@ -59,11 +59,14 @@ export const guidelinePropsSchema = z
     implementation: z.boolean().default(false),
     effort: effortSchema.default("check"),
     state: stateSchema.optional(),
-    dependsOn: z.array(guidelineIdSchema).optional().check(
-      z.refine((arr) => !arr || new Set(arr).size === arr.length, {
-        message: "dependsOn must not contain duplicate guideline IDs",
-      }),
-    ),
+    dependsOn: z
+      .array(guidelineIdSchema)
+      .optional()
+      .check(
+        z.refine((arr) => !arr || new Set(arr).size === arr.length, {
+          message: "dependsOn must not contain duplicate guideline IDs",
+        }),
+      ),
   })
   .check(
     z.refine((data) => data.informational || data.given !== undefined, {

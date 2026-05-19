@@ -46,7 +46,11 @@ export function GuidelineFooter(): React.ReactElement | null {
       <span className={styles.label}>Depends on</span>
       <div className={styles.deps}>
         {guideline.dependsOn.map((depId) => (
-          <a key={depId} href={depHref(depId, principle.id)} className={styles.depTag}>
+          <a
+            key={depId}
+            href={depHref(depId, principle.id)}
+            className={styles.depTag}
+          >
             {depLabel(depId)}
           </a>
         ))}

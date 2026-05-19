@@ -14,9 +14,7 @@ export function Guideline({ index, children, ...guideline }: GuidelineProps) {
   return (
     <GuidelineContext.Provider value={{ guideline }}>
       <div className={styles.root} data-guideline-id={guideline.id}>
-        <div className={styles.index}>
-          {index ?? "·"}
-        </div>
+        <div className={styles.index}>{index ?? "·"}</div>
         <div className={styles.container}>
           <GuidelineHeader />
           <div className={styles.content}>{children}</div>

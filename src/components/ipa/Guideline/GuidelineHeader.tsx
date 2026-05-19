@@ -22,9 +22,10 @@ export function GuidelineHeader(): React.ReactElement {
   return (
     <div className={styles.root}>
       <div className={styles.badges}>
-        {guideline.state !== undefined && guideline.state !== principle.state && (
-          <StateBadge state={guideline.state} />
-        )}
+        {guideline.state !== undefined &&
+          guideline.state !== principle.state && (
+            <StateBadge state={guideline.state} />
+          )}
         <Badge color="muted" variant="outline">
           {guideline.informational ? "Informational" : "Enforced"}
         </Badge>
