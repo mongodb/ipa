@@ -1,16 +1,19 @@
 import React from "react";
 import Content from "@theme-original/DocItem/Content";
 import type { WrapperProps } from "@docusaurus/types";
-import { IpaMetadata } from "@site/src/components/ipa";
+import { useDoc } from "@docusaurus/plugin-content-docs/client";
+import { PrincipleHeader } from "@site/src/components/ipa";
+import { principleSchema } from "@site/src/types/ipa";
 
 type Props = WrapperProps<typeof Content>;
 
-export default function ContentWithIpaMetadata(
-  props: Props,
-): React.ReactElement {
+export default function ContentWrapper(props: Props): React.ReactElement {
+  const { frontMatter } = useDoc();
+  const parsed = principleSchema.safeParse(frontMatter);
+
   return (
     <>
-      <IpaMetadata />
+      {parsed.success && <PrincipleHeader principle={parsed.data} />}
       <Content {...props} />
     </>
   );

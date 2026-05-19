@@ -1,0 +1,39 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.75rem;
+}
+
+.label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.deps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.depTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.5rem;
+  border-radius: 5px;
+  background: rgba(150, 150, 150, 0.08);
+  color: var(--ifm-color-emphasis-600);
+  text-decoration: none;
+  font-size: 0.7rem;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.depTag:hover {
+  background: rgba(150, 150, 150, 0.15);
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+}

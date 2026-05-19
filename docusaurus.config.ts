@@ -4,7 +4,7 @@ import type {
   ThemeConfig,
 } from "@docusaurus/preset-classic";
 import { themes } from "prism-react-renderer";
-import parseFrontMatter from "./src/plugins/parseIpaFrontMatter";
+import parseFrontMatter from "./src/plugins/parsePrincipleFrontMatter";
 
 const config: Config = {
   title: "IPA - Improvement Proposal for APIs",

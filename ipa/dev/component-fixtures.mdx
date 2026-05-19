@@ -1,13 +1,15 @@
 ---
+id: 9999
 title: "Component fixtures (dev only)"
 sidebar_label: "Dev fixtures"
 draft: true
+state: "adopt"
 description:
   "Visual smoke-test fixtures for the merged IPA UI components. Excluded from
   production builds."
 ---
 
-import { Guidelines } from "@site/src/components/ipa";
+import { Guidelines, Guideline } from "@site/src/components/ipa";
 
 # Component fixtures
 
@@ -24,9 +26,31 @@ independently.
 ### Single child
 
 <Guidelines>
-  <p>
-    Child content rendered inside a <code>Guidelines</code>.
-  </p>
+  <Guideline
+    id="IPA-9999-must-wrap-guidelines"
+    lintable
+    state="adopt"
+    effort="reason"
+    given="operation"
+  >
+    With a single child, `<Guidelines>` simply wraps it without adding any
+    separators.
+
+    :::info
+    It can also have annotations.
+    :::
+  </Guideline>
+  <Guideline
+    id="IPA-9999-should-render-separators"
+    implementation
+    state="experimental"
+    effort="reason"
+    given="operation"
+    dependsOn={["IPA-9999-must-wrap-guidelines"]}
+  >
+    With multiple children, `<Guidelines>` draws separators between each
+    adjacent pair.
+  </Guideline>
 </Guidelines>
 
 ### Multiple children (separator styling)
