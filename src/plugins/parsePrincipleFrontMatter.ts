@@ -1,5 +1,5 @@
 import type { DefaultParseFrontMatter } from "@docusaurus/types";
-import { ipaFrontmatterSchema } from "../types/ipa";
+import { principleSchema } from "../types/ipa";
 
 /** Pattern matching IPA doc paths — any numbered file under ipa/ */
 const IPA_DOC_PATTERN = /(?:^|\/)ipa\/.*\/\d+.*\.mdx?$/;
@@ -23,7 +23,7 @@ export default async function parseFrontMatter({
     return result;
   }
 
-  const parsed = ipaFrontmatterSchema.safeParse(result.frontMatter);
+  const parsed = principleSchema.safeParse(result.frontMatter);
   if (!parsed.success) {
     const issues = parsed.error.issues
       .map((i) => `${i.path.join(".")}: ${i.message}`)

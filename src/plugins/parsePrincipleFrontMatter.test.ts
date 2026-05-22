@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import parseFrontMatter from "./parseIpaFrontMatter";
+import parseFrontMatter from "./parsePrincipleFrontMatter";
 
 const IPA_PATH = "ipa/general/0100.md";
 const AUX_PATH = "ipa/index.md";

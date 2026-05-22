@@ -1,19 +1,19 @@
-.tag {
+.badge {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.2rem 0.6rem;
+  padding: 0.2rem 0.725rem;
   border-radius: 20px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.03em;
-  line-height: 1.4;
+  line-height: 1.25rem;
   border: 1px solid transparent;
   white-space: nowrap;
 }
 
 /* Status dot — inherits currentColor so it always matches text */
-.tagDot {
+.badgeDot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -22,41 +22,45 @@
 }
 
 /* green — adopt, lintable */
-.tag[data-color="green"] {
+.badge[data-color="green"] {
   background: rgba(0, 237, 100, 0.1);
   color: #007a35;
   border-color: rgba(0, 237, 100, 0.4);
 }
-[data-theme="dark"] .tag[data-color="green"] {
+[data-theme="dark"] .badge[data-color="green"] {
   color: var(--ifm-color-primary);
 }
 
 /* amber — experimental, not-lintable */
-.tag[data-color="amber"] {
+.badge[data-color="amber"] {
   background: rgba(255, 200, 0, 0.1);
   color: #8a6800;
   border-color: rgba(230, 172, 0, 0.4);
 }
-[data-theme="dark"] .tag[data-color="amber"] {
+[data-theme="dark"] .badge[data-color="amber"] {
   color: #e6ac00;
 }
 
 /* red — deprecated */
-.tag[data-color="red"] {
+.badge[data-color="red"] {
   background: rgba(255, 100, 100, 0.12);
   color: #b52222;
   border-color: rgba(255, 100, 100, 0.4);
 }
-[data-theme="dark"] .tag[data-color="red"] {
+[data-theme="dark"] .badge[data-color="red"] {
   color: #ff6464;
 }
 
 /* muted — retired, implementation, neutral */
-.tag[data-color="muted"] {
+.badge[data-color="muted"] {
   background: rgba(150, 150, 150, 0.1);
   color: var(--ifm-color-emphasis-600);
   border-color: rgba(150, 150, 150, 0.4);
 }
-[data-theme="dark"] .tag[data-color="muted"] {
+[data-theme="dark"] .badge[data-color="muted"] {
   color: var(--ifm-color-emphasis-500);
+}
+
+.badge[data-variant="outline"] {
+  background: transparent;
 }

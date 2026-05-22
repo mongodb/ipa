@@ -1,0 +1,9 @@
+{
+  "label": "Dev",
+  "collapsible": true,
+  "collapsed": true,
+  "link": {
+    "type": "generated-index",
+    "title": "Dev fixtures"
+  }
+}
