@@ -9,7 +9,7 @@ description:
   production builds."
 ---
 
-import { Guidelines, Guideline } from "@site/src/components/ipa";
+import { Guidelines, Guideline, Example } from "@site/src/components/ipa";
 
 # Component fixtures
 
@@ -61,3 +61,38 @@ independently.
   <p>Second child — separated from the first by a top border.</p>
   <p>Third child — separator styling applies between every adjacent pair.</p>
 </Guidelines>
+
+## `<Example>`
+
+`<Example.Correct>` and `<Example.Incorrect>` render collapsible code examples
+with a visual correct/incorrect indicator.
+
+### Correct example
+
+<Example.Correct>
+
+```yaml
+name: list-resources
+```
+
+</Example.Correct>
+
+### Incorrect example
+
+<Example.Incorrect title="Missing name field">
+
+```yaml
+{}
+```
+
+</Example.Incorrect>
+
+### Custom icon override (unicode fallback)
+
+<Example.Correct icon="✓">
+
+```yaml
+name: list-resources
+```
+
+</Example.Correct>

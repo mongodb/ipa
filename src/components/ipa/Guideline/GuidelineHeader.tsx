@@ -1,8 +1,8 @@
-import React from "react";
+import type { ReactElement } from "react";
 import { useGuideline } from "../../../hooks/useGuideline";
 import { usePrinciple } from "../../../hooks/usePrinciple";
 import { StateBadge } from "../shared/StateBadge";
-import Badge from "../../ui/Badge";
+import { Badge } from "../../ui/Badge";
 import styles from "./GuidelineHeader.module.css";
 
 const SPECTRAL_RULESETS_URL =
@@ -15,7 +15,7 @@ function spectralFileUrl(id: string): string {
   return `${SPECTRAL_RULESETS_URL}/IPA-${String(num).padStart(3, "0")}.yaml`;
 }
 
-export function GuidelineHeader(): React.ReactElement {
+export function GuidelineHeader(): ReactElement {
   const guideline = useGuideline();
   const principle = usePrinciple();
 

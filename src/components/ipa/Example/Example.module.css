@@ -1,0 +1,37 @@
+.example {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-left-width: 4px;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  background-color: var(--ifm-background-surface-color);
+}
+
+.correct {
+  border-left-color: var(--ifm-color-success-dark);
+}
+
+.incorrect {
+  border-left-color: var(--ifm-color-danger-dark);
+}
+
+.accordionFlush {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.header {
+  font-weight: 600;
+}
+
+.content {
+  /* padding already provided by Accordion */
+}
+
+.icon {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  vertical-align: -0.125em;
+}

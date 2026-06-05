@@ -1,4 +1,4 @@
-import React from "react";
+import { type ReactNode, type ReactElement } from "react";
 import type { Guideline } from "../../../types/guideline";
 import { GuidelineContext } from "../../../hooks/useGuideline";
 import { GuidelineHeader } from "./GuidelineHeader";
@@ -7,10 +7,14 @@ import styles from "./Guideline.module.css";
 
 interface GuidelineProps extends Guideline {
   index?: number;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-export function Guideline({ index, children, ...guideline }: GuidelineProps) {
+export function Guideline({
+  index,
+  children,
+  ...guideline
+}: GuidelineProps): ReactElement {
   return (
     <GuidelineContext.Provider value={{ guideline }}>
       <div className={styles.root} data-guideline-id={guideline.id}>

@@ -1,4 +1,4 @@
-import React from "react";
+import { type ReactNode, type ReactElement } from "react";
 import styles from "./Badge.module.css";
 
 export type BadgeColor = "green" | "amber" | "red" | "muted";
@@ -8,15 +8,15 @@ interface BadgeProps {
   color?: BadgeColor;
   dot?: boolean;
   variant?: BadgeVariant;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-export default function Badge({
+export function Badge({
   color = "muted",
   dot = false,
   variant = "solid",
   children,
-}: BadgeProps): React.ReactElement {
+}: BadgeProps): ReactElement {
   return (
     <span className={styles.badge} data-color={color} data-variant={variant}>
       {dot && <span className={styles.badgeDot} aria-hidden="true" />}
