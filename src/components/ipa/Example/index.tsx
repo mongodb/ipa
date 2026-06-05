@@ -1,28 +1,16 @@
 import { type ReactElement, type ReactNode } from "react";
-import { Accordion, CheckIcon, CrossIcon } from "@site/src/components/ui";
+import { Accordion } from "@site/src/components/ui";
 import { type ExampleType } from "./types";
 import styles from "./Example.module.css";
 
 interface ExampleProps {
   type: ExampleType;
   title?: string;
-  icon?: ReactNode;
   children: ReactNode;
 }
 
-function ExampleBase({
-  type,
-  title,
-  icon,
-  children,
-}: ExampleProps): ReactElement {
-  const defaultIcon =
-    type === "correct" ? (
-      <CheckIcon className={styles.icon} />
-    ) : (
-      <CrossIcon className={styles.icon} />
-    );
-  const renderedIcon = icon ?? defaultIcon;
+function ExampleBase({ type, title, children }: ExampleProps): ReactElement {
+  const icon = type === "correct" ? "✓" : "✗";
   const defaultTitle = type === "correct" ? "Correct" : "Incorrect";
 
   return (
@@ -32,7 +20,9 @@ function ExampleBase({
         className={styles.accordionFlush}
         title={
           <>
-            {renderedIcon}
+            <span className={styles.icon} aria-hidden="true">
+              {icon}
+            </span>
             <span>{title ?? defaultTitle}</span>
           </>
         }
