@@ -33,7 +33,7 @@
 }
 
 .toggle:hover,
-.toggle[aria-expanded="true"] {
+.toggle[aria-expanded='true'] {
   background-color: var(--ifm-color-emphasis-100);
 }
 
@@ -51,11 +51,13 @@
 
 .chevron {
   flex-shrink: 0;
+  font-size: 1.25rem;
+  line-height: 1;
   transition: transform 0.2s ease;
   color: var(--ifm-color-emphasis-600);
 }
 
-.chevron[data-open] {
+.chevron[data-open="true"] {
   transform: rotate(180deg);
 }
 
@@ -103,7 +105,7 @@
   }
 }
 
-[data-theme="dark"] .toggle:hover,
-[data-theme="dark"] .toggle[aria-expanded="true"] {
+[data-theme='dark'] .toggle:hover,
+[data-theme='dark'] .toggle[aria-expanded='true'] {
   background-color: var(--ifm-color-emphasis-200);
 }

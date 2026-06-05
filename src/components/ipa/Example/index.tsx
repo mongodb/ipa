@@ -2,6 +2,7 @@ import { type ReactElement, type ReactNode } from "react";
 import { Accordion } from "@site/src/components/ui";
 import { type ExampleType } from "./types";
 import styles from "./Example.module.css";
+import clsx from "clsx";
 
 interface ExampleProps {
   type: ExampleType;
@@ -14,24 +15,22 @@ function ExampleBase({ type, title, children }: ExampleProps): ReactElement {
   const defaultTitle = type === "correct" ? "Correct" : "Incorrect";
 
   return (
-    <div className={`${styles.example} ${styles[type] ?? ""}`}>
-      <Accordion
-        defaultOpen
-        className={styles.accordionFlush}
-        title={
-          <>
-            <span className={styles.icon} aria-hidden="true">
-              {icon}
-            </span>
-            <span>{title ?? defaultTitle}</span>
-          </>
-        }
-        titleClassName={styles.header}
-        contentClassName={styles.content}
-      >
-        {children}
-      </Accordion>
-    </div>
+    <Accordion
+      defaultOpen
+      className={clsx(styles.accordion, styles[type])}
+      title={
+        <>
+          <span className={styles.icon} aria-hidden="true">
+            {icon}
+          </span>
+          <span>{title ?? defaultTitle}</span>
+        </>
+      }
+      titleClassName={styles.header}
+      contentClassName={styles.content}
+    >
+      {children}
+    </Accordion>
   );
 }
 

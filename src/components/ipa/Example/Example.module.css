@@ -1,34 +1,106 @@
-.example {
-  border: 1px solid var(--ifm-color-emphasis-300);
-  border-left-width: 4px;
+/* Override Accordion's default container chrome — the variant classes provide border/bg */
+.accordion {
+  border: none;
+  background: transparent;
   border-radius: 0.5rem;
   overflow: hidden;
-  margin-bottom: 1rem;
-  background-color: var(--ifm-background-surface-color);
 }
 
-.correct {
-  border-left-color: var(--ifm-color-success-dark);
-}
-
-.incorrect {
-  border-left-color: var(--ifm-color-danger-dark);
-}
-
-.accordionFlush {
-  border: none;
-  border-radius: 0;
-  background: transparent;
-}
-
+/* The toggle button for the Example accordion — coloured header bar */
 .header {
-  font-weight: 600;
-}
-
-.content {
-  /* padding already provided by Accordion */
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: normal;
 }
 
 .icon {
   flex-shrink: 0;
+}
+
+/* The code content area — no top border (header provides the separator) */
+.content {
+  padding: 0.75rem;
+  border-top: none !important;
+}
+
+.content :global(pre) {
+  margin: 0;
+  font-size: 0.875rem;
+  background: transparent !important;
+  padding: 0;
+}
+
+/* Make code blocks transparent so the variant background shows through */
+.content :global(div[class*="codeBlock"]),
+.content :global(.theme-code-block),
+.content :global(.prism-code) {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Correct variant — tokens defined here, dark mode only overrides what changes */
+.correct {
+  --ex-border: rgba(16, 185, 129, 0.2);
+  --ex-bg: rgba(16, 185, 129, 0.05);
+  --ex-header-color: #059669;
+  --ex-header-hover-bg: rgba(16, 185, 129, 0.08);
+  --ex-icon-color: #10b981;
+
+  border: 1px solid var(--ex-border);
+  background-color: var(--ex-bg);
+}
+
+.correct .header {
+  color: var(--ex-header-color);
+  border-bottom: 1px solid var(--ex-border);
+}
+
+.correct .header[aria-expanded="true"],
+.correct .header:hover {
+  background-color: var(--ex-header-hover-bg) !important;
+}
+
+.correct .icon {
+  color: var(--ex-icon-color);
+}
+
+/* Incorrect variant */
+.incorrect {
+  --ex-border: rgba(239, 68, 68, 0.2);
+  --ex-bg: rgba(239, 68, 68, 0.05);
+  --ex-header-color: #dc2626;
+  --ex-header-hover-bg: rgba(239, 68, 68, 0.08);
+  --ex-icon-color: #ef4444;
+
+  border: 1px solid var(--ex-border);
+  background-color: var(--ex-bg);
+}
+
+.incorrect .header {
+  color: var(--ex-header-color);
+  border-bottom: 1px solid var(--ex-border);
+}
+
+.incorrect .header[aria-expanded="true"],
+.incorrect .header:hover {
+  background-color: var(--ex-header-hover-bg) !important;
+}
+
+.incorrect .icon {
+  color: var(--ex-icon-color);
+}
+
+/* Dark mode — only the tokens that change */
+[data-theme="dark"] .correct {
+  --ex-bg: rgba(16, 185, 129, 0.03);
+  --ex-header-color: #34d399;
+  --ex-header-hover-bg: rgba(16, 185, 129, 0.1);
+}
+
+[data-theme="dark"] .incorrect {
+  --ex-bg: rgba(239, 68, 68, 0.03);
+  --ex-header-color: #f87171;
+  --ex-header-hover-bg: rgba(239, 68, 68, 0.1);
 }
