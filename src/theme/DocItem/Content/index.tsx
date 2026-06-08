@@ -1,4 +1,4 @@
-import React from "react";
+import type { ReactElement } from "react";
 import Content from "@theme-original/DocItem/Content";
 import type { WrapperProps } from "@docusaurus/types";
 import { useDoc } from "@docusaurus/plugin-content-docs/client";
@@ -7,7 +7,7 @@ import { principleSchema } from "@site/src/types/ipa";
 
 type Props = WrapperProps<typeof Content>;
 
-export default function ContentWrapper(props: Props): React.ReactElement {
+export default function ContentWrapper(props: Props): ReactElement {
   const { frontMatter } = useDoc();
   const parsed = principleSchema.safeParse(frontMatter);
 

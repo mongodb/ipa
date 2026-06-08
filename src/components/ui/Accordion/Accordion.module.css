@@ -1,0 +1,111 @@
+.container {
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 0.5rem;
+  background-color: var(--ifm-background-surface-color);
+  overflow: hidden;
+}
+
+/* Strip heading margin/padding — it's purely structural here */
+.heading {
+  margin: 0;
+  padding: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.75rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  line-height: inherit;
+  text-align: start;
+  color: var(--ifm-font-color-base);
+  transition: background-color 0.2s ease;
+}
+
+.toggle:hover,
+.toggle[aria-expanded="true"] {
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: -2px;
+}
+
+.label {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chevron {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.chevron[data-open="true"] {
+  transform: rotate(180deg);
+}
+
+.contentHidden {
+  /* Use !important so this wins over any display rule from contentClassName (e.g. display:flex) */
+  display: none !important;
+}
+
+.content {
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+  padding: 0.75rem;
+  animation: slideDown 0.2s ease;
+}
+
+.content > *:first-child {
+  margin-top: 0;
+}
+
+.content > *:last-child {
+  margin-bottom: 0;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content {
+    animation: none;
+  }
+
+  .chevron {
+    transition: none;
+  }
+
+  .toggle {
+    transition: none;
+  }
+}
+
+[data-theme="dark"] .toggle:hover,
+[data-theme="dark"] .toggle[aria-expanded="true"] {
+  background-color: var(--ifm-color-emphasis-200);
+}

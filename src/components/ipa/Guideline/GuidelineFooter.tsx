@@ -1,4 +1,4 @@
-import React from "react";
+import type { ReactElement } from "react";
 import { useGuideline } from "../../../hooks/useGuideline";
 import { usePrinciple } from "../../../hooks/usePrinciple";
 import styles from "./GuidelineFooter.module.css";
@@ -35,7 +35,7 @@ function depHref(depId: string, currentIpa: number): string {
     : anchor;
 }
 
-export function GuidelineFooter(): React.ReactElement | null {
+export function GuidelineFooter(): ReactElement | null {
   const guideline = useGuideline();
   const principle = usePrinciple();
 
