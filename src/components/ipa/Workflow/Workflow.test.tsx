@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach } from "vitest";
 
 import { Workflow } from "./index";
@@ -67,6 +67,33 @@ describe("<Workflow>", () => {
 });
 
 describe("<Workflow> review checklist", () => {
+  it("renders the page-local progress hint", () => {
+    render(
+      <Workflow>
+        <Workflow.Step>only step</Workflow.Step>
+      </Workflow>,
+    );
+
+    expect(
+      screen.getByText(/progress is kept on this page only/i),
+    ).toBeInTheDocument();
+  });
+
+  it("numbers each step with a decorative circle", () => {
+    render(
+      <Workflow>
+        <Workflow.Step>first step</Workflow.Step>
+        <Workflow.Step>second step</Workflow.Step>
+      </Workflow>,
+    );
+    const list = screen.getByTestId("workflow-steps");
+
+    const one = within(list).getByText("1");
+    const two = within(list).getByText("2");
+    expect(one).toHaveAttribute("aria-hidden", "true");
+    expect(two).toHaveAttribute("aria-hidden", "true");
+  });
+
   it("renders an unchecked checkbox for each step", () => {
     render(
       <Workflow>

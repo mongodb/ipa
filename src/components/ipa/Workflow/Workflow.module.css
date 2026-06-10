@@ -1,113 +1,264 @@
-/* Neutral "process" treatment — emphasis grays, unlike Example's verdict colors */
+/* Neutral "process" treatment — Accordion's default chrome already fits,
+   only spacing and header density change */
 .accordion {
-  border: none;
-  background: transparent;
-  border-radius: 0.5rem;
-  overflow: hidden;
-
-  --wf-border: var(--ifm-color-emphasis-200);
-  --wf-bg: var(--ifm-color-emphasis-0);
-  --wf-header-color: var(--ifm-color-emphasis-700);
-  --wf-header-hover-bg: var(--ifm-color-emphasis-100);
-
-  border: 1px solid var(--wf-border);
-  background-color: var(--wf-bg);
+  margin: 1.25rem 0 0.25rem;
 }
 
 .header {
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  font-size: 0.875rem;
-  font-weight: normal;
-  color: var(--wf-header-color);
-}
-
-.header[aria-expanded="true"] {
-  border-bottom: 1px solid var(--wf-border);
-}
-
-.header[aria-expanded="true"],
-.header:hover {
-  background-color: var(--wf-header-hover-bg) !important;
+  padding: 0.7rem 0.75rem;
 }
 
 .title {
-  display: inline-flex;
+  flex-grow: 1;
+  display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
+.titleIcon {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: var(--ifm-color-secondary);
+}
+
+[data-theme="dark"] .titleIcon {
+  color: var(--ifm-color-primary);
+}
+
+.titleText {
+  font-weight: 600;
+}
+
+/* Progress chip — pill-shaped, right-aligned before the chevron */
+.progress {
+  margin-left: auto;
+  display: inline-flex;
+}
+
+.progress [data-color] {
+  border-radius: 9999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.78rem;
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease;
+}
+
+/* Panel owns no padding — rows and footer pad themselves so the
+   hairline separators span the full width */
 .content {
-  padding: 0.75rem;
+  padding: 0 !important;
   border-top: none !important;
 }
 
-.title :global(.badge) {
-  font-weight: normal;
+/* Thin progress track between header and steps */
+.track {
+  height: 3px;
+  background: var(--ifm-color-emphasis-200);
+  overflow: hidden;
 }
 
-.progress {
-  margin-left: auto;
+.trackFill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--mongodb-sage-green),
+    var(--mongodb-green)
+  );
+  border-radius: 0 2px 2px 0;
+  transition: width 0.3s ease;
+}
+
+.hint {
+  margin: 0.55rem 0.95rem 0.3rem;
+  font-size: 0.78rem;
+  color: var(--ifm-color-emphasis-600);
 }
 
 .steps {
+  list-style: none;
   margin: 0;
-  padding-left: 1.5rem;
+  padding: 0;
 }
 
-.step {
-  margin-bottom: 0.4rem;
-}
-
-.step:last-child {
-  margin-bottom: 0;
+.step + .step .stepLabel {
+  border-top: 1px solid var(--ifm-color-emphasis-200);
 }
 
 .stepLabel {
   display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.7rem 0.95rem;
   cursor: pointer;
+  transition: background-color 0.15s ease;
 }
 
+.stepLabel:hover {
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+[data-theme="dark"] .stepLabel:hover {
+  background-color: var(--ifm-color-emphasis-200);
+}
+
+/* Real checkbox, visually replaced but still focusable */
 .stepCheckbox {
-  flex-shrink: 0;
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
   margin: 0;
-  accent-color: var(--ifm-color-primary-darkest);
-  cursor: pointer;
+  pointer-events: none;
 }
 
-[data-theme="dark"] .stepCheckbox {
-  accent-color: var(--ifm-color-primary);
+.stepBox {
+  flex-shrink: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.22rem;
+  border-radius: 0.3rem;
+  border: 1.5px solid var(--ifm-color-emphasis-500);
+  background: var(--ifm-background-surface-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.stepBox svg {
+  width: 0.7rem;
+  height: 0.7rem;
+  stroke: var(--mongodb-slate);
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 14;
+  stroke-dashoffset: 14;
+  transition: stroke-dashoffset 0.18s ease 0.04s;
+}
+
+.stepLabel:hover .stepBox {
+  border-color: var(--mongodb-sage-green);
+}
+
+.stepCheckbox:checked + .stepLabel .stepBox {
+  background: var(--ifm-color-primary);
+  border-color: var(--ifm-color-primary-darkest);
+}
+
+.stepCheckbox:checked + .stepLabel .stepBox svg {
+  stroke-dashoffset: 0;
+}
+
+.stepCheckbox:focus-visible + .stepLabel {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: -2px;
+  border-radius: 2px;
+}
+
+/* Step number circle — echoes the <Guidelines> numbering motif, smaller
+   and muted so it doesn't compete with the guideline's own index */
+.stepNum {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: 0.05rem;
+  border-radius: 9999px;
+  background: rgba(150, 150, 150, 0.1);
+  color: var(--ifm-color-emphasis-600);
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.stepCheckbox:checked + .stepLabel .stepNum {
+  background: rgba(0, 237, 100, 0.12);
+  color: #007a35;
+}
+
+[data-theme="dark"] .stepCheckbox:checked + .stepLabel .stepNum {
+  color: var(--ifm-color-primary);
 }
 
 /* Done treatment: mute, don't strike through — steps stay legible */
-.stepDone .stepText {
+.stepText {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  transition: color 0.2s ease;
+}
+
+.stepCheckbox:checked + .stepLabel .stepText {
   color: var(--ifm-color-emphasis-600);
+}
+
+.stepText code {
+  font-size: 88%;
 }
 
 .footer {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  margin-top: 0.75rem;
+  padding: 0.45rem 0.95rem 0.55rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
 }
 
 .reset {
   border: none;
-  background: none;
-  padding: 0;
-  font-size: 0.8rem;
+  background: transparent;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
   color: var(--ifm-color-emphasis-600);
   cursor: pointer;
-  transition: color 0.15s ease;
+  padding: 0.2rem 0.45rem;
+  border-radius: 0.3rem;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .reset:hover:not(:disabled) {
-  color: var(--ifm-font-color-base);
-  text-decoration: underline;
+  color: var(--ifm-color-secondary);
+  background: var(--ifm-color-emphasis-100);
+}
+
+[data-theme="dark"] .reset:hover:not(:disabled) {
+  color: var(--ifm-color-primary);
+  background: var(--ifm-color-emphasis-200);
 }
 
 .reset:disabled {
-  opacity: 0.4;
+  opacity: 0.45;
   cursor: default;
+}
+
+.reset:focus-visible {
+  outline: 2px solid var(--ifm-color-primary);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trackFill,
+  .stepBox,
+  .stepBox svg,
+  .stepLabel,
+  .stepNum,
+  .stepText,
+  .progress [data-color] {
+    transition: none;
+  }
 }

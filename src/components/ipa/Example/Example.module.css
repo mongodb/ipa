@@ -6,12 +6,15 @@
   overflow: hidden;
 }
 
-/* The toggle button for the Example accordion — coloured header bar */
+/* The toggle button for the Example accordion — coloured header bar.
+   The separator is transparent while collapsed so it doesn't stack on the
+   container's own bottom border; it only shows when content is open. */
 .header {
   gap: 0.5rem;
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
   font-weight: normal;
+  border-bottom: 1px solid transparent;
 }
 
 .icon {
@@ -54,7 +57,10 @@
 
 .correct .header {
   color: var(--ex-header-color);
-  border-bottom: 1px solid var(--ex-border);
+}
+
+.correct .header[aria-expanded="true"] {
+  border-bottom-color: var(--ex-border);
 }
 
 .correct .header[aria-expanded="true"],
@@ -80,7 +86,10 @@
 
 .incorrect .header {
   color: var(--ex-header-color);
-  border-bottom: 1px solid var(--ex-border);
+}
+
+.incorrect .header[aria-expanded="true"] {
+  border-bottom-color: var(--ex-border);
 }
 
 .incorrect .header[aria-expanded="true"],
