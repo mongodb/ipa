@@ -58,17 +58,16 @@
   border-top: none !important;
 }
 
-/* Thin progress track between header and steps */
+/* Thin progress track between header and steps — quiet, monochrome */
 .track {
-  height: 3px;
+  height: 2px;
   background: var(--ifm-color-emphasis-200);
   overflow: hidden;
 }
 
 .trackFill {
   height: 100%;
-  background: linear-gradient(90deg, #39a05a, #00ed64);
-  border-radius: 0 2px 2px 0;
+  background: var(--ifm-color-emphasis-500);
   transition: width 0.3s ease;
 }
 
@@ -139,7 +138,7 @@
 .stepBox svg {
   width: 0.7rem;
   height: 0.7rem;
-  stroke: #001e2b;
+  stroke: var(--ifm-background-surface-color);
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
@@ -150,12 +149,13 @@
 }
 
 .stepLabel:hover .stepBox {
-  border-color: #39a05a;
+  border-color: var(--ifm-color-emphasis-700);
 }
 
+/* Checked: muted monochrome fill with an inverted tick — theme-adaptive */
 .stepCheckbox:checked + .stepLabel .stepBox {
-  background: #00ed64;
-  border-color: #00a746;
+  background: var(--ifm-color-emphasis-700);
+  border-color: var(--ifm-color-emphasis-700);
 }
 
 .stepCheckbox:checked + .stepLabel .stepBox svg {
@@ -191,15 +191,6 @@
   font-size: 0.75rem;
   font-weight: 600;
   line-height: 1;
-}
-
-.stepCheckbox:checked + .stepLabel .stepNum {
-  background: rgba(0, 237, 100, 0.12);
-  color: #007a35;
-}
-
-[data-theme="dark"] .stepCheckbox:checked + .stepLabel .stepNum {
-  color: #00ed64;
 }
 
 /* Done treatment: mute, don't strike through — steps stay legible */
@@ -243,12 +234,11 @@
 }
 
 .reset:hover:not(:disabled) {
-  color: #116149;
+  color: var(--ifm-font-color-base);
   background: var(--ifm-color-emphasis-100);
 }
 
 [data-theme="dark"] .reset:hover:not(:disabled) {
-  color: #00ed64;
   background: var(--ifm-color-emphasis-200);
 }
 
