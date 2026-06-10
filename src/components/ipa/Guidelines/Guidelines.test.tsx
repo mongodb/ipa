@@ -27,6 +27,7 @@ describe("<Guidelines>", () => {
     const list = screen.getByTestId("guidelines");
 
     expect(list.tagName).toBe("OL");
+    expect(list).toHaveAttribute("role", "list");
     expect(list.children).toHaveLength(1);
     expect(list.children[0].tagName).toBe("LI");
     expect(screen.getByText("content").closest("li")).toBeInTheDocument();
@@ -75,13 +76,25 @@ describe("<Guidelines>", () => {
     expect(circles).toHaveLength(3);
   });
 
-  it("renders as an ordered list", () => {
+  it("does not leak list context into nested guideline content", () => {
     render(
       <Guidelines>
-        <li data-testid="item">item</li>
+        <Guideline {...minimalGuideline} id="IPA-0001-must-test-a">
+          <Guideline {...minimalGuideline} id="IPA-0001-must-test-b">
+            nested
+          </Guideline>
+        </Guideline>
       </Guidelines>,
     );
 
-    expect(screen.getByTestId("guidelines").tagName).toBe("OL");
+    const nestedGuideline = document.querySelector(
+      "[data-guideline-id='IPA-0001-must-test-b']",
+    );
+    const circles = document.querySelectorAll(
+      "[data-guideline-id] [aria-hidden='true']",
+    );
+
+    expect(nestedGuideline?.tagName).toBe("DIV");
+    expect(circles).toHaveLength(1);
   });
 });

@@ -2,7 +2,10 @@ import { type ReactNode, type ReactElement } from "react";
 import clsx from "clsx";
 import type { Guideline } from "../../../types/guideline";
 import { GuidelineContext } from "../../../hooks/useGuideline";
-import { useIsInsideGuidelines } from "../Guidelines/GuidelinesContext";
+import {
+  GuidelinesProvider,
+  useIsInsideGuidelines,
+} from "../Guidelines/GuidelinesContext";
 import { GuidelineHeader } from "./GuidelineHeader";
 import { GuidelineFooter } from "./GuidelineFooter";
 import styles from "./Guideline.module.css";
@@ -29,7 +32,9 @@ export function Guideline({
         )}
         <div className={styles.content}>
           <GuidelineHeader />
-          <div className={styles.body}>{children}</div>
+          <div className={styles.body}>
+            <GuidelinesProvider value={false}>{children}</GuidelinesProvider>
+          </div>
           <GuidelineFooter />
         </div>
       </Root>
