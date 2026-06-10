@@ -3,6 +3,9 @@ import type { Guideline } from "../types/guideline";
 
 interface GuidelineContextValue {
   guideline: Guideline;
+  // Lets a <Workflow> child report its presence so <Guideline> can flag
+  // unlintable, non-informational guidelines that lack review steps.
+  reportWorkflow?: () => void;
 }
 
 export const GuidelineContext = createContext<GuidelineContextValue | null>(

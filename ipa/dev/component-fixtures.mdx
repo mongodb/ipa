@@ -9,7 +9,12 @@ description:
   production builds."
 ---
 
-import { Guidelines, Guideline, Example } from "@site/src/components/ipa";
+import {
+  Guidelines,
+  Guideline,
+  Example,
+  Workflow,
+} from "@site/src/components/ipa";
 
 # Component fixtures
 
@@ -113,3 +118,70 @@ name: list-resources
 ```
 
 </Example.Incorrect>
+
+## `<Workflow>`
+
+`<Workflow>` renders the manual evaluation steps of a guideline as an
+interactive review checklist inside a collapsible accordion. Checking steps
+updates the progress chip in the header; progress is page-local only.
+
+### Inside an unlintable guideline
+
+The primary use: unlintable, non-informational guidelines must document their
+review steps (a dev-console warning fires when they don't).
+
+<Guideline
+  id="IPA-9999-must-use-american-english"
+  state="adopt"
+  effort="check"
+  given="spec"
+>
+  API producers must use American English for all user-facing text in the API
+  specification.
+
+  <Workflow>
+    <Workflow.Step>
+      Scan every user-facing string in the specification (descriptions,
+      summaries, enum values, field names).
+    </Workflow.Step>
+    <Workflow.Step>
+      For each string, check for common British English spellings (e.g.,
+      "cancelled", "colour", "authorise", "behaviour", "organisation").
+    </Workflow.Step>
+    <Workflow.Step>
+      Consult Merriam-Webster's dictionary for the preferred American English
+      form.
+    </Workflow.Step>
+    <Workflow.Step>
+      Flag any non-American spelling as a violation.
+    </Workflow.Step>
+  </Workflow>
+</Guideline>
+
+### Inside a lintable guideline (reference only)
+
+When the parent guideline is lintable, the workflow renders a "Reference only —
+agent skips" marker: the steps document what Spectral checks.
+
+<Guideline
+  id="IPA-9999-must-render-reference-only"
+  lintable
+  state="adopt"
+  effort="check"
+  given="operation"
+>
+  Lintable guidelines may still include a workflow for human readers.
+
+  <Workflow>
+    <Workflow.Step>Verify the operation defines a summary.</Workflow.Step>
+    <Workflow.Step>Verify the summary uses Title Case.</Workflow.Step>
+  </Workflow>
+</Guideline>
+
+### Standalone with a custom title
+
+<Workflow title="Implementation steps">
+  <Workflow.Step>Add the field to the OpenAPI schema.</Workflow.Step>
+  <Workflow.Step>Regenerate the SDK clients.</Workflow.Step>
+  <Workflow.Step>Update the changelog entry.</Workflow.Step>
+</Workflow>

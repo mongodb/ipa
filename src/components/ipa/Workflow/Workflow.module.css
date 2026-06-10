@@ -1,0 +1,113 @@
+/* Neutral "process" treatment — emphasis grays, unlike Example's verdict colors */
+.accordion {
+  border: none;
+  background: transparent;
+  border-radius: 0.5rem;
+  overflow: hidden;
+
+  --wf-border: var(--ifm-color-emphasis-200);
+  --wf-bg: var(--ifm-color-emphasis-0);
+  --wf-header-color: var(--ifm-color-emphasis-700);
+  --wf-header-hover-bg: var(--ifm-color-emphasis-100);
+
+  border: 1px solid var(--wf-border);
+  background-color: var(--wf-bg);
+}
+
+.header {
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: normal;
+  color: var(--wf-header-color);
+}
+
+.header[aria-expanded="true"] {
+  border-bottom: 1px solid var(--wf-border);
+}
+
+.header[aria-expanded="true"],
+.header:hover {
+  background-color: var(--wf-header-hover-bg) !important;
+}
+
+.title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.content {
+  padding: 0.75rem;
+  border-top: none !important;
+}
+
+.title :global(.badge) {
+  font-weight: normal;
+}
+
+.progress {
+  margin-left: auto;
+}
+
+.steps {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.step {
+  margin-bottom: 0.4rem;
+}
+
+.step:last-child {
+  margin-bottom: 0;
+}
+
+.stepLabel {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.stepCheckbox {
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: var(--ifm-color-primary-darkest);
+  cursor: pointer;
+}
+
+[data-theme="dark"] .stepCheckbox {
+  accent-color: var(--ifm-color-primary);
+}
+
+/* Done treatment: mute, don't strike through — steps stay legible */
+.stepDone .stepText {
+  color: var(--ifm-color-emphasis-600);
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+.reset {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 0.8rem;
+  color: var(--ifm-color-emphasis-600);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.reset:hover:not(:disabled) {
+  color: var(--ifm-font-color-base);
+  text-decoration: underline;
+}
+
+.reset:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
