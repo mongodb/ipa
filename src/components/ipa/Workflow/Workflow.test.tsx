@@ -109,6 +109,20 @@ describe("<Workflow> review checklist", () => {
     });
   });
 
+  it("renders and counts steps nested inside wrapper elements", () => {
+    render(
+      <Workflow>
+        <Workflow.Step>direct step</Workflow.Step>
+        <div>
+          <Workflow.Step>wrapped step</Workflow.Step>
+        </div>
+      </Workflow>,
+    );
+
+    expect(screen.getByText("wrapped step")).toBeInTheDocument();
+    expect(screen.getByText("0 of 2 verified")).toBeInTheDocument();
+  });
+
   it("renders an unchecked checkbox for each step", () => {
     render(
       <Workflow>

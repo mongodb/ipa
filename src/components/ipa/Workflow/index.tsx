@@ -1,11 +1,10 @@
 import {
-  Children,
-  cloneElement,
   createContext,
-  isValidElement,
+  useCallback,
   useContext,
   useEffect,
   useId,
+  useMemo,
   useState,
   type ReactNode,
   type ReactElement,
@@ -19,38 +18,43 @@ interface WorkflowProps {
   children: ReactNode;
 }
 
-// Steps only make sense wired into a <Workflow>'s checklist state — same
-// guard idiom as useGuideline().
-const WorkflowContext = createContext(false);
+// Steps render themselves and enroll in the checklist via context — the
+// same composition pattern as <Guidelines>/<Guideline>, so steps survive
+// being wrapped in other elements or components.
+interface WorkflowContextValue {
+  register: (id: string) => () => void;
+  toggle: (id: string) => void;
+  checked: ReadonlySet<string>;
+}
+
+const WorkflowContext = createContext<WorkflowContextValue | null>(null);
 
 interface WorkflowStepProps {
   children: ReactNode;
-  // Injected by <Workflow> — not part of the authoring API.
-  checked?: boolean;
-  onToggle?: () => void;
 }
 
-function WorkflowStep({
-  children,
-  checked = false,
-  onToggle,
-}: WorkflowStepProps): ReactElement {
-  const isInsideWorkflow = useContext(WorkflowContext);
-  if (!isInsideWorkflow) {
+function WorkflowStep({ children }: WorkflowStepProps): ReactElement {
+  const ctx = useContext(WorkflowContext);
+  if (!ctx) {
     throw new Error("<Workflow.Step> must be rendered inside a <Workflow>");
   }
-  const checkboxId = useId();
+  const stepId = useId();
+  const { register } = ctx;
+
+  useEffect(() => register(stepId), [register, stepId]);
+
+  const checked = ctx.checked.has(stepId);
 
   return (
     <li className={styles.step}>
       <input
-        id={checkboxId}
+        id={stepId}
         type="checkbox"
         className={styles.stepCheckbox}
         checked={checked}
-        onChange={() => onToggle?.()}
+        onChange={() => ctx.toggle(stepId)}
       />
-      <label className={styles.stepLabel} htmlFor={checkboxId}>
+      <label className={styles.stepLabel} htmlFor={stepId}>
         <span className={styles.stepBox} aria-hidden="true">
           <svg viewBox="0 0 12 12">
             <path d="M2 6.2 4.8 9 10 3.4" />
@@ -72,29 +76,50 @@ function WorkflowBase({ title, children }: WorkflowProps): ReactElement {
     guidelineCtx?.reportWorkflow?.();
   }, [guidelineCtx]);
 
-  const steps = Children.toArray(children).filter(
-    (child): child is ReactElement<WorkflowStepProps> =>
-      isValidElement(child) && child.type === WorkflowStep,
-  );
-  const [verified, setVerified] = useState<ReadonlySet<number>>(new Set());
+  const [registered, setRegistered] = useState<ReadonlySet<string>>(new Set());
+  const [checked, setChecked] = useState<ReadonlySet<string>>(new Set());
 
-  const toggleStep = (index: number) =>
-    setVerified((prev) => {
+  const register = useCallback((id: string) => {
+    setRegistered((prev) => new Set(prev).add(id));
+    return () => {
+      setRegistered((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      setChecked((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    };
+  }, []);
+
+  const toggle = useCallback((id: string) => {
+    setChecked((prev) => {
       const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
+      if (next.has(id)) {
+        next.delete(id);
       } else {
-        next.add(index);
+        next.add(id);
       }
       return next;
     });
+  }, []);
 
-  const total = steps.length;
-  const done = verified.size;
+  const contextValue = useMemo(
+    () => ({ register, toggle, checked }),
+    [register, toggle, checked],
+  );
+
+  // Steps enroll in an effect, so the count is 0 during SSR and corrects
+  // itself on hydration — acceptable for a decorative progress chip.
+  const total = registered.size;
+  const done = checked.size;
   const allDone = total > 0 && done === total;
 
   return (
-    <WorkflowContext.Provider value={true}>
+    <WorkflowContext.Provider value={contextValue}>
       <Accordion
         className={styles.accordion}
         title={
@@ -151,19 +176,13 @@ function WorkflowBase({ title, children }: WorkflowProps): ReactElement {
           on this page only.
         </p>
         <ol className={styles.steps} data-testid="workflow-steps">
-          {steps.map((step, index) =>
-            cloneElement(step, {
-              key: index,
-              checked: verified.has(index),
-              onToggle: () => toggleStep(index),
-            }),
-          )}
+          {children}
         </ol>
         <div className={styles.footer}>
           <button
             type="button"
             className={styles.reset}
-            onClick={() => setVerified(new Set())}
+            onClick={() => setChecked(new Set())}
             disabled={done === 0}
           >
             Reset
