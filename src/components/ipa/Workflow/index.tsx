@@ -21,14 +21,12 @@ interface WorkflowProps {
 interface WorkflowStepProps {
   children: ReactNode;
   // Injected by <Workflow> — not part of the authoring API.
-  index?: number;
   checked?: boolean;
   onToggle?: () => void;
 }
 
 function WorkflowStep({
   children,
-  index = 1,
   checked = false,
   onToggle,
 }: WorkflowStepProps): ReactElement {
@@ -49,9 +47,7 @@ function WorkflowStep({
             <path d="M2 6.2 4.8 9 10 3.4" />
           </svg>
         </span>
-        <span className={styles.stepNum} aria-hidden="true">
-          {index}
-        </span>
+        <span className={styles.stepNum} aria-hidden="true" />
         <span className={styles.stepText}>{children}</span>
       </label>
     </li>
@@ -148,7 +144,6 @@ function WorkflowBase({ title, children }: WorkflowProps): ReactElement {
         {steps.map((step, index) =>
           cloneElement(step, {
             key: index,
-            index: index + 1,
             checked: verified.has(index),
             onToggle: () => toggleStep(index),
           }),

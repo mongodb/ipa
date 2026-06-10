@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach } from "vitest";
 
 import { Workflow } from "./index";
@@ -79,7 +79,7 @@ describe("<Workflow> review checklist", () => {
     ).toBeInTheDocument();
   });
 
-  it("numbers each step with a decorative circle", () => {
+  it("numbers each step with a decorative counter circle", () => {
     render(
       <Workflow>
         <Workflow.Step>first step</Workflow.Step>
@@ -88,10 +88,14 @@ describe("<Workflow> review checklist", () => {
     );
     const list = screen.getByTestId("workflow-steps");
 
-    const one = within(list).getByText("1");
-    const two = within(list).getByText("2");
-    expect(one).toHaveAttribute("aria-hidden", "true");
-    expect(two).toHaveAttribute("aria-hidden", "true");
+    // Numbering follows the <Guidelines> pattern: an empty aria-hidden
+    // circle whose number comes from a CSS counter, not injected props.
+    const circles = list.querySelectorAll("[class*='stepNum']");
+    expect(circles).toHaveLength(2);
+    circles.forEach((circle) => {
+      expect(circle).toHaveAttribute("aria-hidden", "true");
+      expect(circle).toBeEmptyDOMElement();
+    });
   });
 
   it("renders an unchecked checkbox for each step", () => {

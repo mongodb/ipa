@@ -82,6 +82,11 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  counter-reset: wf-step;
+}
+
+.step {
+  counter-increment: wf-step;
 }
 
 .step + .step .stepLabel {
@@ -163,8 +168,8 @@
   border-radius: 2px;
 }
 
-/* Step number circle — echoes the <Guidelines> numbering motif, smaller
-   and muted so it doesn't compete with the guideline's own index */
+/* Step number circle — same CSS-counter pattern as <Guideline>'s index,
+   smaller and muted so it doesn't compete with the guideline's own number */
 .stepNum {
   flex-shrink: 0;
   display: inline-flex;
@@ -176,11 +181,16 @@
   border-radius: 9999px;
   background: rgba(150, 150, 150, 0.1);
   color: var(--ifm-color-emphasis-600);
-  font-size: 0.75rem;
-  font-weight: 600;
   transition:
     background-color 0.2s ease,
     color 0.2s ease;
+}
+
+.stepNum::before {
+  content: counter(wf-step);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .stepCheckbox:checked + .stepLabel .stepNum {
