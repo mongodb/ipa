@@ -47,19 +47,13 @@ function WorkflowStep({ children }: WorkflowStepProps): ReactElement {
 
   return (
     <li className={styles.step}>
-      <input
-        id={stepId}
-        type="checkbox"
-        className={styles.stepCheckbox}
-        checked={checked}
-        onChange={() => ctx.toggle(stepId)}
-      />
-      <label className={styles.stepLabel} htmlFor={stepId}>
-        <span className={styles.stepBox} aria-hidden="true">
-          <svg viewBox="0 0 12 12">
-            <path d="M2 6.2 4.8 9 10 3.4" />
-          </svg>
-        </span>
+      <label className={styles.stepLabel}>
+        <input
+          type="checkbox"
+          className={styles.stepCheckbox}
+          checked={checked}
+          onChange={() => ctx.toggle(stepId)}
+        />
         <span className={styles.stepNum} aria-hidden="true" />
         <span className={styles.stepText}>{children}</span>
       </label>

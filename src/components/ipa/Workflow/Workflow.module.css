@@ -109,63 +109,13 @@
   background-color: var(--ifm-color-emphasis-200);
 }
 
-/* Real checkbox, visually replaced but still focusable */
+/* Standard native checkbox — only sized and aligned */
 .stepCheckbox {
-  position: absolute;
-  opacity: 0;
-  width: 1px;
-  height: 1px;
-  margin: 0;
-  pointer-events: none;
-}
-
-.stepBox {
   flex-shrink: 0;
-  width: 1.15rem;
-  height: 1.15rem;
-  margin-top: 0.22rem;
-  border-radius: 0.3rem;
-  border: 1.5px solid var(--ifm-color-emphasis-500);
-  background: var(--ifm-background-surface-color);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.stepBox svg {
-  width: 0.7rem;
-  height: 0.7rem;
-  stroke: var(--ifm-background-surface-color);
-  stroke-width: 3;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 14;
-  stroke-dashoffset: 14;
-  transition: stroke-dashoffset 0.18s ease 0.04s;
-}
-
-.stepLabel:hover .stepBox {
-  border-color: var(--ifm-color-emphasis-700);
-}
-
-/* Checked: muted monochrome fill with an inverted tick — theme-adaptive */
-.stepCheckbox:checked + .stepLabel .stepBox {
-  background: var(--ifm-color-emphasis-700);
-  border-color: var(--ifm-color-emphasis-700);
-}
-
-.stepCheckbox:checked + .stepLabel .stepBox svg {
-  stroke-dashoffset: 0;
-}
-
-.stepCheckbox:focus-visible + .stepLabel {
-  outline: 2px solid var(--ifm-color-primary);
-  outline-offset: -2px;
-  border-radius: 2px;
+  width: 1rem;
+  height: 1rem;
+  margin: 0.28rem 0 0;
+  cursor: pointer;
 }
 
 /* Step number circle — same CSS-counter pattern as <Guideline>'s index,
@@ -202,7 +152,7 @@
   transition: color 0.2s ease;
 }
 
-.stepCheckbox:checked + .stepLabel .stepText {
+.stepCheckbox:checked ~ .stepText {
   color: var(--ifm-color-emphasis-600);
 }
 
@@ -254,8 +204,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .trackFill,
-  .stepBox,
-  .stepBox svg,
   .stepLabel,
   .stepNum,
   .stepText,
