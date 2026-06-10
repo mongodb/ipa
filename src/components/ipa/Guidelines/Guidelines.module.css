@@ -1,4 +1,6 @@
 .root {
+  counter-reset: ipa-guideline;
+  list-style: none;
   margin: 2rem 0;
   padding: 1.5rem;
   border-radius: 0.5rem;

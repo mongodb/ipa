@@ -18,10 +18,9 @@ component-merge PR adds a section here.
 
 ## `<Guidelines>`
 
-`<Guidelines>` is a pure visual container: a card-like wrapper that draws
-separators between its children. It carries no state and imposes no semantics on
-its descendants — `<Guideline>` components inside resolve their own `state`
-independently.
+`<Guidelines>` is an ordered list wrapper for `<Guideline>` components. It
+provides automatic numbering and separators between adjacent guidelines, while
+each `<Guideline>` resolves its own `state` independently.
 
 ### Single child
 
@@ -33,34 +32,62 @@ independently.
     effort="reason"
     given="operation"
   >
-    With a single child, `<Guidelines>` simply wraps it without adding any
-    separators.
+    With a single child, `<Guidelines>` wraps it with automatic numbering
+    without adding separators.
 
     :::info
     It can also have annotations.
     :::
 
   </Guideline>
-  <Guideline
-    id="IPA-9999-should-render-separators"
-    implementation
-    state="experimental"
-    effort="reason"
-    given="operation"
-    dependsOn={["IPA-9999-must-wrap-guidelines"]}
-  >
-    With multiple children, `<Guidelines>` draws separators between each
-    adjacent pair.
-  </Guideline>
 </Guidelines>
 
 ### Multiple children (separator styling)
 
 <Guidelines>
-  <p>First child — appears at the top of the card.</p>
-  <p>Second child — separated from the first by a top border.</p>
-  <p>Third child — separator styling applies between every adjacent pair.</p>
+  <Guideline
+    id="IPA-9999-must-render-first-guideline"
+    lintable
+    state="adopt"
+    effort="check"
+    given="operation"
+  >
+    First guideline appears at the top of the card.
+  </Guideline>
+  <Guideline
+    id="IPA-9999-should-render-second-guideline"
+    implementation
+    state="adopt"
+    effort="reason"
+    given="operation"
+  >
+    Second guideline is separated from the first by a top border.
+  </Guideline>
+  <Guideline
+    id="IPA-9999-may-render-third-guideline"
+    informational
+    state="adopt"
+    effort="explore"
+  >
+    Third guideline shows that separator styling applies between every adjacent
+    pair.
+  </Guideline>
 </Guidelines>
+
+### Standalone `<Guideline>` (no numbering)
+
+A `<Guideline>` rendered outside `<Guidelines>` shows no numbering circle and
+renders as a `<div>` rather than an `<li>`.
+
+<Guideline
+  id="IPA-9999-must-render-standalone"
+  informational
+  state="adopt"
+  effort="check"
+>
+  Without a `<Guidelines>` wrapper, no number badge is shown and no list
+  semantics are applied.
+</Guideline>
 
 ## `<Example>`
 
