@@ -52,6 +52,17 @@ describe("<Workflow>", () => {
     expect(screen.getByText("first step").closest("li")).toBeInTheDocument();
   });
 
+  it("throws when a step is rendered outside a <Workflow>", () => {
+    // React logs render-phase throws to console.error; keep test output clean.
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    expect(() => render(<Workflow.Step>orphan</Workflow.Step>)).toThrow(
+      /<Workflow.Step> must be rendered inside a <Workflow>/,
+    );
+
+    error.mockRestore();
+  });
+
   it("renders a custom title instead of the default", () => {
     render(
       <Workflow title="Implementation steps">
