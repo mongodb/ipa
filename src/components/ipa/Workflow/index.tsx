@@ -62,7 +62,6 @@ WorkflowStep.displayName = "Workflow.Step";
 function WorkflowBase({ title, children }: WorkflowProps): ReactElement {
   // Optional on purpose: <Workflow> also renders standalone (e.g. fixtures).
   const guidelineCtx = useContext(GuidelineContext);
-  const referenceOnly = guidelineCtx?.guideline.lintable ?? false;
 
   useEffect(() => {
     guidelineCtx?.reportWorkflow?.();
@@ -121,11 +120,6 @@ function WorkflowBase({ title, children }: WorkflowProps): ReactElement {
           <span className={styles.titleText}>
             {title ?? "Evaluation workflow"}
           </span>
-          {referenceOnly && (
-            <Badge color="muted" variant="outline">
-              Reference only — agent skips
-            </Badge>
-          )}
           <span
             className={styles.progress}
             data-testid="workflow-progress"

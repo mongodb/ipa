@@ -162,44 +162,6 @@ describe("<Workflow> review checklist", () => {
   });
 });
 
-describe("<Workflow> inside a lintable guideline", () => {
-  it("shows a reference-only marker when the parent guideline is lintable", () => {
-    render(
-      <Guideline {...lintableGuideline}>
-        <Workflow>
-          <Workflow.Step>only step</Workflow.Step>
-        </Workflow>
-      </Guideline>,
-    );
-
-    expect(
-      screen.getByText(/reference only — agent skips/i),
-    ).toBeInTheDocument();
-  });
-
-  it("shows no marker when the parent guideline is unlintable", () => {
-    render(
-      <Guideline {...unlintableGuideline}>
-        <Workflow>
-          <Workflow.Step>only step</Workflow.Step>
-        </Workflow>
-      </Guideline>,
-    );
-
-    expect(screen.queryByText(/reference only/i)).toBeNull();
-  });
-
-  it("shows no marker when rendered outside a guideline", () => {
-    render(
-      <Workflow>
-        <Workflow.Step>only step</Workflow.Step>
-      </Workflow>,
-    );
-
-    expect(screen.queryByText(/reference only/i)).toBeNull();
-  });
-});
-
 describe("<Guideline> workflow cross-field check", () => {
   afterEach(() => {
     vi.restoreAllMocks();

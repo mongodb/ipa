@@ -15,24 +15,29 @@
   gap: 0.5rem;
 }
 
+/* Brand accents are hardcoded (like Example.module.css) — the site's
+   custom palette CSS is not wired into the Docusaurus config, so the
+   MongoDB and primary-color variable overrides cannot be relied on here */
 .titleIcon {
   flex-shrink: 0;
   width: 1rem;
   height: 1rem;
-  color: var(--ifm-color-secondary);
+  color: #116149;
 }
 
 [data-theme="dark"] .titleIcon {
-  color: var(--ifm-color-primary);
+  color: #00ed64;
 }
 
 .titleText {
   font-weight: 600;
 }
 
-/* Progress chip — pill-shaped, right-aligned before the chevron */
+/* Progress chip — pill-shaped, right-aligned with breathing room
+   before the chevron */
 .progress {
   margin-left: auto;
+  margin-right: 0.6rem;
   display: inline-flex;
 }
 
@@ -62,11 +67,7 @@
 
 .trackFill {
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    var(--mongodb-sage-green),
-    var(--mongodb-green)
-  );
+  background: linear-gradient(90deg, #39a05a, #00ed64);
   border-radius: 0 2px 2px 0;
   transition: width 0.3s ease;
 }
@@ -133,7 +134,7 @@
 .stepBox svg {
   width: 0.7rem;
   height: 0.7rem;
-  stroke: var(--mongodb-slate);
+  stroke: #001e2b;
   stroke-width: 3;
   fill: none;
   stroke-linecap: round;
@@ -144,12 +145,12 @@
 }
 
 .stepLabel:hover .stepBox {
-  border-color: var(--mongodb-sage-green);
+  border-color: #39a05a;
 }
 
 .stepCheckbox:checked + .stepLabel .stepBox {
-  background: var(--ifm-color-primary);
-  border-color: var(--ifm-color-primary-darkest);
+  background: #00ed64;
+  border-color: #00a746;
 }
 
 .stepCheckbox:checked + .stepLabel .stepBox svg {
@@ -188,7 +189,7 @@
 }
 
 [data-theme="dark"] .stepCheckbox:checked + .stepLabel .stepNum {
-  color: var(--ifm-color-primary);
+  color: #00ed64;
 }
 
 /* Done treatment: mute, don't strike through — steps stay legible */
@@ -232,12 +233,12 @@
 }
 
 .reset:hover:not(:disabled) {
-  color: var(--ifm-color-secondary);
+  color: #116149;
   background: var(--ifm-color-emphasis-100);
 }
 
 [data-theme="dark"] .reset:hover:not(:disabled) {
-  color: var(--ifm-color-primary);
+  color: #00ed64;
   background: var(--ifm-color-emphasis-200);
 }
 
