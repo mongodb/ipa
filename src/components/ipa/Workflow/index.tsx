@@ -7,6 +7,7 @@ import {
 } from "react";
 import { Accordion } from "../../ui";
 import { GuidelineContext } from "../../../hooks/useGuideline";
+import { NumberCircle } from "../shared/NumberCircle";
 import styles from "./Workflow.module.css";
 
 interface WorkflowProps {
@@ -32,7 +33,7 @@ function WorkflowStep({ children }: WorkflowStepProps): ReactElement {
 
   return (
     <li className={styles.step}>
-      <span className={styles.stepNum} aria-hidden="true" />
+      <NumberCircle className={styles.stepNum} />
       <span className={styles.stepText}>{children}</span>
     </li>
   );

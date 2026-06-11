@@ -1,0 +1,17 @@
+/* Shared numbering-circle chrome used by <Guideline>'s index and
+   <Workflow.Step>'s counter. CSS counters cannot be parameterized across
+   modules, so each consumer draws its own number via a ::before rule on
+   the className it passes in, and may override --number-circle-size. */
+.circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--number-circle-size, 1.75rem);
+  height: var(--number-circle-size, 1.75rem);
+  border-radius: 9999px;
+  background: rgba(150, 150, 150, 0.1);
+  color: var(--ifm-color-emphasis-600);
+  font-weight: 600;
+  line-height: 1;
+}

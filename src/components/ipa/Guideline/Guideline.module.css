@@ -8,23 +8,11 @@
   counter-increment: ipa-guideline;
 }
 
-.index {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 9999px;
-  background: rgba(150, 150, 150, 0.1);
-  color: var(--ifm-color-emphasis-600);
-}
-
+/* Circle chrome comes from the shared <NumberCircle>; this module only
+   draws the guideline counter into it */
 .index::before {
   content: counter(ipa-guideline);
   font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1;
 }
 
 .content {

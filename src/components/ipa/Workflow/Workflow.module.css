@@ -47,12 +47,13 @@
   counter-reset: wf-step;
 }
 
-/* Text-first row: the counter leads the reading line, content dominates */
+/* Text-first row: the numbering circle leads the line, content dominates */
 .step {
   counter-increment: wf-step;
   position: relative;
   display: flex;
   align-items: flex-start;
+  gap: 0.7rem;
   padding: 0.45rem 0.95rem;
 }
 
@@ -62,27 +63,21 @@
   content: "";
   position: absolute;
   top: 0;
-  left: calc(0.95rem + 1.35rem);
+  left: calc(0.95rem + 1.5rem + 0.7rem);
   right: 0.95rem;
   border-top: 1px solid var(--ifm-color-emphasis-200);
 }
 
-/* Plain bold counter at the text's left edge — fixed column width keeps
-   every step's text flush on one axis. Same CSS-counter pattern as
-   <Guideline>'s index. */
+/* Shared <NumberCircle> chrome, sized down so it doesn't compete with the
+   guideline's own index; this module only draws the step counter into it */
 .stepNum {
-  flex-shrink: 0;
-  width: 1.35rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--ifm-color-emphasis-700);
+  --number-circle-size: 1.5rem;
+  margin-top: 0.05rem;
 }
 
 .stepNum::before {
-  content: counter(wf-step) ".";
-  font-size: 0.8rem;
-  font-weight: 700;
-  /* Same first-line box as the step text, so baselines align */
-  line-height: calc(0.9rem * 1.55);
+  content: counter(wf-step);
+  font-size: 0.75rem;
 }
 
 /* Step text is the dominant element: base color, comfortable measure */
