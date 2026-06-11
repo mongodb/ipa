@@ -9,7 +9,7 @@ import {
   type ReactNode,
   type ReactElement,
 } from "react";
-import { Accordion, Badge } from "../../ui";
+import { Accordion } from "../../ui";
 import { GuidelineContext } from "../../../hooks/useGuideline";
 import styles from "./Workflow.module.css";
 
@@ -18,11 +18,10 @@ interface WorkflowProps {
   children: ReactNode;
 }
 
-// Steps render themselves and enroll in the checklist via context — the
-// same composition pattern as <Guidelines>/<Guideline>, so steps survive
-// being wrapped in other elements or components.
+// Steps render themselves and join the checklist via context — the same
+// composition pattern as <Guidelines>/<Guideline>, so steps survive being
+// wrapped in other elements or components.
 interface WorkflowContextValue {
-  register: (id: string) => () => void;
   toggle: (id: string) => void;
   checked: ReadonlySet<string>;
 }
@@ -39,10 +38,6 @@ function WorkflowStep({ children }: WorkflowStepProps): ReactElement {
     throw new Error("<Workflow.Step> must be rendered inside a <Workflow>");
   }
   const stepId = useId();
-  const { register } = ctx;
-
-  useEffect(() => register(stepId), [register, stepId]);
-
   const checked = ctx.checked.has(stepId);
 
   return (
@@ -70,24 +65,7 @@ function WorkflowBase({ title, children }: WorkflowProps): ReactElement {
     guidelineCtx?.reportWorkflow?.();
   }, [guidelineCtx]);
 
-  const [registered, setRegistered] = useState<ReadonlySet<string>>(new Set());
   const [checked, setChecked] = useState<ReadonlySet<string>>(new Set());
-
-  const register = useCallback((id: string) => {
-    setRegistered((prev) => new Set(prev).add(id));
-    return () => {
-      setRegistered((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-      setChecked((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-    };
-  }, []);
 
   const toggle = useCallback((id: string) => {
     setChecked((prev) => {
@@ -101,16 +79,7 @@ function WorkflowBase({ title, children }: WorkflowProps): ReactElement {
     });
   }, []);
 
-  const contextValue = useMemo(
-    () => ({ register, toggle, checked }),
-    [register, toggle, checked],
-  );
-
-  // Steps enroll in an effect, so the count is 0 during SSR and corrects
-  // itself on hydration — acceptable for a decorative progress chip.
-  const total = registered.size;
-  const done = checked.size;
-  const allDone = total > 0 && done === total;
+  const contextValue = useMemo(() => ({ toggle, checked }), [toggle, checked]);
 
   return (
     <WorkflowContext.Provider value={contextValue}>
@@ -145,26 +114,11 @@ function WorkflowBase({ title, children }: WorkflowProps): ReactElement {
             <span className={styles.titleText}>
               {title ?? "Evaluation workflow"}
             </span>
-            <span
-              className={styles.progress}
-              data-testid="workflow-progress"
-              aria-live="polite"
-            >
-              <Badge color={allDone ? "green" : "muted"} dot>
-                {done} of {total} verified
-              </Badge>
-            </span>
           </span>
         }
         titleClassName={styles.header}
         contentClassName={styles.content}
       >
-        <div className={styles.track} aria-hidden="true">
-          <div
-            className={styles.trackFill}
-            style={{ width: total > 0 ? `${(done / total) * 100}%` : "0%" }}
-          />
-        </div>
         <p className={styles.hint}>
           Work through each step against the spec under review. Progress is kept
           on this page only.
@@ -177,7 +131,7 @@ function WorkflowBase({ title, children }: WorkflowProps): ReactElement {
             type="button"
             className={styles.reset}
             onClick={() => setChecked(new Set())}
-            disabled={done === 0}
+            disabled={checked.size === 0}
           >
             Reset
           </button>

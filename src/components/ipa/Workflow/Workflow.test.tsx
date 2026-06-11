@@ -109,7 +109,7 @@ describe("<Workflow> review checklist", () => {
     });
   });
 
-  it("renders and counts steps nested inside wrapper elements", () => {
+  it("renders steps nested inside wrapper elements", () => {
     render(
       <Workflow>
         <Workflow.Step>direct step</Workflow.Step>
@@ -120,7 +120,18 @@ describe("<Workflow> review checklist", () => {
     );
 
     expect(screen.getByText("wrapped step")).toBeInTheDocument();
-    expect(screen.getByText("0 of 2 verified")).toBeInTheDocument();
+    expect(screen.getAllByRole("checkbox")).toHaveLength(2);
+  });
+
+  it("does not render a progress chip", () => {
+    render(
+      <Workflow>
+        <Workflow.Step>only step</Workflow.Step>
+      </Workflow>,
+    );
+
+    expect(screen.queryByTestId("workflow-progress")).toBeNull();
+    expect(screen.queryByText(/verified/)).toBeNull();
   });
 
   it("renders an unchecked checkbox for each step", () => {
@@ -136,36 +147,19 @@ describe("<Workflow> review checklist", () => {
     checkboxes.forEach((box) => expect(box).not.toBeChecked());
   });
 
-  it("updates the progress chip when a step is verified", () => {
+  it("marks a step checked when toggled", () => {
     render(
       <Workflow>
         <Workflow.Step>first step</Workflow.Step>
         <Workflow.Step>second step</Workflow.Step>
       </Workflow>,
     );
+    const [first, second] = screen.getAllByRole("checkbox");
 
-    expect(screen.getByText("0 of 2 verified")).toBeInTheDocument();
+    fireEvent.click(first);
 
-    fireEvent.click(screen.getAllByRole("checkbox")[0]);
-
-    expect(screen.getByText("1 of 2 verified")).toBeInTheDocument();
-  });
-
-  it("turns the progress chip green only when all steps are verified", () => {
-    render(
-      <Workflow>
-        <Workflow.Step>first step</Workflow.Step>
-        <Workflow.Step>second step</Workflow.Step>
-      </Workflow>,
-    );
-    const chip = () => screen.getByTestId("workflow-progress");
-
-    expect(chip().querySelector("[data-color='muted']")).not.toBeNull();
-
-    screen.getAllByRole("checkbox").forEach((box) => fireEvent.click(box));
-
-    expect(screen.getByText("2 of 2 verified")).toBeInTheDocument();
-    expect(chip().querySelector("[data-color='green']")).not.toBeNull();
+    expect(first).toBeChecked();
+    expect(second).not.toBeChecked();
   });
 
   it("resets all verified steps", () => {
@@ -184,7 +178,7 @@ describe("<Workflow> review checklist", () => {
 
     fireEvent.click(reset);
 
-    expect(screen.getByText("0 of 2 verified")).toBeInTheDocument();
+    expect(reset).toBeDisabled();
     screen
       .getAllByRole("checkbox")
       .forEach((box) => expect(box).not.toBeChecked());

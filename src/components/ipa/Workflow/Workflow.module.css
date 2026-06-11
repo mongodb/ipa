@@ -33,42 +33,11 @@
   font-weight: 600;
 }
 
-/* Progress chip — pill-shaped, right-aligned with breathing room
-   before the chevron */
-.progress {
-  margin-left: auto;
-  margin-right: 0.6rem;
-  display: inline-flex;
-}
-
-.progress [data-color] {
-  border-radius: 9999px;
-  padding: 0.25rem 0.7rem;
-  font-size: 0.78rem;
-  transition:
-    background-color 0.25s ease,
-    border-color 0.25s ease,
-    color 0.25s ease;
-}
-
 /* Panel owns no padding — rows and footer pad themselves so the
    hairline separators span the full width */
 .content {
   padding: 0 !important;
   border-top: none !important;
-}
-
-/* Thin progress track between header and steps — quiet, monochrome */
-.track {
-  height: 2px;
-  background: var(--ifm-color-emphasis-200);
-  overflow: hidden;
-}
-
-.trackFill {
-  height: 100%;
-  background: var(--ifm-color-emphasis-500);
-  transition: width 0.3s ease;
 }
 
 .hint {
@@ -203,11 +172,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .trackFill,
   .stepLabel,
   .stepNum,
-  .stepText,
-  .progress [data-color] {
+  .stepText {
     transition: none;
   }
 }
