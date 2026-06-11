@@ -27,6 +27,7 @@ describe("<Guidelines>", () => {
     const list = screen.getByTestId("guidelines");
 
     expect(list.tagName).toBe("OL");
+    expect(list).toHaveAttribute("role", "list");
     expect(list.children).toHaveLength(1);
     expect(list.children[0].tagName).toBe("LI");
     expect(screen.getByText("content").closest("li")).toBeInTheDocument();

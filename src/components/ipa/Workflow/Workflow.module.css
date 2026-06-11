@@ -25,8 +25,8 @@
 }
 
 .content {
-  padding: 0 !important;
-  border-top: none !important;
+  padding: 0;
+  border-top: none;
 }
 
 .steps {
@@ -37,6 +37,8 @@
 }
 
 .step {
+  --number-circle-size: 1.5rem;
+  --number-circle-font-size: 0.75rem;
   counter-increment: number-circle;
   position: relative;
   display: flex;
@@ -49,14 +51,12 @@
   content: "";
   position: absolute;
   top: 0;
-  left: calc(0.95rem + 1.5rem + 0.7rem);
+  left: calc(0.95rem + var(--number-circle-size) + 0.7rem);
   right: 0.95rem;
   border-top: 1px solid var(--ifm-color-emphasis-200);
 }
 
 .stepNum {
-  --number-circle-size: 1.5rem;
-  --number-circle-font-size: 0.75rem;
   margin-top: 0.05rem;
 }
 

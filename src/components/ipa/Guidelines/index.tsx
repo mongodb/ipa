@@ -9,7 +9,7 @@ interface GuidelinesProps {
 export function Guidelines({ children }: GuidelinesProps): ReactElement {
   return (
     <GuidelinesProvider value={true}>
-      <ol className={styles.root} data-testid="guidelines">
+      <ol role="list" className={styles.root} data-testid="guidelines">
         {children}
       </ol>
     </GuidelinesProvider>

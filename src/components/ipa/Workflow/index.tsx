@@ -1,12 +1,10 @@
 import {
   createContext,
   useContext,
-  useEffect,
   type ReactNode,
   type ReactElement,
 } from "react";
-import { Accordion, CheckSquareIcon } from "../../ui";
-import { GuidelineContext } from "../../../hooks/useGuideline";
+import { Accordion, CheckSquareIcon } from "@site/src/components/ui";
 import { NumberCircle } from "../shared/NumberCircle";
 import styles from "./Workflow.module.css";
 
@@ -17,7 +15,7 @@ interface WorkflowProps {
 
 // Steps render themselves — the same composition pattern as
 // <Guidelines>/<Guideline>, so steps survive being wrapped in other
-// elements or components. The context exists only to guard against a
+// components. The context exists only to guard against a
 // <Workflow.Step> rendered outside a <Workflow>.
 const WorkflowContext = createContext(false);
 
@@ -56,7 +54,7 @@ function WorkflowBase({ title, children }: WorkflowProps): ReactElement {
         titleClassName={styles.header}
         contentClassName={styles.content}
       >
-        <ol className={styles.steps} data-testid="workflow-steps">
+        <ol role="list" className={styles.steps} data-testid="workflow-steps">
           {children}
         </ol>
       </Accordion>

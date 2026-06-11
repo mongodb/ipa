@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { type ReactNode } from "react";
 import { describe, it, expect, vi } from "vitest";
 
 import { Workflow } from "./index";
@@ -27,6 +28,9 @@ describe("<Workflow>", () => {
     const list = screen.getByTestId("workflow-steps");
 
     expect(list.tagName).toBe("OL");
+    // Explicit role: WebKit drops the implicit list role from
+    // list-style:none lists, and AT numbering depends on it.
+    expect(list).toHaveAttribute("role", "list");
     expect(list.children).toHaveLength(2);
     expect(list.children[0].tagName).toBe("LI");
     expect(screen.getByText("first step").closest("li")).toBeInTheDocument();
@@ -90,13 +94,17 @@ describe("<Workflow> reading list", () => {
     });
   });
 
-  it("renders steps nested inside wrapper elements", () => {
+  it("renders steps wrapped in other components", () => {
+    function Wrapper({ children }: { children: ReactNode }) {
+      return <>{children}</>;
+    }
+
     render(
       <Workflow>
         <Workflow.Step>direct step</Workflow.Step>
-        <div>
+        <Wrapper>
           <Workflow.Step>wrapped step</Workflow.Step>
-        </div>
+        </Wrapper>
       </Workflow>,
     );
 
