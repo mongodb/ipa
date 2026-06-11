@@ -13,10 +13,6 @@ interface WorkflowProps {
   children: ReactNode;
 }
 
-// Steps render themselves — the same composition pattern as
-// <Guidelines>/<Guideline>, so steps survive being wrapped in other
-// components. The context exists only to guard against a
-// <Workflow.Step> rendered outside a <Workflow>.
 const WorkflowContext = createContext(false);
 
 interface WorkflowStepProps {
