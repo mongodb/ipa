@@ -33,148 +33,67 @@
   font-weight: 600;
 }
 
-/* Panel owns no padding — rows and footer pad themselves so the
-   hairline separators span the full width */
+/* Panel owns no padding — rows pad themselves so the inset separators
+   align with the text column */
 .content {
   padding: 0 !important;
   border-top: none !important;
 }
 
-.hint {
-  margin: 0.55rem 0.95rem 0.3rem;
-  font-size: 0.78rem;
-  color: var(--ifm-color-emphasis-600);
-}
-
 .steps {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0.2rem 0;
   counter-reset: wf-step;
 }
 
+/* Text-first row: the counter leads the reading line, content dominates */
 .step {
   counter-increment: wf-step;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  padding: 0.45rem 0.95rem;
 }
 
-.step + .step .stepLabel {
+/* Inset hairline: starts at the text column's left edge so the separator
+   reads as part of the content, not the card chrome */
+.step + .step::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: calc(0.95rem + 1.35rem);
+  right: 0.95rem;
   border-top: 1px solid var(--ifm-color-emphasis-200);
 }
 
-.stepLabel {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.7rem;
-  padding: 0.7rem 0.95rem;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.stepLabel:hover {
-  background-color: var(--ifm-color-emphasis-100);
-}
-
-[data-theme="dark"] .stepLabel:hover {
-  background-color: var(--ifm-color-emphasis-200);
-}
-
-/* Standard native checkbox — only sized and aligned */
-.stepCheckbox {
-  flex-shrink: 0;
-  width: 1rem;
-  height: 1rem;
-  margin: 0.28rem 0 0;
-  cursor: pointer;
-}
-
-/* Step number circle — same CSS-counter pattern as <Guideline>'s index,
-   smaller and muted so it doesn't compete with the guideline's own number */
+/* Plain bold counter at the text's left edge — fixed column width keeps
+   every step's text flush on one axis. Same CSS-counter pattern as
+   <Guideline>'s index. */
 .stepNum {
   flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  margin-top: 0.05rem;
-  border-radius: 9999px;
-  background: rgba(150, 150, 150, 0.1);
-  color: var(--ifm-color-emphasis-600);
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
+  width: 1.35rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ifm-color-emphasis-700);
 }
 
 .stepNum::before {
-  content: counter(wf-step);
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1;
+  content: counter(wf-step) ".";
+  font-size: 0.8rem;
+  font-weight: 700;
+  /* Same first-line box as the step text, so baselines align */
+  line-height: calc(0.9rem * 1.55);
 }
 
-/* Done treatment: mute, don't strike through — steps stay legible */
+/* Step text is the dominant element: base color, comfortable measure */
 .stepText {
   flex: 1;
   min-width: 0;
   font-size: 0.9rem;
   line-height: 1.55;
-  transition: color 0.2s ease;
-}
-
-.stepCheckbox:checked ~ .stepText {
-  color: var(--ifm-color-emphasis-600);
+  color: var(--ifm-font-color-base);
 }
 
 .stepText code {
   font-size: 88%;
-}
-
-.footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 0.45rem 0.95rem 0.55rem;
-  border-top: 1px solid var(--ifm-color-emphasis-200);
-}
-
-.reset {
-  border: none;
-  background: transparent;
-  font: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--ifm-color-emphasis-600);
-  cursor: pointer;
-  padding: 0.2rem 0.45rem;
-  border-radius: 0.3rem;
-  transition:
-    color 0.15s ease,
-    background-color 0.15s ease;
-}
-
-.reset:hover:not(:disabled) {
-  color: var(--ifm-font-color-base);
-  background: var(--ifm-color-emphasis-100);
-}
-
-[data-theme="dark"] .reset:hover:not(:disabled) {
-  background: var(--ifm-color-emphasis-200);
-}
-
-.reset:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-.reset:focus-visible {
-  outline: 2px solid var(--ifm-color-primary);
-  outline-offset: 1px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .stepLabel,
-  .stepNum,
-  .stepText {
-    transition: none;
-  }
 }

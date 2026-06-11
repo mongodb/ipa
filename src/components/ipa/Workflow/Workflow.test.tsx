@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach } from "vitest";
 
 import { Workflow } from "./index";
@@ -77,20 +77,21 @@ describe("<Workflow>", () => {
   });
 });
 
-describe("<Workflow> review checklist", () => {
-  it("renders the page-local progress hint", () => {
+describe("<Workflow> reading list", () => {
+  it("renders no interactive controls besides the accordion toggle", () => {
     render(
       <Workflow>
-        <Workflow.Step>only step</Workflow.Step>
+        <Workflow.Step>first step</Workflow.Step>
+        <Workflow.Step>second step</Workflow.Step>
       </Workflow>,
     );
 
-    expect(
-      screen.getByText(/progress is kept on this page only/i),
-    ).toBeInTheDocument();
+    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+    expect(screen.getAllByRole("button")).toHaveLength(1);
+    expect(screen.queryByText(/progress is kept/i)).toBeNull();
   });
 
-  it("numbers each step with a decorative counter circle", () => {
+  it("numbers each step with a decorative counter", () => {
     render(
       <Workflow>
         <Workflow.Step>first step</Workflow.Step>
@@ -100,12 +101,12 @@ describe("<Workflow> review checklist", () => {
     const list = screen.getByTestId("workflow-steps");
 
     // Numbering follows the <Guidelines> pattern: an empty aria-hidden
-    // circle whose number comes from a CSS counter, not injected props.
-    const circles = list.querySelectorAll("[class*='stepNum']");
-    expect(circles).toHaveLength(2);
-    circles.forEach((circle) => {
-      expect(circle).toHaveAttribute("aria-hidden", "true");
-      expect(circle).toBeEmptyDOMElement();
+    // element whose number comes from a CSS counter, not injected props.
+    const counters = list.querySelectorAll("[class*='stepNum']");
+    expect(counters).toHaveLength(2);
+    counters.forEach((counter) => {
+      expect(counter).toHaveAttribute("aria-hidden", "true");
+      expect(counter).toBeEmptyDOMElement();
     });
   });
 
@@ -119,69 +120,8 @@ describe("<Workflow> review checklist", () => {
       </Workflow>,
     );
 
+    expect(screen.getByText("direct step")).toBeInTheDocument();
     expect(screen.getByText("wrapped step")).toBeInTheDocument();
-    expect(screen.getAllByRole("checkbox")).toHaveLength(2);
-  });
-
-  it("does not render a progress chip", () => {
-    render(
-      <Workflow>
-        <Workflow.Step>only step</Workflow.Step>
-      </Workflow>,
-    );
-
-    expect(screen.queryByTestId("workflow-progress")).toBeNull();
-    expect(screen.queryByText(/verified/)).toBeNull();
-  });
-
-  it("renders an unchecked checkbox for each step", () => {
-    render(
-      <Workflow>
-        <Workflow.Step>first step</Workflow.Step>
-        <Workflow.Step>second step</Workflow.Step>
-      </Workflow>,
-    );
-    const checkboxes = screen.getAllByRole("checkbox");
-
-    expect(checkboxes).toHaveLength(2);
-    checkboxes.forEach((box) => expect(box).not.toBeChecked());
-  });
-
-  it("marks a step checked when toggled", () => {
-    render(
-      <Workflow>
-        <Workflow.Step>first step</Workflow.Step>
-        <Workflow.Step>second step</Workflow.Step>
-      </Workflow>,
-    );
-    const [first, second] = screen.getAllByRole("checkbox");
-
-    fireEvent.click(first);
-
-    expect(first).toBeChecked();
-    expect(second).not.toBeChecked();
-  });
-
-  it("resets all verified steps", () => {
-    render(
-      <Workflow>
-        <Workflow.Step>first step</Workflow.Step>
-        <Workflow.Step>second step</Workflow.Step>
-      </Workflow>,
-    );
-    const reset = screen.getByRole("button", { name: /reset/i });
-
-    expect(reset).toBeDisabled();
-
-    fireEvent.click(screen.getAllByRole("checkbox")[0]);
-    expect(reset).toBeEnabled();
-
-    fireEvent.click(reset);
-
-    expect(reset).toBeDisabled();
-    screen
-      .getAllByRole("checkbox")
-      .forEach((box) => expect(box).not.toBeChecked());
   });
 });
 

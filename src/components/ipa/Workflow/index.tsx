@@ -1,11 +1,7 @@
 import {
   createContext,
-  useCallback,
   useContext,
   useEffect,
-  useId,
-  useMemo,
-  useState,
   type ReactNode,
   type ReactElement,
 } from "react";
@@ -18,40 +14,26 @@ interface WorkflowProps {
   children: ReactNode;
 }
 
-// Steps render themselves and join the checklist via context — the same
-// composition pattern as <Guidelines>/<Guideline>, so steps survive being
-// wrapped in other elements or components.
-interface WorkflowContextValue {
-  toggle: (id: string) => void;
-  checked: ReadonlySet<string>;
-}
-
-const WorkflowContext = createContext<WorkflowContextValue | null>(null);
+// Steps render themselves — the same composition pattern as
+// <Guidelines>/<Guideline>, so steps survive being wrapped in other
+// elements or components. The context exists only to guard against a
+// <Workflow.Step> rendered outside a <Workflow>.
+const WorkflowContext = createContext(false);
 
 interface WorkflowStepProps {
   children: ReactNode;
 }
 
 function WorkflowStep({ children }: WorkflowStepProps): ReactElement {
-  const ctx = useContext(WorkflowContext);
-  if (!ctx) {
+  const isInsideWorkflow = useContext(WorkflowContext);
+  if (!isInsideWorkflow) {
     throw new Error("<Workflow.Step> must be rendered inside a <Workflow>");
   }
-  const stepId = useId();
-  const checked = ctx.checked.has(stepId);
 
   return (
     <li className={styles.step}>
-      <label className={styles.stepLabel}>
-        <input
-          type="checkbox"
-          className={styles.stepCheckbox}
-          checked={checked}
-          onChange={() => ctx.toggle(stepId)}
-        />
-        <span className={styles.stepNum} aria-hidden="true" />
-        <span className={styles.stepText}>{children}</span>
-      </label>
+      <span className={styles.stepNum} aria-hidden="true" />
+      <span className={styles.stepText}>{children}</span>
     </li>
   );
 }
@@ -65,24 +47,8 @@ function WorkflowBase({ title, children }: WorkflowProps): ReactElement {
     guidelineCtx?.reportWorkflow?.();
   }, [guidelineCtx]);
 
-  const [checked, setChecked] = useState<ReadonlySet<string>>(new Set());
-
-  const toggle = useCallback((id: string) => {
-    setChecked((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  }, []);
-
-  const contextValue = useMemo(() => ({ toggle, checked }), [toggle, checked]);
-
   return (
-    <WorkflowContext.Provider value={contextValue}>
+    <WorkflowContext.Provider value={true}>
       <Accordion
         className={styles.accordion}
         title={
@@ -119,23 +85,9 @@ function WorkflowBase({ title, children }: WorkflowProps): ReactElement {
         titleClassName={styles.header}
         contentClassName={styles.content}
       >
-        <p className={styles.hint}>
-          Work through each step against the spec under review. Progress is kept
-          on this page only.
-        </p>
         <ol className={styles.steps} data-testid="workflow-steps">
           {children}
         </ol>
-        <div className={styles.footer}>
-          <button
-            type="button"
-            className={styles.reset}
-            onClick={() => setChecked(new Set())}
-            disabled={checked.size === 0}
-          >
-            Reset
-          </button>
-        </div>
       </Accordion>
     </WorkflowContext.Provider>
   );
