@@ -92,3 +92,13 @@
 .stepText code {
   font-size: 88%;
 }
+
+/* MDX wraps step content in <p>, which carries the theme's paragraph
+   margin — strip it at the edges so rows stay snug */
+.stepText > *:first-child {
+  margin-top: 0;
+}
+
+.stepText > *:last-child {
+  margin-bottom: 0;
+}
