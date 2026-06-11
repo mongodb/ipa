@@ -1,8 +1,19 @@
 import { render, screen } from "@testing-library/react";
 import { type ReactNode } from "react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { Workflow } from "./index";
+
+// Mirrors the docusaurus.config customFields; mutable so tests can flip it.
+let customFields: Record<string, unknown> = {};
+
+vi.mock("@docusaurus/useDocusaurusContext", () => ({
+  default: () => ({ siteConfig: { customFields } }),
+}));
+
+beforeEach(() => {
+  customFields = {};
+});
 
 describe("<Workflow>", () => {
   it("renders a collapsed accordion titled 'Evaluation workflow'", () => {
@@ -58,6 +69,33 @@ describe("<Workflow>", () => {
       screen.getByRole("button", { name: /implementation steps/i }),
     ).toBeInTheDocument();
     expect(screen.queryByText(/evaluation workflow/i)).toBeNull();
+  });
+});
+
+describe("<Workflow> site visibility", () => {
+  it("renders nothing when the site config hides workflows", () => {
+    customFields = { showWorkflows: false };
+
+    render(
+      <Workflow>
+        <Workflow.Step>only step</Workflow.Step>
+      </Workflow>,
+    );
+
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.queryByText("only step")).toBeNull();
+  });
+
+  it("renders by default when the flag is absent", () => {
+    render(
+      <Workflow>
+        <Workflow.Step>only step</Workflow.Step>
+      </Workflow>,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /evaluation workflow/i }),
+    ).toBeInTheDocument();
   });
 });
 

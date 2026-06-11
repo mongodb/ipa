@@ -4,6 +4,7 @@ import {
   type ReactNode,
   type ReactElement,
 } from "react";
+import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import { Accordion, CheckSquareIcon } from "@site/src/components/ui";
 import { NumberCircle } from "../shared/NumberCircle";
 import styles from "./Workflow.module.css";
@@ -34,7 +35,12 @@ function WorkflowStep({ children }: WorkflowStepProps): ReactElement {
 }
 WorkflowStep.displayName = "Workflow.Step";
 
-function WorkflowBase({ title, children }: WorkflowProps): ReactElement {
+function WorkflowBase({ title, children }: WorkflowProps): ReactElement | null {
+  const { siteConfig } = useDocusaurusContext();
+  if (siteConfig.customFields?.showWorkflows === false) {
+    return null;
+  }
+
   return (
     <WorkflowContext.Provider value={true}>
       <Accordion
