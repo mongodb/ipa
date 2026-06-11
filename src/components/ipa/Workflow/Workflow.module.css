@@ -1,5 +1,3 @@
-/* Neutral "process" treatment — Accordion's default chrome already fits,
-   only spacing and header density change */
 .accordion {
   margin: 1.25rem 0 0.25rem;
 }
@@ -15,7 +13,6 @@
   gap: 0.5rem;
 }
 
-/* Muted like the chevron — the header stays fully monochrome */
 .titleIcon {
   flex-shrink: 0;
   width: 1rem;
@@ -27,8 +24,6 @@
   font-weight: 600;
 }
 
-/* Panel owns no padding — rows pad themselves so the inset separators
-   align with the text column */
 .content {
   padding: 0 !important;
   border-top: none !important;
@@ -41,7 +36,6 @@
   counter-reset: wf-step;
 }
 
-/* Text-first row: the numbering circle leads the line, content dominates */
 .step {
   counter-increment: wf-step;
   position: relative;
@@ -51,8 +45,6 @@
   padding: 0.45rem 0.95rem;
 }
 
-/* Inset hairline: starts at the text column's left edge so the separator
-   reads as part of the content, not the card chrome */
 .step + .step::before {
   content: "";
   position: absolute;
@@ -62,8 +54,6 @@
   border-top: 1px solid var(--ifm-color-emphasis-200);
 }
 
-/* Shared <NumberCircle> chrome, sized down so it doesn't compete with the
-   guideline's own index; this module only draws the step counter into it */
 .stepNum {
   --number-circle-size: 1.5rem;
   margin-top: 0.05rem;
@@ -74,7 +64,6 @@
   font-size: 0.75rem;
 }
 
-/* Step text is the dominant element: base color, comfortable measure */
 .stepText {
   flex: 1;
   min-width: 0;
@@ -87,8 +76,6 @@
   font-size: 88%;
 }
 
-/* MDX wraps step content in <p>, which carries the theme's paragraph
-   margin — strip it at the edges so rows stay snug */
 .stepText > *:first-child {
   margin-top: 0;
 }
