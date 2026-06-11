@@ -5,7 +5,7 @@ import {
   type ReactNode,
   type ReactElement,
 } from "react";
-import { Accordion } from "../../ui";
+import { Accordion, CheckSquareIcon } from "../../ui";
 import { GuidelineContext } from "../../../hooks/useGuideline";
 import { NumberCircle } from "../shared/NumberCircle";
 import styles from "./Workflow.module.css";
@@ -54,30 +54,7 @@ function WorkflowBase({ title, children }: WorkflowProps): ReactElement {
         className={styles.accordion}
         title={
           <span className={styles.title}>
-            <svg
-              className={styles.titleIcon}
-              viewBox="0 0 16 16"
-              aria-hidden="true"
-            >
-              <rect
-                x="1.5"
-                y="1.5"
-                width="13"
-                height="13"
-                rx="2.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-              <path
-                d="M4.6 8.2 7 10.5l4.4-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <CheckSquareIcon className={styles.titleIcon} />
             <span className={styles.titleText}>
               {title ?? "Evaluation workflow"}
             </span>

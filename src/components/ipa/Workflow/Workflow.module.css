@@ -15,18 +15,12 @@
   gap: 0.5rem;
 }
 
-/* Brand accents are hardcoded (like Example.module.css) — the site's
-   custom palette CSS is not wired into the Docusaurus config, so the
-   MongoDB and primary-color variable overrides cannot be relied on here */
+/* Muted like the chevron — the header stays fully monochrome */
 .titleIcon {
   flex-shrink: 0;
   width: 1rem;
   height: 1rem;
-  color: #116149;
-}
-
-[data-theme="dark"] .titleIcon {
-  color: #00ed64;
+  color: var(--ifm-color-emphasis-600);
 }
 
 .titleText {
