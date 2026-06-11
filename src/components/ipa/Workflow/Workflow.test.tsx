@@ -1,27 +1,7 @@
 import { render, screen } from "@testing-library/react";
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 import { Workflow } from "./index";
-import { Guideline } from "../Guideline";
-import type { Guideline as GuidelineData } from "../../../types/guideline";
-
-vi.mock("@docusaurus/plugin-content-docs/client", () => ({
-  useDoc: () => ({ frontMatter: { id: 1, state: "adopt" } }),
-}));
-
-const lintableGuideline = {
-  id: "IPA-0001-must-test-a",
-  lintable: true,
-  informational: false,
-  implementation: false,
-  effort: "check",
-  given: "spec",
-} satisfies GuidelineData;
-
-const unlintableGuideline = {
-  ...lintableGuideline,
-  lintable: false,
-} satisfies GuidelineData;
 
 describe("<Workflow>", () => {
   it("renders a collapsed accordion titled 'Evaluation workflow'", () => {
@@ -122,48 +102,5 @@ describe("<Workflow> reading list", () => {
 
     expect(screen.getByText("direct step")).toBeInTheDocument();
     expect(screen.getByText("wrapped step")).toBeInTheDocument();
-  });
-});
-
-describe("<Guideline> workflow cross-field check", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("warns in development when an unlintable, non-informational guideline lacks a <Workflow>", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-    render(<Guideline {...unlintableGuideline}>body</Guideline>);
-
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining("IPA-0001-must-test-a"),
-    );
-  });
-
-  it("does not warn when the guideline contains a <Workflow>", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-    render(
-      <Guideline {...unlintableGuideline}>
-        <Workflow>
-          <Workflow.Step>only step</Workflow.Step>
-        </Workflow>
-      </Guideline>,
-    );
-
-    expect(warn).not.toHaveBeenCalled();
-  });
-
-  it("does not warn for lintable or informational guidelines", () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-    render(<Guideline {...lintableGuideline}>body</Guideline>);
-    render(
-      <Guideline {...unlintableGuideline} informational>
-        body
-      </Guideline>,
-    );
-
-    expect(warn).not.toHaveBeenCalled();
   });
 });

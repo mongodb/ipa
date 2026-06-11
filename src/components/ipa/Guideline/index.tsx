@@ -1,4 +1,4 @@
-import { type ReactNode, type ReactElement, useEffect, useRef } from "react";
+import { type ReactNode, type ReactElement } from "react";
 import clsx from "clsx";
 import type { Guideline } from "../../../types/guideline";
 import { GuidelineContext } from "../../../hooks/useGuideline";
@@ -18,28 +18,9 @@ export function Guideline({
 }: GuidelineProps): ReactElement {
   const isInsideGuidelines = useIsInsideGuidelines();
   const Root = isInsideGuidelines ? "li" : "div";
-  const hasWorkflow = useRef(false);
-
-  useEffect(() => {
-    if (process.env.NODE_ENV === "production") return;
-    if (guideline.lintable || guideline.informational) return;
-    if (!hasWorkflow.current) {
-      console.warn(
-        `Guideline ${guideline.id} is unlintable and non-informational but ` +
-          "has no <Workflow> documenting its manual review steps.",
-      );
-    }
-  }, [guideline.id, guideline.lintable, guideline.informational]);
 
   return (
-    <GuidelineContext.Provider
-      value={{
-        guideline,
-        reportWorkflow: () => {
-          hasWorkflow.current = true;
-        },
-      }}
-    >
+    <GuidelineContext.Provider value={{ guideline }}>
       <Root
         className={clsx(styles.root, isInsideGuidelines && styles.numbered)}
         data-guideline-id={guideline.id}

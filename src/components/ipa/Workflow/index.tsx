@@ -41,13 +41,6 @@ function WorkflowStep({ children }: WorkflowStepProps): ReactElement {
 WorkflowStep.displayName = "Workflow.Step";
 
 function WorkflowBase({ title, children }: WorkflowProps): ReactElement {
-  // Optional on purpose: <Workflow> also renders standalone (e.g. fixtures).
-  const guidelineCtx = useContext(GuidelineContext);
-
-  useEffect(() => {
-    guidelineCtx?.reportWorkflow?.();
-  }, [guidelineCtx]);
-
   return (
     <WorkflowContext.Provider value={true}>
       <Accordion
