@@ -5,14 +5,7 @@
 }
 
 .numbered {
-  counter-increment: ipa-guideline;
-}
-
-/* Circle chrome comes from the shared <NumberCircle>; this module only
-   draws the guideline counter into it */
-.index::before {
-  content: counter(ipa-guideline);
-  font-size: 0.875rem;
+  counter-increment: number-circle;
 }
 
 .content {

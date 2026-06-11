@@ -1,7 +1,7 @@
-/* Shared numbering-circle chrome used by <Guideline>'s index and
-   <Workflow.Step>'s counter. CSS counters cannot be parameterized across
-   modules, so each consumer draws its own number via a ::before rule on
-   the className it passes in, and may override --number-circle-size. */
+/* Contract: the consumer's list does `counter-reset: number-circle` and
+   each item `counter-increment: number-circle`; the circle draws that
+   counter itself. Override --number-circle-size/--number-circle-font-size
+   per consumer. CSS counter scoping keeps nested lists independent. */
 .circle {
   display: flex;
   align-items: center;
@@ -14,4 +14,9 @@
   color: var(--ifm-color-emphasis-600);
   font-weight: 600;
   line-height: 1;
+}
+
+.circle::before {
+  content: counter(number-circle);
+  font-size: var(--number-circle-font-size, 0.875rem);
 }

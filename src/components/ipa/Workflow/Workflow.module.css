@@ -33,11 +33,11 @@
   list-style: none;
   margin: 0;
   padding: 0.2rem 0;
-  counter-reset: wf-step;
+  counter-reset: number-circle;
 }
 
 .step {
-  counter-increment: wf-step;
+  counter-increment: number-circle;
   position: relative;
   display: flex;
   align-items: flex-start;
@@ -56,12 +56,8 @@
 
 .stepNum {
   --number-circle-size: 1.5rem;
+  --number-circle-font-size: 0.75rem;
   margin-top: 0.05rem;
-}
-
-.stepNum::before {
-  content: counter(wf-step);
-  font-size: 0.75rem;
 }
 
 .stepText {

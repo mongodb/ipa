@@ -25,7 +25,7 @@ export function Guideline({
         className={clsx(styles.root, isInsideGuidelines && styles.numbered)}
         data-guideline-id={guideline.id}
       >
-        {isInsideGuidelines && <NumberCircle className={styles.index} />}
+        {isInsideGuidelines && <NumberCircle />}
         <div className={styles.content}>
           <GuidelineHeader />
           <div className={styles.body}>{children}</div>
