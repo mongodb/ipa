@@ -1,6 +1,6 @@
 import { type ReactElement } from "react";
-import { Badge, type BadgeColor } from "../../ui/Badge";
-import type { State } from "../../../types/ipa";
+import { Badge, type BadgeColor } from "../../../ui/Badge";
+import type { State } from "../../../../types/ipa";
 
 const STATE_CONFIG: Record<State, { label: string; color: BadgeColor }> = {
   adopt: { label: "Adopt", color: "green" },
