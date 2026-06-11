@@ -125,10 +125,11 @@ name: list-resources
 reading list inside a collapsible accordion. It is intentionally stateless —
 interactivity can be layered on later if reviewers ask for it.
 
-### Inside an unlintable guideline
+### Inside a guideline
 
-The primary use: unlintable guidelines document the steps a reviewer or agent
-follows to evaluate the rule.
+The primary use: a guideline documents the steps a reviewer or agent follows to
+evaluate the rule. The component renders the same regardless of the guideline's
+metadata.
 
 <Guideline
   id="IPA-9999-must-use-american-english"
@@ -155,26 +156,6 @@ follows to evaluate the rule.
     <Workflow.Step>
       Flag any non-American spelling as a violation.
     </Workflow.Step>
-  </Workflow>
-</Guideline>
-
-### Inside a lintable guideline
-
-Lintable guidelines may also include a workflow — the steps document what
-Spectral checks, for human readers.
-
-<Guideline
-  id="IPA-9999-must-render-reference-only"
-  lintable
-  state="adopt"
-  effort="check"
-  given="operation"
->
-  Lintable guidelines may still include a workflow for human readers.
-
-  <Workflow>
-    <Workflow.Step>Verify the operation defines a summary.</Workflow.Step>
-    <Workflow.Step>Verify the summary uses Title Case.</Workflow.Step>
   </Workflow>
 </Guideline>
 
