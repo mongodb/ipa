@@ -7,6 +7,12 @@ import { themes } from "prism-react-renderer";
 import parseFrontMatter from "./src/plugins/parsePrincipleFrontMatter";
 
 const config: Config = {
+  customFields: {
+    // Workflows are primarily agent-executed evaluation steps; hide them
+    // from the rendered site. Flip to true to show them again.
+    showWorkflows: false,
+  },
+
   title: "IPA - Improvement Proposal for APIs",
   url: "https://mongodb.github.io", // Your website URL
   baseUrl: "/ipa/",

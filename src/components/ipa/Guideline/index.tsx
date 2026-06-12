@@ -3,6 +3,7 @@ import clsx from "clsx";
 import type { Guideline } from "../../../types/guideline";
 import { GuidelineContext } from "../../../hooks/useGuideline";
 import { useIsInsideGuidelines } from "../Guidelines/GuidelinesContext";
+import { NumberCircle } from "../shared/NumberCircle";
 import { GuidelineHeader } from "./GuidelineHeader";
 import { GuidelineFooter } from "./GuidelineFooter";
 import styles from "./Guideline.module.css";
@@ -24,9 +25,7 @@ export function Guideline({
         className={clsx(styles.root, isInsideGuidelines && styles.numbered)}
         data-guideline-id={guideline.id}
       >
-        {isInsideGuidelines && (
-          <div className={styles.index} aria-hidden="true" />
-        )}
+        {isInsideGuidelines && <NumberCircle />}
         <div className={styles.content}>
           <GuidelineHeader />
           <div className={styles.body}>{children}</div>

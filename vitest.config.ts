@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
@@ -7,6 +8,14 @@ import react from "@vitejs/plugin-react";
 // `.tsx` test files.
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    // Docusaurus aliases @site to the repo root; tests must match.
+    alias: {
+      "@site": fileURLToPath(new URL(".", import.meta.url)),
+      "@docusaurus/useDocusaurusContext":
+        "@docusaurus/core/lib/client/exports/useDocusaurusContext",
+    },
+  },
   test: {
     include: ["src/**/*.test.{js,jsx,ts,tsx}"],
     environment: "jsdom",

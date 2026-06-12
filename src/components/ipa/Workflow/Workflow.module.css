@@ -1,0 +1,81 @@
+.accordion {
+  margin: 1.25rem 0 0.25rem;
+}
+
+.header {
+  padding: 0.7rem 0.75rem;
+}
+
+.title {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.titleIcon {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  color: var(--ifm-color-emphasis-600);
+}
+
+.titleText {
+  font-weight: 600;
+}
+
+.content {
+  padding: 0;
+  border-top: none;
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0.2rem 0;
+  counter-reset: number-circle;
+}
+
+.step {
+  --number-circle-size: 1.5rem;
+  --number-circle-font-size: 0.75rem;
+  counter-increment: number-circle;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.45rem 0.95rem;
+}
+
+.step + .step::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: calc(0.95rem + var(--number-circle-size) + 0.7rem);
+  right: 0.95rem;
+  border-top: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.stepNum {
+  margin-top: 0.05rem;
+}
+
+.stepText {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--ifm-font-color-base);
+}
+
+.stepText code {
+  font-size: 88%;
+}
+
+.stepText > *:first-child {
+  margin-top: 0;
+}
+
+.stepText > *:last-child {
+  margin-bottom: 0;
+}
