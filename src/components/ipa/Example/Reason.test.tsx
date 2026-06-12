@@ -1,11 +1,13 @@
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 
-import { Reason } from "./index";
+import { Example } from "./index";
 
-describe("<Reason>", () => {
+describe("<Example.Reason>", () => {
   it("renders the explanation prose", () => {
-    render(<Reason>Merge-patch is simpler for clients.</Reason>);
+    render(
+      <Example.Reason>Merge-patch is simpler for clients.</Example.Reason>,
+    );
 
     expect(
       screen.getByText(/merge-patch is simpler for clients/i),
@@ -13,7 +15,7 @@ describe("<Reason>", () => {
   });
 
   it("renders a 'Why:' lead-in", () => {
-    render(<Reason>Some explanation.</Reason>);
+    render(<Example.Reason>Some explanation.</Example.Reason>);
 
     expect(screen.getByText("Why:")).toBeInTheDocument();
   });
@@ -24,9 +26,9 @@ describe("<Reason>", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     render(
-      <Reason>
+      <Example.Reason>
         <p>First sentence of the reason.</p>
-      </Reason>,
+      </Example.Reason>,
     );
 
     expect(
@@ -35,5 +37,19 @@ describe("<Reason>", () => {
     expect(error).not.toHaveBeenCalled();
 
     error.mockRestore();
+  });
+
+  it("renders inside an example beneath its code block", () => {
+    render(
+      <Example.Correct>
+        <pre>
+          <code>name: list-resources</code>
+        </pre>
+        <Example.Reason>The name field is required.</Example.Reason>
+      </Example.Correct>,
+    );
+
+    expect(screen.getByText(/the name field is required/i)).toBeInTheDocument();
+    expect(screen.getByText("Why:")).toBeInTheDocument();
   });
 });

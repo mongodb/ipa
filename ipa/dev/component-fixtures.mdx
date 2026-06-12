@@ -13,7 +13,6 @@ import {
   Guidelines,
   Guideline,
   Example,
-  Reason,
   Workflow,
 } from "@site/src/components/ipa";
 
@@ -120,9 +119,9 @@ name: list-resources
 
 </Example.Incorrect>
 
-## `<Reason>`
+## `<Example.Reason>`
 
-`<Reason>` is the short prose explanation inside `<Example.Correct>` and
+`<Example.Reason>` is the short prose explanation inside `<Example.Correct>` and
 `<Example.Incorrect>` blocks — why the pattern is correct or incorrect, the
 principle rather than a restatement of the guideline. It renders beneath the
 code block under the example's tinted hairline, with an inline "Why:" lead-in in
@@ -137,9 +136,9 @@ PATCH /clusters/{clusterId}
 Content-Type: application/merge-patch+json
 ```
 
-<Reason>
+<Example.Reason>
   Merge-patch is simpler for clients — send only the fields to change.
-</Reason>
+</Example.Reason>
 
 </Example.Correct>
 
@@ -156,19 +155,12 @@ components:
         __v: { type: integer }
 ```
 
-<Reason>
+<Example.Reason>
   Exposing `_id` and `__v` leaks MongoDB document internals into the API
   surface, coupling clients to the storage layer.
-</Reason>
+</Example.Reason>
 
 </Example.Incorrect>
-
-### Outside an example (fallback styling)
-
-A `<Reason>` rendered outside an example falls back to neutral colors — the
-hairline uses the default border token and the lead inherits the text color.
-
-<Reason>Rendered standalone, no verdict tint is available.</Reason>
 
 ## `<Workflow>`
 

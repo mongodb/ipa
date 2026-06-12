@@ -1,6 +1,7 @@
 import { type ReactElement, type ReactNode } from "react";
 import { Accordion } from "@site/src/components/ui";
 import { type ExampleType } from "./types";
+import { Reason } from "./Reason";
 import styles from "./Example.module.css";
 import clsx from "clsx";
 
@@ -47,4 +48,5 @@ IncorrectExample.displayName = "Incorrect";
 export const Example = Object.assign(ExampleBase, {
   Correct: CorrectExample,
   Incorrect: IncorrectExample,
+  Reason: Reason,
 });
