@@ -1,0 +1,31 @@
+/* The --ex-* tokens are defined on the Example variant root
+   (Example.module.css) and reach these rules by cascade. */
+.reason {
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--ex-border);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--ifm-font-color-base);
+}
+
+.lead {
+  font-weight: 700;
+  color: var(--ex-header-color);
+}
+
+.reason code {
+  font-size: 88%;
+}
+
+/* MDX wraps the prose in <p>: the first paragraph flows inline after the
+   "Why:" lead, subsequent paragraphs break below. */
+.reason p {
+  display: inline;
+  margin: 0;
+}
+
+.reason p + p {
+  display: block;
+  margin-top: 0.5rem;
+}
