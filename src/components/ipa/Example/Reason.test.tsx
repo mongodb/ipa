@@ -48,8 +48,11 @@ describe("<Example.Reason>", () => {
         <Example.Reason>The name field is required.</Example.Reason>
       </Example.Correct>,
     );
+    const code = screen.getByText("name: list-resources");
+    const reason = screen.getByText(/the name field is required/i);
 
-    expect(screen.getByText(/the name field is required/i)).toBeInTheDocument();
-    expect(screen.getByText("Why:")).toBeInTheDocument();
+    expect(
+      code.compareDocumentPosition(reason) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });

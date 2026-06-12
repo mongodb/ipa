@@ -1,11 +1,9 @@
-/* Sits beneath the code block inside an Example's content area, separated
-   by the example's own tinted hairline. The --ex-* tokens are defined on the
-   Example variant root and cascade down; the fallbacks keep the component
-   legible if it is ever rendered outside an Example. */
+/* The --ex-* tokens are defined on the Example variant root
+   (Example.module.css) and reach these rules by cascade. */
 .reason {
   margin-top: 0.75rem;
   padding-top: 0.6rem;
-  border-top: 1px solid var(--ex-border, var(--ifm-color-emphasis-200));
+  border-top: 1px solid var(--ex-border);
   font-size: 0.85rem;
   line-height: 1.6;
   color: var(--ifm-font-color-base);
@@ -13,15 +11,15 @@
 
 .lead {
   font-weight: 700;
-  color: var(--ex-header-color, inherit);
+  color: var(--ex-header-color);
 }
 
 .reason code {
   font-size: 88%;
 }
 
-/* MDX wraps indented children in <p>. The first paragraph flows inline after
-   the "Why:" lead; any further paragraphs break below with a small gap. */
+/* MDX wraps the prose in <p>: the first paragraph flows inline after the
+   "Why:" lead, subsequent paragraphs break below. */
 .reason p {
   display: inline;
   margin: 0;
