@@ -14,6 +14,14 @@ export default defineConfig({
       "@site": fileURLToPath(new URL(".", import.meta.url)),
       "@docusaurus/useDocusaurusContext":
         "@docusaurus/core/lib/client/exports/useDocusaurusContext",
+      // @theme-original/* aliases are generated during a Docusaurus build and
+      // don't resolve under vitest; point the one our swizzle re-exports at a stub.
+      "@theme-original/MDXComponents": fileURLToPath(
+        new URL(
+          "./test/stubs/theme-original-mdx-components.ts",
+          import.meta.url,
+        ),
+      ),
     },
   },
   test: {
