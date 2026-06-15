@@ -1,0 +1,945 @@
+---
+id: 103
+state: adopt
+---
+
+# IPA-103: Methods
+
+An API is composed of one or more methods, which represent a specific operation
+that a service can perform on behalf of the consumer.
+
+## Guidance
+
+- API authors **should** choose from the defined categories in the following
+  order:
+  - Standard methods (on collections and resources)
+  - Custom methods (on collections, resources, or stateless)
+- Standard methods **must not** cause side effects
+  - In such scenarios where a side effect is necessary, a custom method
+    **should** be used
+  - A side effect specifically includes mutating
+    [client-owned fields](0111.md#single-owner-fields) of any resource other
+    than the target of the request. The dependent mutation **must** be performed
+    through the dependent resource's own endpoint; if the operation is
+    fundamentally multi-resource by design, it **must** be modeled as a custom
+    method per the rule above.
+  - Side effects limited to read-only or
+    [effective values](0111.md#effective-values) of another resource **may**
+    occur in standard methods.
+- Standard methods **must** guarantee
+  [atomicity](https://en.wikipedia.org/wiki/Atomicity_%28database_systems%29)
+  - In cases where atomicity cannot be guaranteed, consider in the following
+    order:
+    - A new sub-resource with the appropriate methods
+    - A [singleton-resource](0113.md) for the corresponding section
+    - [Custom methods](0109.md), for example, an `Add` or `Remove` operation for
+      repeated fields
+
+If a standard method is unsuitable, then custom methods offer a lesser, but
+still valuable level of consistency, helping the user reason about the scope of
+the action and the object whose configuration is read to inform that action.
+
+Selecting a custom method may be valuable for:
+
+- State management of a resource since they usually carry side effects
+- If atomic modifications are required when adding or removing from repeated
+  fields
+
+### Response bodies
+
+- Every endpoint **must** support a versioned JSON content type (e.g.
+  `application/vnd.atlas.YYYY-MM-DD+json`), per [IPA-900](../sdks/0900.md).
+  Additional content types (e.g. `+csv`) **may** be offered alongside JSON.
+- When a response body is returned as a JSON content type, it **must** be a JSON
+  object with a fixed set of named properties at the root.
+  - Top-level arrays, primitives, or objects with dynamic (unknown) keys at the
+    root are prohibited because they cannot be consistently typed by
+    schema-based clients and tooling.
+  - Collections **must** be wrapped in an envelope object per [IPA-110](0110.md)
+    (e.g. `{"results": [...], "links": [...], "totalCount": 42}`).
+
+### Naming
+
+- The method name is the
+  [Operation ID](https://swagger.io/docs/specification/v3_0/paths-and-operations/#operationid)
+  (`operationId`) in the OpenAPI Specification
+- Operation IDs **must** be unique
+- Operation IDs **must** be in `camelCase`
+
+<Guidelines>
+
+<Guideline id="IPA-0103-should-prefer-standard-methods" given="operation" effort="reason">
+
+API authors **should** choose a method category in priority order: prefer a
+standard method (on a collection or resource), and only fall back to a custom
+method when no standard method fits.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters:
+    get:
+      summary: Return All Clusters
+      operationId: listClusters
+    post:
+      summary: Create One Cluster
+      operationId: createCluster
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      summary: Return One Cluster
+      operationId: getCluster
+    patch:
+      summary: Update One Cluster
+      operationId: updateCluster
+    delete:
+      summary: Remove One Cluster
+      operationId: deleteCluster
+```
+
+<Example.Reason>
+  Reading and mutating cluster configuration maps cleanly onto the standard
+  list/create/get/update/delete methods, so no custom method is introduced.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:read:
+    get:
+      summary: Read One Cluster
+      operationId: readCluster
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:set:
+    post:
+      summary: Set One Cluster Configuration
+      operationId: setCluster
+```
+
+<Example.Reason>
+  Plain reads and full-configuration writes are exactly what the standard Get
+  and Update methods express. Reaching for custom methods first discards the
+  consistency a standard method would have provided.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate the operations defined for the resource under review.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each operation, determine whether it expresses a standard method (List,
+    Get, Create, Update, Delete) or a custom method (a `:verb` suffix or
+    otherwise non-standard action).
+  </Workflow.Step>
+  <Workflow.Step>
+    For every custom method, ask whether a standard method could express the
+    same intent without a side effect or atomicity problem.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any custom method whose behavior a standard method could have covered;
+    otherwise confirm the custom method is justified.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0103-must-not-cause-side-effects" given="operation" effort="reason">
+
+Standard methods (List, Get, Create, Update, Delete) **must not** cause side
+effects beyond the resource state they nominally read or write.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      summary: Return One Cluster
+      operationId: getCluster
+      description: >-
+        Returns the configuration and state of the specified cluster. This
+        method does not modify any resource.
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  The Get method only reads cluster state. A standard method that leaves the
+  system unchanged keeps its semantics predictable for callers.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      summary: Return One Cluster
+      operationId: getCluster
+      description: >-
+        Returns the specified cluster and triggers a fresh backup snapshot as a
+        side effect of reading it.
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  Triggering a backup is a side effect that callers do not expect from a Get.
+  Side-effecting behavior belongs in a custom method, not a standard one.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify each standard method (List, Get, Create, Update, Delete) on the
+    resource under review.
+  </Workflow.Step>
+  <Workflow.Step>
+    Read the operation summary and description to determine what state the
+    method is expected to read or write.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check whether the method performs additional actions beyond that nominal
+    read or write (e.g., triggering jobs, mutating other resources, sending
+    notifications).
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any standard method that carries a side effect, and recommend a custom
+    method for the side-effecting behavior.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0103-should-use-custom-method-for-side-effects"
+  given="operation"
+  effort="reason"
+  dependsOn={["IPA-0103-must-not-cause-side-effects"]}
+>
+
+When a side effect is necessary, a custom method **should** be used to carry it
+rather than attaching the behavior to a standard method.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:restart:
+    post:
+      summary: Restart One Cluster
+      operationId: restartCluster
+      description: >-
+        Restarts the specified cluster. The restart is modeled as a custom
+        method because it produces a side effect on the running cluster.
+      responses:
+        "202":
+          description: Accepted
+```
+
+<Example.Reason>
+  The side-effecting restart lives in a custom `:restart` method, keeping the
+  standard Get/Update methods free of surprising behavior.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    patch:
+      summary: Update One Cluster
+      operationId: updateCluster
+      description: >-
+        Updates cluster fields and, if the instance size changes, restarts the
+        cluster as part of the same Update call.
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  Folding a restart into the standard Update method hides a side effect inside a
+  method callers expect to be side-effect free. A dedicated custom method makes
+  the action explicit.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For any operation flagged as having a side effect, confirm the side effect
+    is genuinely required by the use case.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check whether the side effect is expressed through a custom method (e.g., a
+    `:verb` operation) rather than a standard method.
+  </Workflow.Step>
+  <Workflow.Step>
+    If the side effect is attached to a standard method, recommend extracting it
+    into a custom method.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the resulting custom method names the action and the object it acts
+    on.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0103-must-mutate-dependent-through-own-endpoint"
+  given="operation"
+  effort="reason"
+  dependsOn={["IPA-0103-must-not-cause-side-effects"]}
+>
+
+Mutating the [client-owned fields](0111.md#single-owner-fields) of any resource
+other than the target of the request is a side effect. Such a dependent mutation
+**must** be performed through the dependent resource's own endpoint rather than
+as a hidden effect of a standard method on the target resource.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    patch:
+      summary: Update One Cluster
+      operationId: updateCluster
+      description: >-
+        Updates fields owned by the target cluster only. Changing the backup
+        policy is performed separately through the backup policy's own endpoint.
+      responses:
+        "200":
+          description: OK
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}/backupSchedule:
+    patch:
+      summary: Update One Backup Schedule
+      operationId: updateBackupSchedule
+      description: >-
+        Mutates the client-owned fields of the backup schedule resource through
+        its own endpoint.
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  Each resource's client-owned fields are mutated through its own endpoint, so
+  callers can see and reason about every change rather than discovering an
+  implicit cross-resource write.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    patch:
+      summary: Update One Cluster
+      operationId: updateCluster
+      description: >-
+        Updates the cluster and, as a side effect, rewrites the client-owned
+        retention fields of the associated backup schedule resource.
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  Updating the cluster silently mutates client-owned fields of a different
+  resource (the backup schedule). That dependent mutation must go through the
+  backup schedule's own endpoint.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each standard method, identify the target resource of the request.
+  </Workflow.Step>
+  <Workflow.Step>
+    Determine whether the operation writes any client-owned field belonging to a
+    resource other than that target.
+  </Workflow.Step>
+  <Workflow.Step>
+    If it does, confirm an endpoint exists on the dependent resource that owns
+    those fields and that the mutation is performed there instead.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any standard method that mutates another resource's client-owned fields
+    inline, and recommend routing the change through the dependent resource's
+    own endpoint.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0103-must-model-multi-resource-as-custom-method"
+  given="operation"
+  effort="reason"
+  dependsOn={["IPA-0103-must-mutate-dependent-through-own-endpoint"]}
+>
+
+If an operation is fundamentally multi-resource by design — it must mutate more
+than one resource as a single logical action — it **must** be modeled as a
+custom method rather than as a standard method on one of the resources.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:migrate:
+    post:
+      summary: Migrate One Cluster
+      operationId: migrateCluster
+      description: >-
+        Moves a cluster to a new project, updating both the source and
+        destination project resources as a single multi-resource action.
+      responses:
+        "202":
+          description: Accepted
+```
+
+<Example.Reason>
+  An action that inherently spans multiple resources is expressed as an explicit
+  custom `:migrate` method, so callers understand its cross-resource scope.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    patch:
+      summary: Update One Cluster
+      operationId: updateCluster
+      description: >-
+        Updates the cluster and, when the project field changes, also mutates
+        both the source and destination project resources in the same call.
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  A standard Update is being used for a fundamentally multi-resource migration.
+  An operation that mutates several resources as one logical action belongs in a
+  custom method.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each operation, determine the full set of resources whose state it
+    mutates as part of one logical action.
+  </Workflow.Step>
+  <Workflow.Step>
+    If more than one resource is mutated and the mutations cannot be split into
+    independent per-resource endpoints, the operation is fundamentally
+    multi-resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm any fundamentally multi-resource operation is expressed as a custom
+    method (e.g., a `:verb` operation) rather than a standard method.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any standard method that performs a fundamentally multi-resource action
+    and recommend remodeling it as a custom method.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0103-may-have-read-only-side-effects-in-standard-methods" informational>
+
+Side effects limited to read-only or
+[effective values](0111.md#effective-values) of another resource **may** occur
+in standard methods, since they do not mutate any client-owned field of the
+other resource.
+
+</Guideline>
+
+<Guideline
+  id="IPA-0103-must-guarantee-atomicity"
+  given="operation"
+  effort="reason"
+>
+
+Standard methods **must** guarantee
+[atomicity](https://en.wikipedia.org/wiki/Atomicity_%28database_systems%29): the
+operation either fully succeeds or leaves the resource unchanged, with no
+partially applied state.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    patch:
+      summary: Update One Cluster
+      operationId: updateCluster
+      description: >-
+        Applies all changes in the request as a single atomic update. If any
+        field fails validation, no changes are persisted.
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  An all-or-nothing Update never leaves the cluster in a half-modified state, so
+  callers can retry safely and reason about the resource deterministically.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    patch:
+      summary: Update One Cluster
+      operationId: updateCluster
+      description: >-
+        Applies each field in the request one at a time. If a later field fails,
+        earlier fields remain persisted.
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  A partially applied Update leaves the resource in an inconsistent state that
+  callers cannot reason about or cleanly retry. When atomicity is impossible,
+  model the operation as a sub-resource, singleton resource, or custom method
+  instead.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify each standard method (Create, Update, Delete) that mutates resource
+    state.
+  </Workflow.Step>
+  <Workflow.Step>
+    Determine, from the operation description and request schema, whether the
+    method applies multiple changes that could partially succeed.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the operation is documented and designed to either fully succeed or
+    leave the resource unchanged.
+  </Workflow.Step>
+  <Workflow.Step>
+    If atomicity cannot be guaranteed, recommend a sub-resource with its own
+    methods, a singleton resource, or a custom method (such as `Add`/`Remove`
+    for repeated fields).
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0103-may-use-custom-method-for-state-or-atomicity" informational>
+
+Selecting a custom method **may** be valuable for state management of a resource
+(which usually carries side effects) or when atomic modifications are required
+when adding to or removing from repeated fields.
+
+</Guideline>
+
+<Guideline
+  id="IPA-0103-must-support-versioned-json-content-type"
+  given="operation"
+>
+
+Every endpoint **must** support a versioned JSON content type (e.g.
+`application/vnd.atlas.YYYY-MM-DD+json`), per [IPA-900](../sdks/0900.md).
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      summary: Return One Cluster
+      operationId: getCluster
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.atlas.2024-08-05+json:
+              schema:
+                $ref: "#/components/schemas/Cluster"
+```
+
+<Example.Reason>
+  The operation returns a dated, versioned JSON content type, so SDK generators
+  and clients can pin to a stable, evolvable representation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      summary: Return One Cluster
+      operationId: getCluster
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cluster"
+```
+
+<Example.Reason>
+  Only an unversioned `application/json` content type is offered. Without a
+  versioned JSON media type, clients cannot pin to a specific API version as
+  IPA-900 requires.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each operation, inspect the `content` map of every response body.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check whether at least one media type is a versioned JSON content type
+    matching `application/vnd.atlas.YYYY-MM-DD+json`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any endpoint whose response bodies do not offer a versioned JSON
+    content type.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0103-may-offer-additional-content-types" informational>
+
+Additional content types (e.g. a `+csv` media type) **may** be offered alongside
+the required versioned JSON content type.
+
+</Guideline>
+
+<Guideline
+  id="IPA-0103-must-use-json-object-at-root"
+  given="operation"
+>
+
+When a response body is returned as a JSON content type, it **must** be a JSON
+object with a fixed set of named properties at the root. Top-level arrays,
+primitives, or objects with dynamic (unknown) keys at the root are prohibited
+because they cannot be consistently typed by schema-based clients and tooling.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      summary: Return One Cluster
+      operationId: getCluster
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.atlas.2024-08-05+json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  stateName:
+                    type: string
+```
+
+<Example.Reason>
+  The root schema is an object with a fixed set of named properties, so
+  schema-based clients can generate a stable, strongly typed model.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters:
+    get:
+      summary: Return All Clusters
+      operationId: listClusters
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.atlas.2024-08-05+json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Cluster"
+```
+
+<Example.Reason>
+  The root of the JSON response is a top-level array. A root array cannot carry
+  named envelope properties and cannot be consistently typed, so it is
+  prohibited.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each operation, find every JSON response body and resolve its root
+    schema.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the root schema is `type: object` with a fixed set of named
+    properties.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any root schema that is an array, a primitive, or an object whose keys
+    are dynamic (e.g., declared only through `additionalProperties` or
+    `patternProperties` with no fixed named properties).
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0103-must-wrap-collections-in-envelope"
+  given="operation"
+  dependsOn={["IPA-0103-must-use-json-object-at-root"]}
+>
+
+Collections **must** be wrapped in an envelope object per [IPA-110](0110.md)
+(e.g. `{"results": [...], "links": [...], "totalCount": 42}`) rather than
+returned as a bare top-level array.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters:
+    get:
+      summary: Return All Clusters
+      operationId: listClusters
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.atlas.2024-08-05+json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Cluster"
+                  links:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Link"
+                  totalCount:
+                    type: integer
+```
+
+<Example.Reason>
+  The collection is wrapped in an envelope object with `results`, `links`, and
+  `totalCount`, matching the IPA-110 pagination envelope and keeping the root a
+  named object.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters:
+    get:
+      summary: Return All Clusters
+      operationId: listClusters
+      responses:
+        "200":
+          description: OK
+          content:
+            application/vnd.atlas.2024-08-05+json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Cluster"
+```
+
+<Example.Reason>
+  The collection is returned as a bare top-level array with no envelope, leaving
+  no place for pagination links or counts and violating the IPA-110 envelope
+  requirement.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify each operation that returns a collection of resources (typically a
+    List method).
+  </Workflow.Step>
+  <Workflow.Step>
+    Resolve the root schema of its JSON response body.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the collection is wrapped in an envelope object (with the IPA-110
+    `results`/`links`/`totalCount` properties) rather than returned as a bare
+    array.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any collection response whose root is an unwrapped array.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0103-must-have-unique-operation-id" given="operation">
+
+Operation IDs (`operationId`), which serve as the method name, **must** be
+unique across the specification.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters:
+    get:
+      summary: Return All Clusters
+      operationId: listClusters
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      summary: Return One Cluster
+      operationId: getCluster
+```
+
+<Example.Reason>
+  Each operation has a distinct `operationId`, so generated SDK method names and
+  tooling references resolve unambiguously to a single operation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters:
+    get:
+      summary: Return All Clusters
+      operationId: getClusters
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      summary: Return One Cluster
+      operationId: getClusters
+```
+
+<Example.Reason>
+  Two operations share the `operationId` `getClusters`, which collides in
+  generated clients and makes the method name ambiguous.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect the `operationId` of every operation across all paths in the
+    specification.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare the collected values and detect any duplicates.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag every `operationId` that appears on more than one operation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0103-must-use-camel-case-operation-id" given="operation">
+
+Operation IDs (`operationId`) **must** be written in `camelCase`.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      summary: Return One Cluster
+      operationId: getCluster
+```
+
+<Example.Reason>
+  `getCluster` is camelCase: a lowercase first word with each subsequent word
+  capitalized, matching the convention SDK generators expect.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      summary: Return One Cluster
+      operationId: Get_Cluster
+```
+
+<Example.Reason>
+  `Get_Cluster` uses a leading capital and an underscore separator, which is not
+  camelCase and produces inconsistent generated method names.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect the `operationId` of every operation across all paths.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each `operationId`, verify it starts with a lowercase letter and
+    contains only letters and digits, with word boundaries marked by
+    capitalization (no underscores, hyphens, or spaces).
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any `operationId` that does not match camelCase.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+</Guidelines>
