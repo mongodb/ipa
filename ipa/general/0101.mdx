@@ -1,0 +1,948 @@
+---
+id: 101
+state: adopt
+---
+
+# IPA-101: Resource-Oriented Design
+
+Resource-oriented design is a pattern for specifying APIs based on several
+high-level design principles:
+
+- The fundamental building blocks of an API are
+  [individually named resources](0102.md) (nouns) and the relationships and
+  hierarchy that exist between them
+- A small number of [standard methods](0103.md) (verbs) provide the semantics
+  for most common operations
+  - [Custom methods](0109.md) are available in situations where the standard
+    methods do not fit.
+- Stateless protocol: Each interaction between the client and the server are
+  independent, and both the client and server have clear roles
+
+## Guidance
+
+When designing an API, consider the following (roughly in logical order):
+
+- The resources (nouns) the API will provide
+- The relationships and hierarchies between those resources
+- The schema of each resource
+- The methods (verbs) each resource provides rely as much as possible on the
+  [standard verbs](0103.md)
+
+### Resources
+
+- A resource-oriented API **should** generally be modeled as a resource
+  hierarchy
+  - Each node is either a simple resource or a collection of resources
+  - A collection contains resources of the same type
+  - A resource usually has fields
+- Resources **may** have any number of sub-resources
+- The schema for a resource **must** be the same across all methods related to
+  the resource
+
+:::warning[Important]
+
+API producers **should not** expect that their API will be reflective of their
+database schema. Having an API that is identical to the underlying database
+schema is an antipattern, as it tightly couples the surface to the underlying
+system
+
+:::
+
+### Methods
+
+A typical resource-oriented API exposes a large number of resources with a small
+number of methods on each resource and **should not** be confused with the HTTP
+methods. The methods here described related to the operations available on a
+resource.
+
+The methods can be:
+
+- The standard methods ([Get](0104.md), [List](0105.md), [Create](0106.md),
+  [Update](0107.md), [Delete](0108.md))
+- [Custom methods](0109.md)
+
+The following table illustrates the relationship between resources and the
+standard methods:
+
+| Standard method | Request                                        | Response                |
+| --------------- | ---------------------------------------------- | ----------------------- |
+| Create          | Contains the future resource                   | Is the resource         |
+| Get             | None                                           | Is the resource         |
+| Update          | Contains the resource or parts of the resource | Is the current resource |
+| Delete          | None                                           | None                    |
+| List            | None                                           | Are the resources       |
+
+- A resource **must** support at minimum [Get](0104.md)
+  - Clients **must** be able to validate the state of resources after performing
+    a mutation such as [Create](0106.md), [Update](0107.md), or
+    [Delete](0108.md)
+- A resource **must** also support [List](0105.md) except for
+  [singleton resources](0113.md) where more than one resource is not possible
+- APIs **should** prefer standard methods over custom methods
+  - [Custom methods](0109.md) help define functionality that does not cleanly
+    map to any of the standard methods
+
+### Read-Only Resources
+
+Read-only resources are resources that cannot be modified by API consumers.
+
+- Read-only resources **must** have [Get](0104.md) and [List](0105.md) methods
+- Read-only resources **must not** have [Create](0106.md), [Update](0107.md), or
+  [Delete](0108.md) methods
+- Read-only resources **may** have [custom methods](0109.md) as appropriate
+- All response schema properties for read-only resources **must** be marked as
+  read-only
+  - In OpenAPI, this means all properties **must** have `readOnly: true`
+  - All fields in read-only resources are server-owned. For guidance on
+    server-owned fields, see [IPA-111](0111.md#single-owner-fields)
+- Unsupported operations on read-only resources **should** return
+  `405 Not Allowed`
+- Unsupported operations **must not** be documented
+  - Some declarative-friendly clients require all standard methods to be
+    implemented, but we consider documented unsupported methods to be in
+    detriment of generated documentation and code
+
+<Guidelines>
+
+<Guideline
+  id="IPA-0101-should-model-as-resource-hierarchy"
+  given="spec"
+  effort="reason"
+>
+
+A resource-oriented API **should** generally be modeled as a resource hierarchy,
+where each node is either a simple resource or a collection of resources of the
+same type.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters:
+    get:
+      operationId: listClusters
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getCluster
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}/backup/snapshots:
+    get:
+      operationId: listSnapshots
+```
+
+<Example.Reason>
+  Paths form a clear hierarchy: a `clusters` collection holds individual
+  `cluster` resources, each of which owns a `snapshots` sub-collection. The
+  nesting reflects the real ownership relationships between resources.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/getClusterBackupData:
+    get:
+      operationId: getClusterBackupData
+  /api/atlas/v2/doSnapshotLookup:
+    get:
+      operationId: doSnapshotLookup
+```
+
+<Example.Reason>
+  The paths are flat, verb-shaped RPC endpoints with no resource hierarchy.
+  Clients cannot infer ownership or navigate between related resources because
+  the structure encodes actions rather than nouns.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate all paths in the specification and group them by their resource
+    segments.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm that each path alternates between collection nouns and resource
+    identifiers (e.g., `/clusters/{clusterName}/snapshots/{snapshotId}`) rather
+    than encoding verbs or actions in the path.
+  </Workflow.Step>
+  <Workflow.Step>
+    Verify that nested paths reflect genuine ownership or containment
+    relationships between the parent and child resources.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each collection contains resources of a single type.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any paths that are flat, verb-shaped, or that do not fit into a
+    coherent resource hierarchy.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0101-may-have-sub-resources" informational>
+
+Resources **may** have any number of sub-resources.
+
+</Guideline>
+
+<Guideline
+  id="IPA-0101-must-use-consistent-resource-schema"
+  given="schema"
+  effort="reason"
+>
+
+The schema for a resource **must** be the same across all methods related to the
+resource.
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        regionName: { type: string }
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cluster"
+    put:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cluster"
+```
+
+<Example.Reason>
+  Both the Get and Update methods return the same `Cluster` schema, so clients
+  see one stable representation of the resource regardless of which method they
+  call.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  name: { type: string }
+                  regionName: { type: string }
+    put:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clusterId: { type: string }
+                  clusterName: { type: string }
+```
+
+<Example.Reason>
+  The Get and Update methods return divergent representations of the same
+  cluster (different field names, missing fields). Clients cannot rely on a
+  single consistent shape for the resource across operations.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the resource under review and collect every operation that returns
+    or accepts that resource (Get, List, Create, Update).
+  </Workflow.Step>
+  <Workflow.Step>
+    Resolve the request and response schemas referenced by each of those
+    operations.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare the property names, types, and structure across all of those
+    schemas.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any operation whose schema introduces, renames, or omits fields
+    relative to the canonical resource representation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0101-should-not-mirror-database-schema"
+  given="schema"
+  implementation
+  effort="explore"
+>
+
+API producers **should not** expect that their API will be reflective of their
+database schema, as having an API identical to the underlying database tightly
+couples the surface to the underlying system.
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        regionName: { type: string }
+```
+
+<Example.Reason>
+  The resource exposes a stable API surface independent of storage internals.
+  Clients are decoupled from the underlying data model.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      type: object
+      properties:
+        _id: { type: string }
+        __v: { type: integer }
+        ns: { type: string }
+```
+
+<Example.Reason>
+  Exposing `_id`, `__v`, and `ns` leaks MongoDB document internals into the API
+  surface, coupling clients to the storage layer and making the schema brittle
+  to database refactors.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the technical design document or data model for the API under review.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare resource names in the API against entity or table names in the data
+    model.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare field names in the API response schemas against column or document
+    field names in the data model.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check whether the API resource hierarchy mirrors the database relationship
+    model one-to-one.
+  </Workflow.Step>
+  <Workflow.Step>
+    If no design doc is available, inspect the schemas for storage-layer
+    artifacts (e.g., `_id`, `__v`, raw collection names).
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any tight coupling found, or confirm the API surface is independent
+    of the storage model.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0101-must-support-get" given="resource" effort="reason">
+
+A resource **must** support at minimum the [Get](0104.md) method.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getCluster
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  The cluster resource exposes a Get method, so consumers can retrieve and
+  validate the state of an individual resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    put:
+      operationId: updateCluster
+      responses:
+        "200":
+          description: OK
+    delete:
+      operationId: deleteCluster
+      responses:
+        "204":
+          description: No Content
+```
+
+<Example.Reason>
+  The resource supports mutation but offers no Get method, so consumers have no
+  way to read back the resource after creating or updating it.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify each individually named resource path in the specification (a path
+    ending in a resource identifier such as `/clusters/{clusterName}`).
+  </Workflow.Step>
+  <Workflow.Step>
+    For each such resource, check whether a `get` operation is defined.
+  </Workflow.Step>
+  <Workflow.Step>Report any resource that lacks a Get method.</Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0101-must-allow-state-validation-after-mutation" informational>
+
+Clients **must** be able to validate the state of resources after performing a
+mutation such as [Create](0106.md), [Update](0107.md), or [Delete](0108.md).
+
+</Guideline>
+
+<Guideline id="IPA-0101-must-support-list" given="resource" effort="reason">
+
+A resource **must** also support the [List](0105.md) method, except for
+[singleton resources](0113.md) where more than one resource is not possible.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters:
+    get:
+      operationId: listClusters
+      responses:
+        "200":
+          description: OK
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getCluster
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  The collection path exposes a List method alongside the per-resource Get, so
+  consumers can both enumerate clusters and retrieve any individual one.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getCluster
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  Only the individual cluster can be fetched; there is no collection-level List
+  method, so consumers cannot discover which clusters exist. The resource is not
+  a singleton, so List is required.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify each resource collection in the specification (a path ending in a
+    collection noun such as `/clusters`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Determine whether the resource is a singleton (only one instance can ever
+    exist); if so, List is not required.
+  </Workflow.Step>
+  <Workflow.Step>
+    For every non-singleton resource, check whether a collection-level `get`
+    (List) operation is defined.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any non-singleton resource that lacks a List method.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0101-should-prefer-standard-methods"
+  given="operation"
+  effort="reason"
+>
+
+APIs **should** prefer standard methods over [custom methods](0109.md), using
+custom methods only for functionality that does not cleanly map to a standard
+method.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    put:
+      operationId: updateCluster
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  Updating a cluster maps cleanly to the standard Update method, so a standard
+  method is used instead of a custom one.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:setName:
+    post:
+      operationId: setClusterName
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  Renaming a cluster is just a field update and maps cleanly to the standard
+  Update method, so introducing a `:setName` custom method is unnecessary
+  surface area.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify every custom method in the specification (operations using the
+    `:customVerb` path suffix convention).
+  </Workflow.Step>
+  <Workflow.Step>
+    For each custom method, determine the operation it performs and whether it
+    maps to a standard method (Get, List, Create, Update, Delete).
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any custom method whose behavior could be expressed with a standard
+    method instead.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0101-must-support-get-and-list-on-read-only"
+  given="resource"
+  effort="reason"
+>
+
+Read-only resources **must** have [Get](0104.md) and [List](0105.md) methods.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/processes:
+    get:
+      operationId: listProcesses
+      responses:
+        "200":
+          description: OK
+  /api/atlas/v2/groups/{groupId}/processes/{processId}:
+    get:
+      operationId: getProcess
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  The read-only `processes` resource exposes both List and Get, so consumers can
+  enumerate processes and inspect any individual one even though they cannot
+  modify them.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/processes/{processId}:
+    get:
+      operationId: getProcess
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  The read-only resource exposes Get but no collection-level List, so consumers
+  cannot discover which processes exist.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify resources that are read-only (consumers cannot create, update, or
+    delete them).
+  </Workflow.Step>
+  <Workflow.Step>
+    For each read-only resource, confirm a per-resource `get` (Get) operation is
+    defined.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm a collection-level `get` (List) operation is also defined.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any read-only resource missing either the Get or the List method.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0101-must-not-have-mutation-methods-on-read-only"
+  given="resource"
+  effort="reason"
+>
+
+Read-only resources **must not** have [Create](0106.md), [Update](0107.md), or
+[Delete](0108.md) methods.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/processes:
+    get:
+      operationId: listProcesses
+      responses:
+        "200":
+          description: OK
+  /api/atlas/v2/groups/{groupId}/processes/{processId}:
+    get:
+      operationId: getProcess
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  The read-only process resource only exposes read operations (Get and List); no
+  Create, Update, or Delete methods are present.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/processes/{processId}:
+    get:
+      operationId: getProcess
+      responses:
+        "200":
+          description: OK
+    delete:
+      operationId: deleteProcess
+      responses:
+        "204":
+          description: No Content
+```
+
+<Example.Reason>
+  A read-only resource must not be mutable; exposing a Delete method contradicts
+  its read-only contract and lets consumers modify server-owned state.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify resources that are read-only (consumers cannot modify them).
+  </Workflow.Step>
+  <Workflow.Step>
+    For each read-only resource, inspect its operations for any `post` (Create),
+    `put`/`patch` (Update), or `delete` (Delete) methods.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any mutation method present on a read-only resource.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0101-may-have-custom-methods-on-read-only" informational>
+
+Read-only resources **may** have [custom methods](0109.md) as appropriate.
+
+</Guideline>
+
+<Guideline
+  id="IPA-0101-must-mark-read-only-properties-read-only"
+  given="schema"
+  effort="reason"
+>
+
+All response schema properties for read-only resources **must** be marked as
+read-only — in OpenAPI, every property **must** have `readOnly: true`.
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Process:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        hostname:
+          type: string
+          readOnly: true
+        port:
+          type: integer
+          readOnly: true
+```
+
+<Example.Reason>
+  Every property of the read-only resource is marked `readOnly: true`, so the
+  schema accurately communicates that all fields are server-owned and cannot be
+  set by consumers.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Process:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        hostname:
+          type: string
+        port:
+          type: integer
+```
+
+<Example.Reason>
+  `hostname` and `port` lack `readOnly: true`, so the schema implies consumers
+  can set them even though the resource is read-only and all its fields are
+  server-owned.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify resources that are read-only and locate their response schemas.
+  </Workflow.Step>
+  <Workflow.Step>
+    Enumerate every property defined in each of those response schemas,
+    including nested object properties.
+  </Workflow.Step>
+  <Workflow.Step>Confirm each property carries `readOnly: true`.</Workflow.Step>
+  <Workflow.Step>
+    Report any property of a read-only resource that is not marked `readOnly:
+    true`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0101-should-return-405-for-unsupported-operations"
+  given="operation"
+  effort="reason"
+  dependsOn={["IPA-0101-must-not-have-mutation-methods-on-read-only"]}
+>
+
+Unsupported operations on read-only resources **should** return
+`405 Not Allowed`.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/processes/{processId}:
+    delete:
+      operationId: deleteProcess
+      responses:
+        "405":
+          description: Method Not Allowed
+```
+
+<Example.Reason>
+  When a consumer attempts an unsupported mutation on a read-only resource, the
+  server returns `405 Not Allowed`, signaling clearly that the operation is not
+  permitted.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/processes/{processId}:
+    delete:
+      operationId: deleteProcess
+      responses:
+        "500":
+          description: Internal Server Error
+```
+
+<Example.Reason>
+  Returning `500` for an operation that is simply not allowed misleads consumers
+  into treating an intentional restriction as a server fault. The unsupported
+  operation should return `405 Not Allowed`.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify read-only resources and any operations on them that are not
+    supported.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each unsupported operation that is nonetheless reachable, inspect the
+    documented response codes.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the operation responds with `405 Not Allowed` rather than a generic
+    success or error code.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any unsupported operation that does not return `405 Not Allowed`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0101-must-not-document-unsupported-operations"
+  given="spec"
+  effort="reason"
+>
+
+Unsupported operations **must not** be documented in the specification, because
+documented unsupported methods degrade generated documentation and code.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/processes/{processId}:
+    get:
+      operationId: getProcess
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  Only the supported Get operation is documented; the unsupported mutation
+  methods are omitted entirely, keeping generated SDKs and docs free of
+  operations that cannot be used.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/processes/{processId}:
+    get:
+      operationId: getProcess
+      responses:
+        "200":
+          description: OK
+    delete:
+      operationId: deleteProcess
+      description: This operation is not supported.
+      responses:
+        "405":
+          description: Method Not Allowed
+```
+
+<Example.Reason>
+  Documenting an unsupported Delete operation pollutes generated SDKs and
+  documentation with a method consumers can never use, even when it is annotated
+  as unsupported.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Scan the specification for operations described or annotated as unsupported,
+    not implemented, or method-not-allowed.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, determine whether the operation is documented purely to signal
+    that it is unavailable.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any unsupported operation that appears in the specification; it
+    should be removed rather than documented.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+</Guidelines>
