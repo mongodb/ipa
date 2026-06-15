@@ -1,0 +1,996 @@
+---
+id: 102
+state: adopt
+---
+
+# IPA-102: Resource Identifiers
+
+Most APIs expose resources (their primary nouns) that users can create,
+retrieve, and manipulate. Additionally, resources are named meaning each
+resource has a unique identifier that API consumers use to reference that
+resource.
+
+## Guidance
+
+- The full resource identifier is a URI without transport protocols (schemeless)
+  - Fully qualified paths
+- All resource identifiers defined by an API **must** be unique
+  - Resource names are formatted according to the
+    [URI path schema](https://datatracker.ietf.org/doc/html/rfc3986#appendix-A)
+- Resource identifiers **must** use the slash (/) character to separate
+  individual segments of the resource identifier
+  - Double slashes (//) **must not** be used
+- Resource identifier components **should** alternate between:
+  - Collection identifiers (example: groups, clusters, orgs, users)
+    - Collection identifiers **must** be in `camelCase`
+    - Collection identifiers **must** begin with a lowercase letter and contain
+      only ASCII letters and numbers (`/[a-z][a-zA-Z0-9]*/`).
+    - Collection identifiers **must** be plural
+      - In situations where there is no plural word ("info"), or where the
+        singular and plural terms are the same ("moose"), the non-pluralized
+        (singular) form is correct.
+  - Resource IDs (example: `groupId`, `clusterName`, `orgId`)
+    - Resource IDs **should** be server-generated unique identifiers rather than
+      human-readable, client-provided identifiers
+      - Server-generated unique identifiers (e.g., UUIDs, auto-generated IDs)
+        are immutable and globally unique
+      - Human-readable identifiers (e.g., names, types) may change over time or
+        have uniqueness constraints that are difficult to maintain
+      - In some cases, API producers might decide to use a human-readable
+        identifier (e.g., `clusterName`), however using a system-generated
+        unique identifier is recommended for long-term stability and flexibility
+    - Resource IDs **should** follow the format `<resourceName>Id`
+      - Where `<resourceName>` is the singular form of the collection identifier
+      - Example: for collection `groups`, the resource ID should be `groupId`
+    - Resource IDs **must** be in `camelCase`
+    - The resource ID used in the resource identifier (as the URI path
+      parameter) **must** match the field name used in the resource
+      representation
+      - This ensures consistency between the resource identifier and the
+        resource representation
+      - Example: if the resource identifier uses `groupId`, the resource itself
+        **must** have a field named `groupId`
+- Resource identifiers **should not** use abbreviations
+  - Unless the abbreviation is well understood, for example, IP, AWS, TCP
+- Resource identifier **must not** include file extensions such as `.gz`,`.csv`,
+  `.json`
+  - The file extension **must** be only included as
+    [media type](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/MIME_types)
+    in the
+    [Accept Header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Accept).
+  - Examples:
+    - `Accept: application/zip`
+    - `Accept: application/json`
+    - `Accept: application/xml`
+    - `Accept: application/gzip`
+
+<Guidelines>
+
+<Guideline id="IPA-0102-must-be-unique" given="paths" effort="reason">
+
+All resource identifiers defined by an API **must** be unique, with resource
+names formatted according to the URI path schema.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters:
+    get:
+      operationId: listClusters
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getCluster
+```
+
+<Example.Reason>
+  Each path resolves to exactly one resource identifier, so no two operations
+  collide on the same identifier.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters:
+    get:
+      operationId: listClusters
+  /api/atlas/v2/groups/{groupId}/clusters:
+    post:
+      operationId: createCluster
+```
+
+<Example.Reason>
+  The same resource identifier is declared twice, so the identifier no longer
+  uniquely references a single resource definition.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate every key under `paths` to collect all resource identifiers
+    defined by the API.
+  </Workflow.Step>
+  <Workflow.Step>
+    Normalize each identifier (ignoring path-parameter names) and check for any
+    two paths that resolve to the same resource identifier.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each identifier conforms to the URI path schema (RFC 3986 Appendix
+    A).
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any duplicate or malformed resource identifier as a violation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0102-must-use-slash-separators" given="paths">
+
+Resource identifiers **must** use the slash (/) character to separate individual
+segments of the resource identifier.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getCluster
+```
+
+<Example.Reason>
+  Every segment boundary is a single slash, so the identifier parses into a
+  clean, predictable hierarchy of segments.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters.{clusterName}:
+    get:
+      operationId: getCluster
+```
+
+<Example.Reason>
+  Using a period instead of a slash between `clusters` and `{clusterName}`
+  prevents the identifier from being parsed as separate hierarchy segments.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each key under `paths`, split the identifier and confirm that segments
+    are delimited only by the slash (/) character.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any segment boundary that uses a different delimiter (for example a
+    period, comma, or semicolon) instead of a slash.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0102-must-not-use-double-slashes"
+  given="paths"
+  lintable
+  dependsOn={["IPA-0102-must-use-slash-separators"]}
+>
+
+Double slashes (//) **must not** be used to separate segments of a resource
+identifier.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters:
+    get:
+      operationId: listClusters
+```
+
+<Example.Reason>
+  Single slashes produce no empty segments, so every segment of the identifier
+  is meaningful.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}//clusters:
+    get:
+      operationId: listClusters
+```
+
+<Example.Reason>
+  The `//` introduces an empty path segment, which is ambiguous and not a valid
+  resource identifier.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline>
+
+<Guideline id="IPA-0102-should-alternate-collection-and-id" given="paths" lintable>
+
+Resource identifier components **should** alternate between collection
+identifiers and resource IDs.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getCluster
+```
+
+<Example.Reason>
+  Segments strictly alternate collection identifier, path parameter, collection
+  identifier, path parameter — so the hierarchy is unambiguous.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/{clusterName}:
+    get:
+      operationId: getCluster
+```
+
+<Example.Reason>
+  Two path parameters appear back to back with no intervening collection
+  identifier, breaking the resource-name / path-param alternation.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline>
+
+<Guideline id="IPA-0102-must-collection-identifier-camelcase" given="paths" lintable>
+
+Collection identifiers **must** be in `camelCase`.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/serverlessInstances:
+    get:
+      operationId: listServerlessInstances
+```
+
+<Example.Reason>
+  `serverlessInstances` is camelCase, so the collection identifier is consistent
+  with the API-wide naming convention.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/serverless_instances:
+    get:
+      operationId: listServerlessInstances
+```
+
+<Example.Reason>
+  `serverless_instances` uses snake_case, which is not camelCase and breaks the
+  naming convention for collection identifiers.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline>
+
+<Guideline id="IPA-0102-must-collection-identifier-pattern" given="paths" lintable>
+
+Collection identifiers **must** begin with a lowercase letter and contain only
+ASCII letters and numbers (`/[a-z][a-zA-Z0-9]*/`).
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters:
+    get:
+      operationId: listClusters
+```
+
+<Example.Reason>
+  `clusters` begins with a lowercase letter and contains only ASCII letters,
+  matching the required pattern.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/Clusters:
+    get:
+      operationId: listClusters
+```
+
+<Example.Reason>
+  `Clusters` begins with an uppercase letter, violating the
+  `/[a-z][a-zA-Z0-9]*/` pattern required for collection identifiers.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline>
+
+<Guideline id="IPA-0102-must-collection-identifier-plural" given="paths" effort="reason">
+
+Collection identifiers **must** be plural, except where there is no plural form
+or the singular and plural terms are the same, in which case the singular form
+is correct.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters:
+    get:
+      operationId: listClusters
+```
+
+<Example.Reason>
+  `clusters` is the plural form of the noun, signaling that the segment
+  identifies a collection rather than a single resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/cluster:
+    get:
+      operationId: listClusters
+```
+
+<Example.Reason>
+  `cluster` is singular even though it names a collection of clusters, which
+  obscures the difference between a collection and an individual resource.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each key under `paths`, identify the collection-identifier segments
+    (non-parameter segments that name a collection).
+  </Workflow.Step>
+  <Workflow.Step>
+    Check whether each collection identifier is a plural noun.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each apparent exception, confirm the noun has no distinct plural form
+    (e.g. "info") or that its singular and plural are identical (e.g. "moose")
+    before accepting the singular spelling.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any singular collection identifier that does not qualify for the
+    exception as a violation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0102-should-use-server-generated-ids"
+  given="paths"
+  effort="reason"
+>
+
+Resource IDs **should** be server-generated unique identifiers rather than
+human-readable, client-provided identifiers, for long-term stability and
+flexibility.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}:
+    get:
+      operationId: getGroup
+```
+
+<Example.Reason>
+  `groupId` is a server-generated, immutable, globally unique identifier, so the
+  reference stays stable even if the resource is renamed.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupName}:
+    get:
+      operationId: getGroup
+```
+
+<Example.Reason>
+  `groupName` is a human-readable, client-provided identifier that can change
+  over time or carry uniqueness constraints that are hard to maintain.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each resource identifier under `paths`, locate the resource-ID path
+    parameters (the segments inside curly braces).
+  </Workflow.Step>
+  <Workflow.Step>
+    Determine whether each resource ID is a server-generated identifier (e.g.
+    `groupId`, an auto-generated ID or UUID) or a human-readable,
+    client-supplied value (e.g. a name).
+  </Workflow.Step>
+  <Workflow.Step>
+    For any human-readable identifier, check whether a documented rationale
+    justifies using it instead of a system-generated unique identifier.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any unjustified human-readable resource ID as a deviation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0102-should-follow-resource-name-id-format"
+  given="paths"
+  effort="reason"
+>
+
+Resource IDs **should** follow the format `<resourceName>Id`, where
+`<resourceName>` is the singular form of the collection identifier.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}:
+    get:
+      operationId: getGroup
+```
+
+<Example.Reason>
+  The collection is `groups`, so its resource ID is `groupId` — the singular
+  collection name plus the `Id` suffix, making the relationship obvious.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{id}:
+    get:
+      operationId: getGroup
+```
+
+<Example.Reason>
+  A bare `id` does not follow the `<resourceName>Id` format, so it is unclear
+  which collection the identifier belongs to.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each resource identifier under `paths`, pair each resource-ID path
+    parameter with its preceding collection identifier.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compute the expected resource-ID name as the singular form of the collection
+    identifier followed by `Id` (e.g. `groups` → `groupId`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare the actual path-parameter name against the expected name and report
+    any that do not follow the `<resourceName>Id` format.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0102-must-resource-id-camelcase" given="parameter">
+
+Resource IDs **must** be in `camelCase`.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}:
+    get:
+      operationId: getGroup
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  `groupId` is camelCase, keeping resource-ID naming consistent with field
+  naming across the API.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{group_id}:
+    get:
+      operationId: getGroup
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  `group_id` uses snake_case, which is not camelCase and breaks consistency with
+  the rest of the API surface.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every path parameter that serves as a resource ID from the
+    `parameters` lists.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check each resource-ID name against the camelCase convention (lowercase
+    first letter, no separators such as underscores or hyphens).
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any resource ID that is not camelCase as a violation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0102-must-id-match-representation-field"
+  given={["paths", "schema"]}
+  effort="reason"
+>
+
+The resource ID used in the resource identifier (as the URI path parameter)
+**must** match the field name used in the resource representation.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}:
+    get:
+      operationId: getGroup
+components:
+  schemas:
+    Group:
+      properties:
+        groupId:
+          type: string
+        name:
+          type: string
+```
+
+<Example.Reason>
+  The path parameter `groupId` and the representation field `groupId` use the
+  same name, so the identifier and the resource body stay consistent.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}:
+    get:
+      operationId: getGroup
+components:
+  schemas:
+    Group:
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+```
+
+<Example.Reason>
+  The identifier uses `groupId` but the representation exposes the field as
+  `id`, so a client cannot reliably map the path parameter to a body field.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each resource identifier under `paths`, note the resource-ID path
+    parameter name.
+  </Workflow.Step>
+  <Workflow.Step>
+    Locate the schema that represents that resource in `components.schemas`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the representation schema contains a field whose name matches the
+    path-parameter resource ID exactly.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any mismatch between the path-parameter resource ID and the
+    representation field name as a violation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0102-should-not-use-abbreviations" given="paths" effort="reason">
+
+Resource identifiers **should not** use abbreviations, unless the abbreviation
+is well understood (for example, IP, AWS, TCP).
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/networkPermissionEntries:
+    get:
+      operationId: listNetworkPermissionEntries
+```
+
+<Example.Reason>
+  The collection identifier spells out `networkPermissionEntries` in full,
+  keeping the identifier readable for all consumers.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/netPermEntries:
+    get:
+      operationId: listNetworkPermissionEntries
+```
+
+<Example.Reason>
+  `netPermEntries` abbreviates "network" and "permission" into terms that are
+  not widely understood, hurting readability.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each key under `paths`, inspect each non-parameter segment of the
+    resource identifier.
+  </Workflow.Step>
+  <Workflow.Step>
+    Identify any segment that uses an abbreviation rather than the full word.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each abbreviation, decide whether it is a well-understood term (e.g. IP,
+    AWS, TCP) or an obscure shortening.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any abbreviation that is not well understood as a deviation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0102-must-not-include-file-extensions" given="paths" effort="reason">
+
+Resource identifiers **must not** include file extensions such as `.gz`, `.csv`,
+or `.json`.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}/backup:
+    get:
+      operationId: getBackup
+```
+
+<Example.Reason>
+  The identifier names the resource without a file extension; the desired
+  representation is negotiated separately via the Accept header.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}/backup.json:
+    get:
+      operationId: getBackup
+```
+
+<Example.Reason>
+  The `.json` extension encodes a representation format into the resource
+  identifier, coupling the resource to one media type instead of using content
+  negotiation.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each key under `paths`, inspect each segment of the resource identifier
+    for a trailing file extension (e.g. `.gz`, `.csv`, `.json`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any segment that carries a file extension as a violation, since
+    format selection belongs in the Accept header, not the identifier.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0102-must-use-media-type-in-accept-header" informational>
+
+When a representation format is needed, the file extension **must** be included
+only as a media type in the Accept header (for example,
+`Accept: application/json`, `Accept: application/gzip`), never in the resource
+identifier.
+
+</Guideline>
+
+</Guidelines>
+
+Example
+
+- Group identifier `/groups/{groupId}`
+- Cluster identifier `/groups/{groupId}/clusters/{clusterName}`
+- User collection identifier `/orgs/{orgId}/users`
+
+### Nested Collections
+
+If a resource identifier contains multiple levels of a hierarchy and a parent
+collection's name is used as a prefix for the child resource's name, the child
+collection's name **may** omit the prefix.
+
+:::note
+
+Relationships between resources expressed as nested collections or hierarchical
+relationships have certain implications that API producers need to consider
+
+:::
+
+- Nested collections imply a cascade effect
+- Deleting a parent **must** delete associated children
+- Access to the parent **may** imply access to children
+- Children **must not** belong to multiple parents
+
+<Guidelines>
+
+<Guideline id="IPA-0102-may-omit-parent-prefix" given="paths" effort="reason">
+
+If a resource identifier contains multiple levels of a hierarchy and a parent
+collection's name is used as a prefix for the child resource's name, the child
+collection's name **may** omit the prefix.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/clusters/{clusterName}/nodes:
+    get:
+      operationId: listClusterNodes
+```
+
+<Example.Reason>
+  Under the `clusters` parent the child collection is simply `nodes`; the
+  `cluster` prefix is redundant and omitting it keeps the identifier concise.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/clusters/{clusterName}/clusterNodes:
+    get:
+      operationId: listClusterNodes
+```
+
+<Example.Reason>
+  `clusterNodes` repeats the parent `clusters` prefix that the hierarchy already
+  conveys, making the identifier needlessly verbose.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each nested resource identifier under `paths`, identify the parent
+    collection and each child collection name.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check whether a child collection name redundantly repeats the parent
+    collection's name as a prefix.
+  </Workflow.Step>
+  <Workflow.Step>
+    Note that omitting such a redundant prefix is permitted; do not flag the
+    concise form as a violation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0102-must-cascade-delete-children"
+  given="delete-operation"
+  implementation
+  effort="explore"
+>
+
+Deleting a parent resource **must** delete its associated child resources
+(nested collections imply a cascade effect).
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}:
+    delete:
+      operationId: deleteGroup
+      description: >-
+        Deletes the specified group and all clusters, network peering
+        connections, and other child resources it contains.
+```
+
+<Example.Reason>
+  Deleting the parent group removes its nested children, so no orphaned child
+  resources are left behind.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}:
+    delete:
+      operationId: deleteGroup
+      description: >-
+        Deletes the specified group. Clusters within the group are left running
+        and must be deleted separately.
+```
+
+<Example.Reason>
+  Leaving child clusters behind after deleting the parent group orphans them,
+  breaking the cascade implied by the nested-collection hierarchy.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the Delete operation for a parent resource that owns nested child
+    collections.
+  </Workflow.Step>
+  <Workflow.Step>
+    Inspect the delete handler's source code (or backing service logic) to
+    determine what happens to the parent's child resources.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm that deleting the parent also deletes all associated children rather
+    than leaving them orphaned.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any parent Delete operation that does not cascade to its children as
+    a violation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0102-may-imply-access-to-children" informational>
+
+Access to a parent resource **may** imply access to its child resources.
+
+</Guideline>
+
+<Guideline
+  id="IPA-0102-must-not-belong-to-multiple-parents"
+  given="paths"
+  effort="reason"
+>
+
+A child resource **must not** belong to multiple parents.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getCluster
+```
+
+<Example.Reason>
+  Each cluster is reachable only beneath its single owning group, so every child
+  resource has exactly one parent.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getClusterByGroup
+  /api/atlas/v2/orgs/{orgId}/clusters/{clusterName}:
+    get:
+      operationId: getClusterByOrg
+```
+
+<Example.Reason>
+  The same `clusters/{clusterName}` child is nested under both `groups` and
+  `orgs`, giving the child two parents and making ownership ambiguous.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each child collection under `paths`, collect every parent collection it
+    is nested beneath across all resource identifiers.
+  </Workflow.Step>
+  <Workflow.Step>
+    Determine whether the same child collection appears under more than one
+    distinct parent collection.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any child resource that belongs to multiple parents as a violation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+</Guidelines>
