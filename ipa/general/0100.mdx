@@ -1,0 +1,107 @@
+---
+id: 100
+state: adopt
+---
+
+# IPA-100: Language
+
+Developers worldwide use MongoDB, and many customers who don't speak English as
+their first language consume our APIs. It is important to avoid any possible
+confusion across different idioms and colloquialisms unifying to a common
+language.
+
+## Guidance
+
+API producers **must** use American English across the API.
+
+This includes but is not limited to:
+
+- Resource names
+- Field names
+- Descriptions
+- Enum values
+
+**Example:** “canceled” over
+[cancelled](https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag/Cloud-Backups/operation/createBackupExportJob).
+
+The MongoDB Style Guide uses the Merriam-Webster’s Collegiate Dictionary. 11th
+ed. Springfield, MA: Merriam-Webster, 2003. Continually updated at
+[https://www.merriam-webster.com/](https://www.merriam-webster.com/).
+
+<Guidelines>
+
+<Guideline id="IPA-0100-must-use-american-english" given="spec">
+
+API producers **must** use American English for all user-facing text in the API
+specification, including resource names, field names, descriptions, summaries,
+and enum values.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}/backup/exports:
+    post:
+      summary: Create One Backup Export Job
+      operationId: createBackupExportJob
+      description: >-
+        Creates one export job for the specified backup snapshot. The job is
+        canceled if it does not complete within 24 hours.
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  Uses the American English spelling "canceled" (one "l") in the user-facing
+  description.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}/backup/exports:
+    post:
+      summary: Create One Backup Export Job
+      operationId: createBackupExportJob
+      description: >-
+        Creates one export job for the specified backup snapshot. The job is
+        cancelled if it does not complete within 24 hours.
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  Uses the British English spelling "cancelled" (double "l"). American English
+  uses "canceled".
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Scan every user-facing string in the specification: descriptions, summaries,
+    enum values, resource names, and field names.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each string, check for common British English spellings (e.g.,
+    "cancelled", "colour", "authorise", "behaviour", "organisation").
+  </Workflow.Step>
+  <Workflow.Step>
+    Consult Merriam-Webster's dictionary for the preferred American English
+    form.
+  </Workflow.Step>
+  <Workflow.Step>Flag any non-American spelling as a violation.</Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+</Guidelines>
+
+## Further Reading
+
+[MongoDB Meta Documentation](https://www.mongodb.com/docs/meta/style-guide/terminology/general-term-guidelines/use-consistent-terms/#use-consistent-terminology)
