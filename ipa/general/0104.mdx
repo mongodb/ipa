@@ -1,0 +1,751 @@
+---
+id: 104
+state: adopt
+---
+
+# IPA-104: Get
+
+In REST APIs, it is customary to make a `GET` request to a resource's URI (for
+example, `/groups/{groupId}/clusters/{clusterName}`) to retrieve that resource.
+
+## Guidance
+
+- APIs **must** provide a Get method for resources
+- The purpose of the Get method is to return data from a single resource
+- The HTTP verb **must** be
+  [`GET`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/GET)
+- The method **must not** [cause side effects](0103.mdx)
+- The request **must not** include a body
+- API producers **should** implement as a `Response` suffixed object
+  - A `Response` object **must not** include fields available only on creation
+    or update
+    - In OpenAPI, this means that the `Response` object **must not** include
+      fields with `writeOnly: true`
+- The response status code **must** be
+  [200 OK](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200)
+- The response **may** include a
+  [HATEOAS](https://en.wikipedia.org/wiki/HATEOAS) `links` field
+
+Example
+
+```http request
+GET /groups/${groupId}/clusters/${clusterName}
+```
+
+### Naming
+
+- Operation ID **must** be unique
+- Operation ID **must** be in `camelCase`
+- Operation ID **must** start with the verb “get”
+- Operation ID **should** be followed by a noun or compound noun
+  - The noun(s) in the Operation ID **should** be the collection identifiers
+    from the resource identifier in singular form
+    - If the resource is a [singleton](0113.md), the last noun **may** be the
+      plural form of the collection identifier
+
+Examples:
+
+| Resource Identifier                          | Operation ID       |
+| -------------------------------------------- | ------------------ |
+| `/groups/${groupId}/clusters/${clusterName}` | `getGroupCluster`  |
+| (Singleton) `/groups/${groupId}/settings`    | `getGroupSettings` |
+
+<Guidelines>
+
+<Guideline id="IPA-0104-must-provide-get-method" given="resource" lintable>
+
+APIs **must** provide a Get method for resources.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      summary: Return One Cluster
+      operationId: getGroupCluster
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  The resource exposes a `GET` method so clients have a standard, side-effect
+  free way to retrieve its current representation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    delete:
+      summary: Remove One Cluster
+      operationId: deleteGroupCluster
+      responses:
+        "204":
+          description: No Content
+```
+
+<Example.Reason>
+  The resource path supports `DELETE` but offers no way to read the resource, so
+  clients cannot retrieve its representation.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline>
+
+<Guideline id="IPA-0104-must-use-http-get" given="get-operation">
+
+The HTTP verb used to retrieve a single resource **must** be `GET`.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      summary: Return One Cluster
+      operationId: getGroupCluster
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  Retrieval uses the `GET` verb, which HTTP defines as safe and idempotent —
+  exactly the semantics expected for reading a resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    post:
+      summary: Fetch One Cluster
+      operationId: fetchGroupCluster
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  Using `POST` to read a resource breaks HTTP safety semantics and prevents
+  caching and proxy intermediaries from treating the call as a pure read.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the operation intended to retrieve a single resource for the path.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the operation is declared under the `get` key of the path item, not
+    `post`, `put`, `patch`, or `delete`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any single-resource retrieval implemented with a verb other than `GET`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0104-must-not-cause-side-effects"
+  given="get-operation"
+  implementation
+  effort="explore"
+>
+
+The Get method **must not** cause side effects; it is a safe, read-only
+operation.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      summary: Return One Cluster
+      operationId: getGroupCluster
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  The handler only reads and returns the cluster; repeated calls leave server
+  state unchanged.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      summary: Return One Cluster
+      operationId: getGroupCluster
+      description: Returns the cluster and resets its last-accessed timestamp.
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  Mutating the last-accessed timestamp as part of a read makes `GET` unsafe, so
+  clients and caches can no longer treat the call as a pure retrieval.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the `GET` operation and the source-code handler that implements it.
+  </Workflow.Step>
+  <Workflow.Step>
+    Inspect the handler for writes: database inserts/updates/deletes, queued
+    jobs, external calls that mutate state, or counters incremented on read.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the operation declares no `requestBody` and performs no action that
+    changes resource state.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any state mutation as a side effect violating the safe-read contract.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0104-must-not-include-request-body" given="get-operation" lintable>
+
+The Get method request **must not** include a body.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      summary: Return One Cluster
+      operationId: getGroupCluster
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  All inputs are carried in the path; the operation declares no `requestBody`,
+  matching the read-only semantics of `GET`.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      summary: Return One Cluster
+      operationId: getGroupCluster
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  A request body on `GET` is undefined by HTTP for reads and is dropped by many
+  intermediaries, so any payload it carries cannot be relied upon.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline>
+
+<Guideline id="IPA-0104-should-return-response-suffixed-object" given="get-operation" lintable>
+
+API producers **should** implement the Get method response as a `Response`
+suffixed object.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getGroupCluster
+      responses:
+        "200":
+          content:
+            application/vnd.atlas.2024-08-05+json:
+              schema:
+                $ref: "#/components/schemas/ClusterResponse"
+```
+
+<Example.Reason>
+  The response references a named, reusable `Response` suffixed schema, which
+  keeps the read shape distinct from request schemas and consistent across the
+  API.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getGroupCluster
+      responses:
+        "200":
+          content:
+            application/vnd.atlas.2024-08-05+json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+```
+
+<Example.Reason>
+  An inline, unnamed schema cannot follow the `Response` suffix convention and
+  is not reusable, breaking the consistent read-model naming across resources.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0104-must-not-include-creation-or-update-only-fields"
+  given="get-operation"
+  effort="reason"
+  dependsOn={["IPA-0104-must-not-include-write-only-fields"]}
+>
+
+The `Response` object **must not** include fields that are available only on
+creation or update.
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    ClusterResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        mongoDBVersion:
+          type: string
+          readOnly: true
+```
+
+<Example.Reason>
+  The read model exposes only fields a client can observe; creation/update-only
+  inputs such as one-time provisioning options are absent.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    ClusterResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        rootPassword:
+          type: string
+```
+
+<Example.Reason>
+  `rootPassword` is supplied only when creating or updating the cluster;
+  surfacing it on a read implies it can be retrieved, which is misleading and
+  unsafe.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Resolve the schema referenced by the `GET` 2xx response.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each property, determine whether it is meaningful only at creation or
+    update time (e.g., secrets, one-time provisioning inputs, write-only
+    credentials).
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare against the Create/Update request schemas for the same resource to
+    identify input-only fields that leaked into the response.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any creation/update-only field present in the response object.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0104-must-not-include-write-only-fields" given="get-operation" lintable>
+
+In OpenAPI, the Get method `Response` object **must not** include fields marked
+`writeOnly: true`.
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    ClusterResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        mongoDBVersion:
+          type: string
+          readOnly: true
+```
+
+<Example.Reason>
+  No property is marked `writeOnly: true`, so every field in the response is one
+  a client is allowed to read.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    ClusterResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        rootPassword:
+          type: string
+          writeOnly: true
+```
+
+<Example.Reason>
+  A `writeOnly: true` property is by definition input-only; including it in a
+  read response contradicts its own declaration.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline>
+
+<Guideline id="IPA-0104-must-respond-200-ok" given="get-operation" lintable>
+
+The Get method response status code **must** be `200 OK`.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getGroupCluster
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  A successful read returns `200 OK`, the standard HTTP success code for
+  retrieving an existing resource representation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getGroupCluster
+      responses:
+        "201":
+          description: Created
+```
+
+<Example.Reason>
+  `201 Created` signals resource creation, not retrieval, so it misrepresents
+  what a Get method does and confuses clients relying on status semantics.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline>
+
+<Guideline id="IPA-0104-may-include-hateoas-links" informational>
+
+The Get method response **may** include a HATEOAS `links` field to advertise
+related resources and navigation.
+
+</Guideline>
+
+<Guideline
+  id="IPA-0104-must-have-unique-operation-id"
+  given="get-operation"
+  effort="reason"
+>
+
+The Get method Operation ID **must** be unique across the specification.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getGroupCluster
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}/processes:
+    get:
+      operationId: getGroupClusterProcess
+```
+
+<Example.Reason>
+  Each Get operation has a distinct `operationId`, so generated SDK method names
+  and tooling references never collide.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getGroupCluster
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}/processes:
+    get:
+      operationId: getGroupCluster
+```
+
+<Example.Reason>
+  Two operations share `getGroupCluster`, which breaks code generators and any
+  client that resolves operations by ID.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect the `operationId` of every operation in the specification, not only
+    Get methods.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check whether the Get method's `operationId` appears more than once across
+    that collection.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any duplicate `operationId` value as a uniqueness violation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline>
+
+<Guideline id="IPA-0104-must-use-camel-case-operation-id" given="get-operation" lintable>
+
+The Get method Operation ID **must** be in `camelCase`.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getGroupCluster
+```
+
+<Example.Reason>
+  `camelCase` matches the convention SDK generators expect, producing idiomatic
+  method names across languages.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: get_group_cluster
+```
+
+<Example.Reason>
+  `snake_case` deviates from the API-wide `camelCase` convention and yields
+  non-idiomatic generated client code.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline>
+
+<Guideline id="IPA-0104-must-start-operation-id-with-get" given="get-operation" lintable>
+
+The Get method Operation ID **must** start with the verb `get`.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getGroupCluster
+```
+
+<Example.Reason>
+  The `get` prefix communicates the operation's intent and aligns the
+  `operationId` with its HTTP verb.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: fetchGroupCluster
+```
+
+<Example.Reason>
+  `fetch` is not the standardized retrieval verb; readers and tooling cannot
+  infer the operation type from the ID.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline>
+
+<Guideline id="IPA-0104-should-follow-get-with-noun" given="get-operation" lintable>
+
+The Get method Operation ID **should** be followed by a noun or compound noun.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getGroupCluster
+```
+
+<Example.Reason>
+  The noun phrase `GroupCluster` names the resource being retrieved, so the ID
+  reads as a clear verb-plus-object phrase.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getOne
+```
+
+<Example.Reason>
+  `getOne` carries no noun identifying the resource, leaving the operation's
+  target ambiguous.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline>
+
+<Guideline
+  id="IPA-0104-should-use-singular-collection-identifiers"
+  given="get-operation"
+  lintable
+  dependsOn={["IPA-0104-should-follow-get-with-noun"]}
+>
+
+The noun(s) in the Get method Operation ID **should** be the collection
+identifiers from the resource identifier in singular form.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getGroupCluster
+```
+
+<Example.Reason>
+  The path's collection segments `groups` and `clusters` appear singularized as
+  `Group` and `Cluster`, so the ID maps directly onto the resource hierarchy.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /api/atlas/v2/groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getGroupsClusters
+```
+
+<Example.Reason>
+  Plural `Groups`/`Clusters` reads like a list operation, obscuring that a
+  single resource is being retrieved.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline>
+
+<Guideline id="IPA-0104-may-use-plural-noun-for-singleton" informational>
+
+If the resource is a singleton, the last noun in the Get method Operation ID
+**may** be the plural form of the collection identifier (for example,
+`getGroupSettings`).
+
+</Guideline>
+
+</Guidelines>
+
+### Error Handling
+
+See [IPA-114: Errors](0114.md) for guidance on error handling and documentation,
+in particular Authentication, Authorization and Not Found.
