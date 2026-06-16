@@ -13,9 +13,9 @@ resource.
 
 - APIs **should** provide an update method for resources unless it is not
   valuable for users to do so
-  - [Read-only resources](0101.md#read-only-resources) **must not** have an
+  - [Read-only resources](0101.mdx#read-only-resources) **must not** have an
     Update method
-  - [Read-only singleton resources](0113.md#read-only-singleton-resources)
+  - [Read-only singleton resources](0113.mdx#read-only-singleton-resources)
     **must not** have an Update method
   - The purpose of the Update method is to make changes to the resources without
     causing side effects
@@ -28,18 +28,18 @@ resource.
   - `PUT` is strongly discouraged because it becomes a backward-incompatible
     change to add fields to the resource
 - The request body **must** contain the resource being updated, i.e. the
-  resource or parts of the resource returned by the [Get method](0104.md)
+  resource or parts of the resource returned by the [Get method](0104.mdx)
   - API producers **should** implement as a `UpdateRequest` suffixed object
     - A `UpdateRequest` object **must** include only input fields
       - In OpenAPI, this means that the `UpdateRequest` object **must not**
         include fields with `readOnly: true`
 - The response body **should** be the same resource returned by the
-  [Get method](0104.md)
+  [Get method](0104.mdx)
   - The Update method **should** return the complete resource to avoid
     complexities for clients
 - The Update method **must** respect the client provided values, or lack
   thereof, for all fields in the request (see
-  [Client-owned fields](0111.md#single-owner-fields))
+  [Client-owned fields](0111.mdx#single-owner-fields))
   - For partial resource updates, the Update method **must** only update fields
     included in the request body and leave all other fields unchanged
   - For full resource replacements, the Update method **must** update the full
@@ -50,7 +50,7 @@ resource.
     request, the server **should** unset the field or reset it to its default
     value
     - The server **should** return a
-      [validation error](0114.md#validation-errors) if the client provides
+      [validation error](0114.mdx#validation-errors) if the client provides
       `null` for a field that is not nullable and cannot be unset
 - Update operations **must not** accept query parameters
   - Query parameters are usually a sign of a side effect that standard methods
@@ -61,7 +61,7 @@ resource.
     return a 200 response with no change to the resource
 - Resources **should** provide a single canonical update operation
   - If a resource has multiple Update methods, it's possible one, or all of
-    them, **may** be [custom methods](0109.md)
+    them, **may** be [custom methods](0109.mdx)
 
 Example
 
@@ -71,7 +71,8 @@ PATCH /groups/${groupId}/clusters/{clusterName}
 
 ### Error Handling
 
-See [IPA-114: Errors](0114.md) for guidance on error handling and documentation.
+See [IPA-114: Errors](0114.mdx) for guidance on error handling and
+documentation.
 
 ### Naming
 
@@ -81,8 +82,8 @@ See [IPA-114: Errors](0114.md) for guidance on error handling and documentation.
 - Operation ID **should** be followed by a noun or compound noun
 - The noun(s) in the Operation ID **should** be the collection identifiers from
   the resource identifier in singular form
-  - If the resource is a [singleton resource](0113.md), the last noun **may** be
-    the plural form of the collection identifier
+  - If the resource is a [singleton resource](0113.mdx), the last noun **may**
+    be the plural form of the collection identifier
 
 Examples:
 

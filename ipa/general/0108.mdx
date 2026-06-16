@@ -13,9 +13,9 @@ resource.
 
 - APIs **should** provide a Delete method for resources unless it is not
   valuable for users to do so
-  - [Read-only resources](0101.md#read-only-resources) **must not** have a
+  - [Read-only resources](0101.mdx#read-only-resources) **must not** have a
     Delete method
-  - [Singleton resources](0113.md) **must not** have a Delete method
+  - [Singleton resources](0113.mdx) **must not** have a Delete method
 - The HTTP verb **must** be
   [`DELETE`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/DELETE)
 - The response **should** be empty
@@ -26,7 +26,7 @@ resource.
 - The Delete method **should** succeed if and only if a resource was present and
   was successfully deleted
   - If the resource did not exist, the method **should** respond with a
-    `NOT FOUND` [error](0114.md)
+    `NOT FOUND` [error](0114.mdx)
 
 Example
 
@@ -52,7 +52,8 @@ DELETE /groups/{groupId}/clusters/{clusterName}?cascading=true
 
 ### Error Handling
 
-See [IPA-114: Errors](0114.md) for guidance on error handling and documentation.
+See [IPA-114: Errors](0114.mdx) for guidance on error handling and
+documentation.
 
 ### Naming
 

@@ -12,14 +12,14 @@ parent.
 ## Guidance
 
 - Singleton resources **must not** have a user-provided or system-generated ID
-- Singleton resources **must not** define the [Create](0106.md) or
-  [Delete](0108.md) standard methods
+- Singleton resources **must not** define the [Create](0106.mdx) or
+  [Delete](0108.mdx) standard methods
   - The singleton is implicitly created or deleted when its parent is created or
     deleted
-- Singleton resources **must** define the [Get](0104.md) method
-- Singleton resources **should** define the [Update](0107.md) method, unless the
-  resource is [read-only](0113.md#read-only-singleton-resources)
-- Singleton resources **may** define [custom methods](0109.md) as appropriate
+- Singleton resources **must** define the [Get](0104.mdx) method
+- Singleton resources **should** define the [Update](0107.mdx) method, unless
+  the resource is [read-only](0113.mdx#read-only-singleton-resources)
+- Singleton resources **may** define [custom methods](0109.mdx) as appropriate
 
 Example
 
@@ -31,19 +31,19 @@ PATCH /groups/${groupId}/settings
 
 ### Read-Only Singleton Resources
 
-Read-only singleton resources are [singleton resources](0113.md) that cannot be
+Read-only singleton resources are [singleton resources](0113.mdx) that cannot be
 modified by API consumers.
 
-- Read-only singleton resources **must** have only the [Get](0104.md) method
-- Read-only singleton resources **must not** have [Create](0106.md),
-  [Update](0107.md), or [Delete](0108.md) methods
-- Read-only singleton resources **may** have [custom methods](0109.md) as
+- Read-only singleton resources **must** have only the [Get](0104.mdx) method
+- Read-only singleton resources **must not** have [Create](0106.mdx),
+  [Update](0107.mdx), or [Delete](0108.mdx) methods
+- Read-only singleton resources **may** have [custom methods](0109.mdx) as
   appropriate, provided they do not modify the resource
 - All response schema properties for read-only singleton resources **must** be
   marked as read-only
   - In OpenAPI, this means all properties **must** have `readOnly: true`
   - All fields in read-only singleton resources are server-owned. For guidance
-    on server-owned fields, see [IPA-111](0111.md#single-owner-fields)
+    on server-owned fields, see [IPA-111](0111.mdx#single-owner-fields)
 - Unsupported operations on read-only singleton resources **should** return
   `405 Not Allowed`
 - Unsupported operations **must not** be documented
@@ -51,8 +51,8 @@ modified by API consumers.
 ### Resetting Singleton Resources
 
 Singleton resources can be restored to their default state without deleting the
-parent resource. For such cases, a `:reset` [custom method](0109.md) **must** be
-used.
+parent resource. For such cases, a `:reset` [custom method](0109.mdx) **must**
+be used.
 
 - The `:reset` custom method name **must** be reserved exclusively for restoring
   singleton resources to their default state

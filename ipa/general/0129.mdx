@@ -16,12 +16,12 @@ specified way.
 - API Producers **may** use query parameters for:
   - Filtering
   - Searching
-  - [Pagination](0110.md)
-  - [The envelope object](0115.md)
-  - [Cascading delete](0108.md#cascading-delete)
+  - [Pagination](0110.mdx)
+  - [The envelope object](0115.mdx)
+  - [Cascading delete](0108.mdx#cascading-delete)
 - Query parameters **must not** be used in place of request body fields for
-  [Create](0106.md) and [Update](0107.md) Methods, i.e. when the value causes a
-  side-effect
+  [Create](0106.mdx) and [Update](0107.mdx) Methods, i.e. when the value causes
+  a side-effect
 - Query parameters **must not** be required
 - API Producers **should** document the possible length of query parameter
   values
@@ -73,18 +73,18 @@ values.
 - Filtering **should** be implemented using query parameters
   - For example, `/groups?name=project1`
 - Filtering and searching **may** be implemented for
-  - [List Methods](0105.md)
-  - [Custom Methods](0109.md) used for retrieving data
+  - [List Methods](0105.mdx)
+  - [Custom Methods](0109.mdx) used for retrieving data
 - Filtering and searching **must not** be implemented for
-  - [Get Methods](0104.md)
-  - [Create Methods](0106.md)
-  - [Update Methods](0107.md)
-  - [Delete Methods](0108.md)
+  - [Get Methods](0104.mdx)
+  - [Create Methods](0106.mdx)
+  - [Update Methods](0107.mdx)
+  - [Delete Methods](0108.mdx)
 
 ## Further Reading
 
 - [IETF RFC3986 - 3.4](https://www.ietf.org/rfc/rfc3986.txt)
-- [IPA-108: Delete - Cascading Delete](0108.md#cascading-delete)
-- [IPA-110: Pagination](0110.md)
-- [IPA-115: Envelope Object](0115.md)
-- [IPA-116: Backwards Compatibility](0116.md)
+- [IPA-108: Delete - Cascading Delete](0108.mdx#cascading-delete)
+- [IPA-110: Pagination](0110.mdx)
+- [IPA-115: Envelope Object](0115.mdx)
+- [IPA-116: Backwards Compatibility](0116.mdx)

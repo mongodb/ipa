@@ -50,7 +50,7 @@ will promote clarity, completeness and consistency.
   > contains your projects.
 
 - When the same property appears in multiple polymorphic variants unified by
-  `oneOf` with a discriminator (see [IPA-125](0125.md)), that property's
+  `oneOf` with a discriminator (see [IPA-125](0125.mdx)), that property's
   description **should** be identical across variants. Variant-specific context
   **should** be documented in the variant schema's own `description`, not by
   diverging the property's description between variants.
@@ -163,7 +163,7 @@ Operation summaries are titles describing an API operation.
   - API Producers **must not** use "Return All" unless the API can really return
     _all_ items in a collection
     - Collections may contain an unbounded number of entries and must be
-      paginated (see [Pagination](0110.md)). If the total number of entries can
+      paginated (see [Pagination](0110.mdx)). If the total number of entries can
       exceed the page size and prevent the client from accessing the full set,
       do not use "all."
 - API Producers **must** use only one main action verb e.g. "Create," "Update,"
