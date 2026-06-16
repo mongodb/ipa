@@ -28,7 +28,11 @@ export function Guideline({
         {isInsideGuidelines && <NumberCircle />}
         <div className={styles.content}>
           <GuidelineHeader />
-          <div className={styles.body}>{children}</div>
+          {/* `markdown` makes children inherit Docusaurus' markdown vertical
+              rhythm (heading/paragraph/list/admonition spacing), since the
+              `.markdown > *` rules only match direct children of a markdown
+              container. */}
+          <div className={clsx(styles.body, "markdown")}>{children}</div>
           <GuidelineFooter />
         </div>
       </Root>
