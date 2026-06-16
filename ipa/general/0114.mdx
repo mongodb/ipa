@@ -22,7 +22,7 @@ error-handling code.
   in case of an error by adding a `help` field
   - `help` **must** include a short description as description
   - `help` **must** include a link to the documentation url
-- [Methods](0103.md) **must** document any possible error and their associated
+- [Methods](0103.mdx) **must** document any possible error and their associated
   [HTTP status code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status)
 
 ### Authentication and Authorization
@@ -64,7 +64,7 @@ Validation errors typically occur when:
 - APIs **must not** accept invalid requests and silently modify field values to
   make them valid
   - This violates the principle that client-owned fields must not be modified by
-    the server (see [IPA-111](0111.md#single-owner-fields))
+    the server (see [IPA-111](0111.mdx#single-owner-fields))
 - APIs **should** make the best effort to validate as much as possible of the
   request and include all validation errors in the field `badRequestDetail`
   - `badRequestDetail` **must** include an array of fields and each field

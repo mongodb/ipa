@@ -17,7 +17,7 @@ reduced when clients need to modify the lists.
   - A good rule of thumb is 100 elements
   - If repeated data has the chance of being too large, the API **should** use a
     sub-resource instead
-- [Client-owned](0111.md#single-owner-fields) repeated fields **should** be
+- [Client-owned](0111.mdx#single-owner-fields) repeated fields **should** be
   respected by the server
   - The server **should not** modify the order of elements or remove duplicates,
     without explicit documentation that the server will do so
@@ -26,17 +26,17 @@ reduced when clients need to modify the lists.
 
 - A resource **may** use one of two strategies to enable updating a repeated
   field:
-  - Direct update using the standard [Update](0107.md) method
+  - Direct update using the standard [Update](0107.mdx) method
     - A standard `Update` method is only able to update the entire list
   - Custom `Add` and `Remove` methods
-    - When choosing a [custom method](0109.md) approach, API consumers **must
-      not** be able to set the field via [Create](0106.md) or [Update](0107.md)
-      operations
+    - When choosing a [custom method](0109.mdx) approach, API consumers **must
+      not** be able to set the field via [Create](0106.mdx) or
+      [Update](0107.mdx) operations
 
 :::note
 
-Declarative-friendly resources **must** use the standard [Update](0107.md)
+Declarative-friendly resources **must** use the standard [Update](0107.mdx)
 method, and not introduce `Add` and `Remove` methods. To learn more, see
-[IPA-127](0127.md).
+[IPA-127](0127.mdx).
 
 :::

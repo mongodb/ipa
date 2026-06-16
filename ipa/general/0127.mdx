@@ -29,12 +29,12 @@ require extra, stricter guidance to support IaC tooling automation.
 ## Guidance
 
 - A resource **must** be strongly consistent with the **Resource-Oriented
-  Design** ([IPA-101](0101.md))
+  Design** ([IPA-101](0101.mdx))
 - A resource **must** have `CREATE`, `DELETE`, `GET`, `LIST` methods, except for
-  [singleton resources](0113.md) and
-  [read-only resources](0101.md#read-only-resources) which **must** have `GET`
+  [singleton resources](0113.mdx) and
+  [read-only resources](0101.mdx#read-only-resources) which **must** have `GET`
   and `LIST` methods.
-- A resource **should not** have custom methods ([IPA-109](0109.md)). Any
+- A resource **should not** have custom methods ([IPA-109](0109.mdx)). Any
   complementary functionality of a resource exposed through custom methods will
   not be supported through automation. Deviation from this guidance requires a
   strong justification and review by the governing API body.
@@ -55,12 +55,12 @@ error-prone development.
 
 ### Further Reading
 
-- [IPA-101: Resource-Oriented Design](0101.md)
-- [IPA-104: Get](0104.md)
-- [IPA-105: List](0105.md)
-- [IPA-106: Create](0106.md)
-- [IPA-108: Delete](0108.md)
-- [IPA-109: Custom Methods](0109.md)
-- [IPA-111: Server-Modified Values and Defaults](0111.md)
-- [IPA-114: Errors](0114.md)
-- [IPA-125: Single Type in Request and Response](0125.md)
+- [IPA-101: Resource-Oriented Design](0101.mdx)
+- [IPA-104: Get](0104.mdx)
+- [IPA-105: List](0105.mdx)
+- [IPA-106: Create](0106.mdx)
+- [IPA-108: Delete](0108.mdx)
+- [IPA-109: Custom Methods](0109.mdx)
+- [IPA-111: Server-Modified Values and Defaults](0111.mdx)
+- [IPA-114: Errors](0114.mdx)
+- [IPA-125: Single Type in Request and Response](0125.mdx)

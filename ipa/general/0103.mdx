@@ -18,22 +18,22 @@ that a service can perform on behalf of the consumer.
   - In such scenarios where a side effect is necessary, a custom method
     **should** be used
   - A side effect specifically includes mutating
-    [client-owned fields](0111.md#single-owner-fields) of any resource other
+    [client-owned fields](0111.mdx#single-owner-fields) of any resource other
     than the target of the request. The dependent mutation **must** be performed
     through the dependent resource's own endpoint; if the operation is
     fundamentally multi-resource by design, it **must** be modeled as a custom
     method per the rule above.
   - Side effects limited to read-only or
-    [effective values](0111.md#effective-values) of another resource **may**
+    [effective values](0111.mdx#effective-values) of another resource **may**
     occur in standard methods.
 - Standard methods **must** guarantee
   [atomicity](https://en.wikipedia.org/wiki/Atomicity_%28database_systems%29)
   - In cases where atomicity cannot be guaranteed, consider in the following
     order:
     - A new sub-resource with the appropriate methods
-    - A [singleton-resource](0113.md) for the corresponding section
-    - [Custom methods](0109.md), for example, an `Add` or `Remove` operation for
-      repeated fields
+    - A [singleton-resource](0113.mdx) for the corresponding section
+    - [Custom methods](0109.mdx), for example, an `Add` or `Remove` operation
+      for repeated fields
 
 If a standard method is unsuitable, then custom methods offer a lesser, but
 still valuable level of consistency, helping the user reason about the scope of
@@ -48,15 +48,16 @@ Selecting a custom method may be valuable for:
 ### Response bodies
 
 - Every endpoint **must** support a versioned JSON content type (e.g.
-  `application/vnd.atlas.YYYY-MM-DD+json`), per [IPA-900](../sdks/0900.md).
+  `application/vnd.atlas.YYYY-MM-DD+json`), per [IPA-900](../sdks/0900.mdx).
   Additional content types (e.g. `+csv`) **may** be offered alongside JSON.
 - When a response body is returned as a JSON content type, it **must** be a JSON
   object with a fixed set of named properties at the root.
   - Top-level arrays, primitives, or objects with dynamic (unknown) keys at the
     root are prohibited because they cannot be consistently typed by
     schema-based clients and tooling.
-  - Collections **must** be wrapped in an envelope object per [IPA-110](0110.md)
-    (e.g. `{"results": [...], "links": [...], "totalCount": 42}`).
+  - Collections **must** be wrapped in an envelope object per
+    [IPA-110](0110.mdx) (e.g.
+    `{"results": [...], "links": [...], "totalCount": 42}`).
 
 ### Naming
 

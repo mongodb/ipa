@@ -14,7 +14,7 @@ example, `/groups/{groupId}/clusters/{clusterName}`) to retrieve that resource.
 - The purpose of the Get method is to return data from a single resource
 - The HTTP verb **must** be
   [`GET`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/GET)
-- The method **must not** [cause side effects](0103.md)
+- The method **must not** [cause side effects](0103.mdx)
 - The request **must not** include a body
 - API producers **should** implement as a `Response` suffixed object
   - A `Response` object **must not** include fields available only on creation
@@ -40,7 +40,7 @@ GET /groups/${groupId}/clusters/${clusterName}
 - Operation ID **should** be followed by a noun or compound noun
   - The noun(s) in the Operation ID **should** be the collection identifiers
     from the resource identifier in singular form
-    - If the resource is a [singleton](0113.md), the last noun **may** be the
+    - If the resource is a [singleton](0113.mdx), the last noun **may** be the
       plural form of the collection identifier
 
 Examples:
@@ -52,5 +52,5 @@ Examples:
 
 ### Error Handling
 
-See [IPA-114: Errors](0114.md) for guidance on error handling and documentation,
-in particular Authentication, Authorization and Not Found.
+See [IPA-114: Errors](0114.mdx) for guidance on error handling and
+documentation, in particular Authentication, Authorization and Not Found.
