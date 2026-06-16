@@ -12,6 +12,10 @@ language.
 
 ## Guidance
 
+<Guidelines>
+
+<Guideline id="IPA-0100-must-use-american-english" given="spec" lintable>
+
 API producers **must** use American English across the API.
 
 This includes but is not limited to:
@@ -21,12 +25,34 @@ This includes but is not limited to:
 - Descriptions
 - Enum values
 
-**Example:** “canceled” over
-[cancelled](https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag/Cloud-Backups/operation/createBackupExportJob).
+:::note
 
 The MongoDB Style Guide uses the Merriam-Webster’s Collegiate Dictionary. 11th
 ed. Springfield, MA: Merriam-Webster, 2003. Continually updated at
 [https://www.merriam-webster.com/](https://www.merriam-webster.com/).
+
+:::
+
+<Example.Correct>
+
+```yaml
+properties:
+  status:
+    type: string
+    enum:
+      - CANCELED
+      - COMPLETED
+```
+
+<Example.Reason>
+  Uses the American English spelling "canceled" (one "l") in the enum value.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline>
+
+</Guidelines>
 
 ## Further Reading
 
