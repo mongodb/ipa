@@ -17,10 +17,49 @@ reduced when clients need to modify the lists.
   - A good rule of thumb is 100 elements
   - If repeated data has the chance of being too large, the API **should** use a
     sub-resource instead
-- [Client-owned](0111.mdx#single-owner-fields) repeated fields **should** be
-  respected by the server
-  - The server **should not** modify the order of elements or remove duplicates,
-    without explicit documentation that the server will do so
+- [Client-owned](0111.mdx#single-owner-fields) repeated fields **must** be
+  respected by the server.
+  - The server **must not** modify the order of elements or remove duplicates,
+    unless the field is explicitly declared as a set (see List vs Set below).
+
+### List vs Set
+
+Every array property **must** be classified as either a **list** or a **set** so
+that clients and downstream tooling can reason correctly about order and
+equality.
+
+- **List** — order is meaningful. Elements may repeat. This is the default
+  classification when the semantic is not explicitly declared.
+- **Set** — order is not meaningful. Elements are unique (no duplicates).
+
+API producers **must** explicitly declare set-like arrays using the
+`x-xgen-array-semantic` extension (see [IPA-131](0131.mdx)) in the OpenAPI spec:
+
+```yaml
+tags:
+  type: array
+  x-xgen-array-semantic: set
+  items:
+    type: string
+```
+
+If the extension is omitted, the array is treated as a list.
+
+#### List (ordered) guarantees
+
+- For [client-owned](0111.mdx#single-owner-fields) lists, the server **must**
+  preserve the client-provided order of elements on round-trip (see above).
+- For all lists (client-owned or server-owned), the server **must** return
+  elements in a deterministic, stable order across repeated GET responses for
+  the same resource state. Unstable ordering causes false drift in declarative
+  clients.
+
+#### Set (unordered) guarantees
+
+- The server **must not** return duplicate elements.
+- The server **may** return elements in any order; the order of elements in a
+  response is not part of the resource state.
+- Clients **must** treat equality without regard to order.
 
 ## Update Strategy
 

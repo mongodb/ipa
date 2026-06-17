@@ -41,6 +41,24 @@ For resources where all fields are server-owned, see
 
 :::
 
+### Optional Fields with Server Defaults
+
+Assigning a server-side default in place of a client-omitted value during
+resource creation is an anti-pattern because it creates hybrid ownership — the
+field is client-owned but the server is effectively choosing a value. This makes
+it harder for state-driven clients and downstream tooling to tell whether a
+returned value was client-set or server-filled.
+
+- Optional request fields **must** be returned by the server with the same value
+  (or absence of value) the client provided.
+- Legacy fields that retain this anti-pattern **must** be annotated per
+  [IPA-131](0131.mdx) so declarative tooling can handle the hybrid ownership.
+- Booleans are exempt: optional booleans **must** default to `false` per
+  [Boolean Values](#boolean-values), avoiding a tri-state (true / false / unset)
+  that is hard for both API producers and consumers to reason about.
+- Booleans **must not** be annotated with the extension described in
+  [IPA-131](0131.mdx).
+
 ### Effective Values
 
 There are instances where a service will allocate, generate, or calculate a
@@ -73,7 +91,7 @@ the server may scale it up or down based on load.
 
 ### Boolean Values
 
-- Booleans **should** default to `false`
+- Optional boolean fields **must** default to `false`
   - Many serialization systems won’t distinguish `false` values from unset
     values which introduces complications when a boolean defaults to `true`
 
