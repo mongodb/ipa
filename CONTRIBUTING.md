@@ -44,9 +44,6 @@ scripts/preview-pr.sh <pr-number>              # current branch if no number
 scripts/preview-pr.sh <pr-number> --port 3001  # if port 3000 is taken
 ```
 
-By hand: `gh pr checkout <n>` → `npm ci` (if deps changed) →
-`npm run docusaurus:start`.
-
 The site is served under `/ipa/`, so it opens at `http://localhost:<port>/ipa/`
 (default port 3000) with hot reload. A guideline renders at
 `http://localhost:<port>/ipa/<id>`, where `<id>` is the IPA number — the file's
