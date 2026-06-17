@@ -52,11 +52,13 @@ npm ci                       # only if dependencies changed
 npm run docusaurus:start
 ```
 
-Either way the site opens at <http://localhost:3000> with hot reload. The dev
-server renders `<Guideline>` components exactly as the production build does, so
-it is the fastest way to confirm an enrichment looks right. A file
-`ipa/<id>.mdx` renders at `http://localhost:3000/<id>` (e.g. `ipa/110.mdx` →
-`/110`).
+Either way the site is served under the `/ipa/` base path, so it opens at
+<http://localhost:3000/ipa/> with hot reload. The dev server renders
+`<Guideline>` components exactly as the production build does, so it is the
+fastest way to confirm an enrichment looks right. A guideline file (e.g.
+`ipa/general/0101.mdx`) renders at `http://localhost:3000/ipa/<id>`, where
+`<id>` is its frontmatter `id` — the IPA number without leading zeros (e.g.
+`101`).
 
 If port 3000 is already in use (for example, previewing two PRs at once), pass
 `--port`:

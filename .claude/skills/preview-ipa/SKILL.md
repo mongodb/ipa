@@ -32,13 +32,16 @@ approving it. This serves the same Docusaurus site CI builds, with hot reload.
    script is missing, fall back to: `gh pr checkout <n>` → `npm ci` (only if
    deps changed) → `npm run docusaurus:start -- --no-open`.
 
-3. **Report the URLs.** The site serves at `http://localhost:<port>` (default
-   `3000`, or whatever `--port` you passed). Point the reviewer straight at what
-   changed: list the changed guideline files and map each to its page — a file
-   `ipa/<id>.mdx` renders at `<base-url>/<id>` (e.g. on the default port,
-   `ipa/110.mdx` → <http://localhost:3000/110>). Get the changed files with
-   `gh pr diff <n> --name-only`, or `git diff --name-only origin/main...HEAD`
-   for the current branch.
+3. **Report the URLs.** The site is served under the `/ipa/` base path, so the
+   home is `http://localhost:<port>/ipa/` (default port `3000`, or whatever
+   `--port` you passed). Point the reviewer straight at what changed: list the
+   changed guideline files and map each to its page. A guideline file lives
+   under `ipa/general/`, `ipa/sdks/`, or `ipa/dev/` with a zero-padded name, and
+   renders at `http://localhost:<port>/ipa/<id>`, where `<id>` is its
+   frontmatter `id` (the IPA number, no leading zeros) — e.g.
+   `ipa/general/0101.mdx` (`id: 101`) → <http://localhost:3000/ipa/101>. Get the
+   changed files with `gh pr diff <n> --name-only`, or
+   `git diff --name-only origin/main...HEAD` for the current branch.
 
 4. **Stop** the background dev server when the user is done by killing the whole
    process tree — e.g. `pkill -f docusaurus` — then confirm the port no longer
