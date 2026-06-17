@@ -26,7 +26,7 @@ header — the `informational` field stays in the metadata.
 
 <Guidelines>
 
-<Guideline id="IPA-000-must-use-american-english" given="spec" lintable>
+<Guideline id="IPA-000-must-use-american-english" given="spec" enforcement="rule">
 
 API producers **must** use American English across the API — resource names,
 field names, descriptions, and enum values.
@@ -92,7 +92,7 @@ children and draws separators between them. A `<Guideline>` resolves its own
 <Guidelines>
   <Guideline
     id="IPA-000-must-render-first-guideline"
-    lintable
+    enforcement="rule"
     state="adopt"
     effort="check"
     given="operation"
@@ -101,6 +101,7 @@ children and draws separators between them. A `<Guideline>` resolves its own
   </Guideline>
   <Guideline
     id="IPA-000-should-render-second-guideline"
+    enforcement="automatable"
     implementation
     state="adopt"
     effort="reason"
@@ -110,7 +111,7 @@ children and draws separators between them. A `<Guideline>` resolves its own
   </Guideline>
   <Guideline
     id="IPA-000-may-render-third-guideline"
-    informational
+    enforcement="advisory"
     state="adopt"
     effort="explore"
   >
@@ -126,7 +127,7 @@ renders as a `<div>` rather than an `<li>`.
 
 <Guideline
   id="IPA-000-must-render-standalone"
-  informational
+  enforcement="advisory"
   state="adopt"
   effort="check"
 >
