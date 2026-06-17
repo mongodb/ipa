@@ -155,10 +155,9 @@ If no alias fits, pass a raw JSONPath starting with `$`.
 
 **`lintable`** (boolean, default false)
 
-Set this when a Spectral rule in the
-[`mongodb/openapi` rulesets](https://github.com/mongodb/openapi/tree/main/tools/spectral/ipa/rulesets)
-actually enforces the guideline. Don't set it speculatively for rules that don't
-exist yet. The component derives the lint rule link from the `id` automatically.
+Set this when automated checks enforce the guideline. Don't set it speculatively
+for checks that don't exist yet. The component derives the lint rule link from
+the `id` automatically.
 
 **`informational`** (boolean, default false)
 
