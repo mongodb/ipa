@@ -297,17 +297,17 @@ broken form, so it only surfaces at `npm run docusaurus:build`.
 `.vscode/ipa-guidelines.code-snippets` has tab-stop scaffolding for all IPA
 components. Type a prefix in any `.mdx` file and press Tab:
 
-| Prefix               | Inserts                                       |
-| -------------------- | --------------------------------------------- |
-| `guideline`          | `<Guideline>` with required props             |
-| `guideline-info`     | `<Guideline informational>`                   |
-| `guideline-full`     | `<Guideline>` with examples                   |
-| `guideline-workflow` | `<Guideline>` with examples and a workflow    |
-| `example-correct`    | `<Example.Correct>` with `<Example.Reason>`   |
-| `example-incorrect`  | `<Example.Incorrect>` with `<Example.Reason>` |
-| `example-reason`     | `<Example.Reason>` standalone                 |
-| `workflow`           | `<Workflow>` with three steps                 |
-| `workflow-step`      | One `<Workflow.Step>`                         |
+| Prefix                 | Inserts                                       |
+| ---------------------- | --------------------------------------------- |
+| `guideline`            | `<Guideline>` with required props             |
+| `guideline-info`       | `<Guideline informational>`                   |
+| `guideline-lintable`   | `<Guideline lintable>` with examples          |
+| `guideline-unlintable` | `<Guideline>` with examples and a workflow    |
+| `example-correct`      | `<Example.Correct>` with `<Example.Reason>`   |
+| `example-incorrect`    | `<Example.Incorrect>` with `<Example.Reason>` |
+| `example-reason`       | `<Example.Reason>` standalone                 |
+| `workflow`             | `<Workflow>` with three steps                 |
+| `workflow-step`        | One `<Workflow.Step>`                         |
 
 ## Commit Message Guidelines
 

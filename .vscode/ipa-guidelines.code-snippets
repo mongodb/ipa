@@ -89,10 +89,10 @@
     "description": "Single IPA <Workflow.Step>",
     "body": ["<Workflow.Step>", "  $0", "</Workflow.Step>"],
   },
-  "Full guideline with examples": {
+  "Lintable guideline with examples": {
     "scope": "mdx,markdown",
-    "prefix": "guideline-full",
-    "description": "Complete IPA <Guideline> with correct and incorrect examples",
+    "prefix": "guideline-lintable",
+    "description": "Lintable IPA <Guideline> with correct and incorrect examples",
     "body": [
       "<Guideline id=\"IPA-${1:0000}-${2|must,should,may|}-${3:slug}\" given=\"${4|operation,get-operation,create-operation,update-operation,delete-operation,resource,paths,schema,parameter,tag,enum,spec|}\"${5: lintable}>",
       "",
@@ -125,10 +125,10 @@
       "</Guideline>",
     ],
   },
-  "Full guideline with workflow": {
+  "Unlintable guideline with examples and workflow": {
     "scope": "mdx,markdown",
-    "prefix": "guideline-workflow",
-    "description": "Complete IPA <Guideline> with workflow (for unlintable guidelines)",
+    "prefix": "guideline-unlintable",
+    "description": "Unlintable IPA <Guideline> with correct and incorrect examples and workflow",
     "body": [
       "<Guideline id=\"IPA-${1:0000}-${2|must,should,may|}-${3:slug}\" given=\"${4|operation,get-operation,create-operation,update-operation,delete-operation,resource,paths,schema,parameter,tag,enum,spec|}\">",
       "",
