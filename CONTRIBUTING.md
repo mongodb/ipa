@@ -125,7 +125,7 @@ four-digit number is the principle number (zero-padded), and the severity token
 must match the bolded keyword in the prose — `must not` maps to `must`,
 `should not` to `should`.
 
-```
+```text
 IPA-0104-must-resource-has-get
      ^^^^  ^^^^  ^^^^^^^^^^^^^^^^
      prin  sev   slug (kebab-case description)
@@ -208,53 +208,35 @@ Every non-informational guideline should have a `<Example.Correct>` and
 fragment. Each example block must contain an `<Example.Reason>` explaining _why_
 the fragment is correct or incorrect — not just restating the rule.
 
-````mdx
+```mdx
 <Example.Correct>
-
-```yaml
-properties:
-  status:
-    type: string
-    enum:
-      - CANCELED
-```
-````
-
-<Example.Reason> Uses the American English spelling "canceled" (one "l") in the
-enum value. </Example.Reason>
-
+  <Example.Reason>
+    Uses the American English spelling "canceled" (one "l") in the enum value.
+  </Example.Reason>
 </Example.Correct>
 
 <Example.Incorrect>
-
-```yaml
-properties:
-  status:
-    type: string
-    enum:
-      - CANCELLED
+  <Example.Reason>"Cancelled" is the British English spelling.</Example.Reason>
+</Example.Incorrect>
 ```
 
-<Example.Reason> "Cancelled" is the British English spelling. </Example.Reason>
-
-</Example.Incorrect>
-
-````
+The code block inside each example is standard fenced yaml — the outer
+`<Example.*>` wrapper is what makes it render as a collapsible correct/incorrect
+panel.
 
 Keep examples generic. Use plain resources like `/users/{userId}` or
-`/orders/{orderId}` rather than Atlas-specific paths or MongoDB nouns. Show only what
-the rule is about so the correct/incorrect contrast is obvious.
+`/orders/{orderId}` rather than Atlas-specific paths or MongoDB nouns. Show only
+what the rule is about so the correct/incorrect contrast is obvious.
 
 ### Workflows
 
-A `<Workflow>` documents the manual evaluation steps for an unlintable guideline — the
-ordered checks a reviewer follows to decide whether a spec satisfies the rule.
+A `<Workflow>` documents the manual evaluation steps for an unlintable guideline
+— the ordered checks a reviewer follows to decide whether a spec satisfies the
+rule.
 
 ```mdx
 <Workflow>
-  <Workflow.Step>
-    Locate all response schemas across the spec.
-  </Workflow.Step>
+  <Workflow.Step>Locate all response schemas across the spec.</Workflow.Step>
   <Workflow.Step>
     For each schema, check whether field names use camelCase.
   </Workflow.Step>
@@ -262,7 +244,7 @@ ordered checks a reviewer follows to decide whether a spec satisfies the rule.
     Flag any fields using snake_case, PascalCase, or other conventions.
   </Workflow.Step>
 </Workflow>
-````
+```
 
 Unlintable, non-informational guidelines require a workflow. Lintable guidelines
 don't need one.
@@ -312,7 +294,7 @@ components. Type a prefix in any `.mdx` file and press Tab:
 We follow [Conventional Commits](https://conventionalcommits.org/) for **PR
 titles only**. Individual commits are flexible.
 
-### Examples
+### Commit examples
 
 - `fix(ipa0110): remove explicit number for items per page`
 - `feat(ipa0210): add new IPA functionality`
