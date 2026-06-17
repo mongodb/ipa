@@ -37,12 +37,12 @@ export const givenSchema = z.union([
   z.array(givenValueSchema).nonempty(),
 ]);
 
-// Guideline ID format: IPA-{nnnn}-{must|should|may}-{slug}
+// Guideline ID format: IPA-{nnn}-{must|should|may}-{slug}
 export const guidelineIdSchema = z
   .string()
   .regex(
-    /^IPA-\d{4}-(must|should|may)-.+$/,
-    "Guideline ID must match IPA-{nnnn}-{must|should|may}-{slug}",
+    /^IPA-\d{3}-(must|should|may)-.+$/,
+    "Guideline ID must match IPA-{nnn}-{must|should|may}-{slug}",
   );
 
 // Effort level

@@ -9,7 +9,7 @@ vi.mock("@docusaurus/plugin-content-docs/client", () => ({
 }));
 
 const minimalGuideline = {
-  id: "IPA-0001-must-test-a",
+  id: "IPA-001-must-test-a",
   informational: true,
   lintable: false,
   implementation: false,
