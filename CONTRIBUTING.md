@@ -58,6 +58,13 @@ it is the fastest way to confirm an enrichment looks right. A file
 `ipa/<id>.mdx` renders at `http://localhost:3000/<id>` (e.g. `ipa/110.mdx` →
 `/110`).
 
+If port 3000 is already in use (for example, previewing two PRs at once), pass
+`--port`:
+
+```bash
+scripts/preview-pr.sh <pr-number> --port 3001
+```
+
 > Using Claude Code? The `preview-ipa` skill wraps this flow — just ask it to
 > "preview PR `<number>`".
 

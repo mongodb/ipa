@@ -43,6 +43,10 @@ approving it. This serves the same Docusaurus site CI builds, with hot reload.
 ## Notes
 
 - The dev server hot-reloads, so further edits appear without a restart.
+- If port 3000 is busy (e.g. previewing two PRs at once, or a leftover server),
+  pass a port — `scripts/preview-pr.sh <n> --port 3001` — and report that port
+  in the URLs. Without it, Docusaurus prompts interactively for a new port,
+  which stalls a backgrounded run.
 - For production fidelity (search index + the `onBrokenLinks: "throw"` check CI
   runs), use `npm run docusaurus:build && npm run docusaurus:serve` instead —
   slower, but it matches the CI build exactly.

@@ -3,13 +3,15 @@
 # Preview a pull request's rendered IPA docs locally.
 #
 # Usage:
-#   scripts/preview-pr.sh <pr-number>   # check out a PR, then serve it
-#   scripts/preview-pr.sh               # serve the currently checked-out branch
-#   scripts/preview-pr.sh <pr> --install  # force a clean `npm ci` first
+#   scripts/preview-pr.sh <pr-number>          # check out a PR, then serve it
+#   scripts/preview-pr.sh                      # serve the current branch
+#   scripts/preview-pr.sh <pr> --port 3001     # serve on a specific port
+#   scripts/preview-pr.sh <pr> --install       # force a clean `npm ci` first
 #
-# Starts the Docusaurus dev server at http://localhost:3000 with hot reload, so
-# you see <Guideline> components rendered exactly as the production build emits
-# them. The <pr-number> form requires the GitHub CLI (`gh`).
+# Starts the Docusaurus dev server (default http://localhost:3000) with hot
+# reload, so you see <Guideline> components rendered exactly as the production
+# build emits them. Pass --port/-p to avoid a clash with port 3000 (e.g. when
+# comparing two PRs side by side). The <pr-number> form requires the GitHub CLI.
 # Prerequisites: Node.js 22.x / npm 10.x (pinned in .tool-versions).
 
 set -euo pipefail
@@ -18,21 +20,37 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 pr=""
+port=""
 force_install=false
-for arg in "$@"; do
-  case "$arg" in
+while [[ $# -gt 0 ]]; do
+  case "$1" in
     -i | --install) force_install=true ;;
+    -p | --port)
+      shift
+      port="${1:-}"
+      if [[ -z "$port" ]]; then
+        echo "error: --port requires a value" >&2
+        exit 1
+      fi
+      ;;
+    --port=*) port="${1#*=}" ;;
     -h | --help)
-      sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     -*)
-      echo "error: unknown option '$arg'" >&2
+      echo "error: unknown option '$1'" >&2
       exit 1
       ;;
-    *) pr="$arg" ;;
+    *) pr="$1" ;;
   esac
+  shift
 done
+
+if [[ -n "$port" && ! "$port" =~ ^[0-9]+$ ]]; then
+  echo "error: --port must be a number (got '$port')" >&2
+  exit 1
+fi
 
 if [[ -n "$pr" ]]; then
   if ! command -v gh >/dev/null 2>&1; then
@@ -53,5 +71,9 @@ else
   echo "==> Reusing existing node_modules (pass --install if dependencies changed)"
 fi
 
-echo "==> Starting Docusaurus dev server at http://localhost:3000 (Ctrl-C to stop)"
-npm run docusaurus:start
+echo "==> Starting Docusaurus dev server at http://localhost:${port:-3000} (Ctrl-C to stop)"
+if [[ -n "$port" ]]; then
+  npm run docusaurus:start -- --port "$port"
+else
+  npm run docusaurus:start
+fi
