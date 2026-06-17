@@ -6,6 +6,7 @@ description:
   — the rendered <Guideline> components, anchors, and admonitions, not just the
   MDX diff. Triggers on "preview PR <n>", "preview this branch", "see the
   rendered guidelines", "view the docs for this PR".
+argument-hint: "<pr-number>"
 ---
 
 # Preview IPA docs for a pull request
