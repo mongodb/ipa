@@ -1,61 +1,46 @@
 ---
 name: preview-ipa
 description:
-  Preview a pull request's rendered IPA documentation locally. Use when a
-  reviewer or contributor wants to see how guideline changes look before merging
-  — the rendered <Guideline> components, anchors, and admonitions, not just the
-  MDX diff. Triggers on "preview PR <n>", "preview this branch", "see the
-  rendered guidelines", "view the docs for this PR".
+  Use when a reviewer or contributor wants to see how a PR's IPA guideline
+  changes render locally — the <Guideline> components, anchors, and admonitions,
+  not just the MDX diff. Triggers on "preview PR <n>", "preview this branch",
+  "see the rendered guidelines", "view the docs for this PR".
 argument-hint: "<pr-number>"
 ---
 
 # Preview IPA docs for a pull request
 
-Render IPA guideline changes locally so a reviewer can see how a PR looks before
-approving it. This serves the same Docusaurus site CI builds, with hot reload.
+Serve the IPA Docusaurus site locally — the same site CI builds, with hot reload
+— so a reviewer sees how a PR renders before merging.
 
 ## Steps
 
-1. **Decide what to preview.**
-   - If the user gave a PR number, use it.
-   - Otherwise preview the currently checked-out branch.
+1. **Pick the target:** the given PR number, or the current branch if none.
 
-2. **Start the preview** from the repo root, in the **background** (the dev
-   server is long-running and would otherwise block):
+2. **Start the server** from the repo root, in the **background** (it is
+   long-running and would otherwise block):
 
    ```bash
-   scripts/preview-pr.sh <pr-number> --no-open   # omit the number for the current branch
+   scripts/preview-pr.sh <pr-number> --no-open   # no number → current branch
    ```
 
-   `--no-open` stops the backgrounded server from launching a browser tab; add
-   `--port 3001` if 3000 is busy (see Notes). If `gh` is unavailable or the
-   script is missing, fall back to: `gh pr checkout <n>` → `npm ci` (only if
-   deps changed) → `npm run docusaurus:start -- --no-open`.
+   `--no-open` keeps the backgrounded server from opening a browser tab; add
+   `--port <n>` if 3000 is taken (otherwise Docusaurus prompts interactively and
+   stalls). See `scripts/preview-pr.sh --help` for all options. If the script
+   isn't present, run the steps by hand: `gh pr checkout <n>` → `npm ci` →
+   `npm run docusaurus:start -- --no-open`.
 
-3. **Report the URLs.** The site is served under the `/ipa/` base path, so the
-   home is `http://localhost:<port>/ipa/` (default port `3000`, or whatever
-   `--port` you passed). Point the reviewer straight at what changed: list the
-   changed guideline files and map each to its page. A guideline file lives
-   under `ipa/general/`, `ipa/sdks/`, or `ipa/dev/` with a zero-padded name, and
-   renders at `http://localhost:<port>/ipa/<id>`, where `<id>` is its
-   frontmatter `id` (the IPA number, no leading zeros) — e.g.
-   `ipa/general/0101.mdx` (`id: 101`) → <http://localhost:3000/ipa/101>. Get the
-   changed files with `gh pr diff <n> --name-only`, or
-   `git diff --name-only origin/main...HEAD` for the current branch.
+3. **Report the page URLs.** The site is served under `/ipa/`, so a guideline
+   page is `http://localhost:<port>/ipa/<id>` — `<id>` is the IPA number, i.e.
+   the changed file's name without leading zeros (e.g. `ipa/general/0101.mdx` →
+   <http://localhost:3000/ipa/101>). List changed files with
+   `gh pr diff <n> --name-only`.
 
-4. **Stop** the background dev server when the user is done by killing the whole
-   process tree — e.g. `pkill -f docusaurus` — then confirm the port no longer
-   responds. Killing only the launcher can orphan the `node` server and leave
-   the port bound (the "leftover server" the port note warns about).
+4. **Stop** by killing the process tree — `pkill -f docusaurus` — then confirm
+   the port is free. Killing only the launcher orphans the `node` server.
 
 ## Notes
 
-- The dev server hot-reloads, so further edits appear without a restart.
-- If port 3000 is busy (e.g. previewing two PRs at once, or a leftover server),
-  pass a port — `scripts/preview-pr.sh <n> --port 3001` — and report that port
-  in the URLs. Without it, Docusaurus prompts interactively for a new port,
-  which stalls a backgrounded run.
 - For production fidelity (search index + the `onBrokenLinks: "throw"` check CI
-  runs), use `npm run docusaurus:build && npm run docusaurus:serve` instead —
-  slower, but it matches the CI build exactly.
+  runs), use `npm run docusaurus:build && npm run docusaurus:serve` instead.
 - Requires Node.js 22.x / npm 10.x (pinned in `.tool-versions`).
