@@ -33,9 +33,9 @@ resource.
     - A `UpdateRequest` object **must** include only input fields
       - In OpenAPI, this means that the `UpdateRequest` object **must not**
         include fields with `readOnly: true`
-- The response body **should** be the same resource returned by the
+- The response body **must** be the same resource returned by the
   [Get method](0104.mdx)
-  - The Update method **should** return the complete resource to avoid
+  - The Update method **must** return the complete resource to avoid
     complexities for clients
 - The Update method **must** respect the client provided values, or lack
   thereof, for all fields in the request (see

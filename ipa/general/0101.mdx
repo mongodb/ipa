@@ -38,6 +38,21 @@ When designing an API, consider the following (roughly in logical order):
 - Resources **may** have any number of sub-resources
 - The schema for a resource **must** be the same across all methods related to
   the resource
+- The schema consistency rule implies that every field accepted in a request
+  body **must** also be present in the response body for the same resource.
+  Omitting request fields from responses breaks declarative clients and forces
+  manual reconciliation in downstream tooling.
+  - The only exceptions are [sensitive fields](0111.mdx#sensitive-fields), which
+    may be omitted entirely (write-only) or may appear only in the Create
+    response (reveal-once).
+  - For the per-method expression of this rule, see [Create](0106.mdx) and
+    [Update](0107.mdx).
+- Resources declared by clients **must not** be silently removed by the server
+  as a result of time-based expiry, inactivity, or other server-side lifecycle
+  events. If such a lifecycle transition is part of the resource's domain model,
+  it **must** be represented as a terminal status on the resource (e.g.
+  `EXPIRED`, `REVOKED`, `REJECTED`), and the resource **must** remain readable
+  through the Get and List methods until the client explicitly deletes it.
 
 :::warning[Important]
 

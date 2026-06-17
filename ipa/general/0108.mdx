@@ -23,10 +23,13 @@ resource.
     [204 No Content](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/204)
     status
 - The request **must not** include a body
-- The Delete method **should** succeed if and only if a resource was present and
-  was successfully deleted
-  - If the resource did not exist, the method **should** respond with a
-    `NOT FOUND` [error](0114.mdx)
+- The Delete method **must** succeed if and only if a resource was present and
+  was successfully deleted.
+  - If the resource did not exist, the method **must** respond with a
+    `404 Not Found` error per [IPA-114](0114.mdx#not-found).
+- The Delete method **must not** return a successful response while any internal
+  state of the resource — settings, policies, configurations, or any other state
+  without an independent endpoint — remains.
 
 Example
 
