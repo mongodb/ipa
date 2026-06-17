@@ -71,6 +71,31 @@ the server may scale it up or down based on load.
 }
 ```
 
+### Sensitive Fields
+
+Some resource fields carry secrets — passwords, API keys, private credentials.
+The API design **must** prevent accidental exposure of these values in
+responses. Sensitive fields **must** be marked in OpenAPI so that consumers and
+tooling can identify them (see [IPA-117](0117.mdx#sensitive-field-markings) for
+the required annotations), and **must** follow one of the following
+information-flow patterns:
+
+- **Write-only.** The client submits the value on [Create](0106.mdx) (or
+  [Update](0107.mdx)) and the server **must not** return it in any response.
+- **Reveal-once.** For values the client cannot retrieve later (e.g.
+  server-generated API keys), the field **may** appear in the [Create](0106.mdx)
+  response so the client can capture it, but **must not** appear in subsequent
+  [Get](0104.mdx) or [List](0105.mdx) responses. Reveal-once is the sanctioned
+  exception to the [schema consistency rule](0101.mdx#resources).
+
+When a masked representation of a sensitive field (e.g. `****` or a last-4
+display value) needs to appear in [Get](0104.mdx) or [List](0105.mdx) responses,
+it **must** be modeled as a separate read-only **redacted sibling** property
+following the [Effective Values](#effective-values) pattern. The raw and
+redacted values **must not** share the same property name. A redacted sibling
+**may** be added to either a write-only or a reveal-once field independently of
+the chosen information-flow pattern.
+
 ### Boolean Values
 
 - Booleans **should** default to `false`

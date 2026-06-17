@@ -76,6 +76,17 @@ will promote clarity, completeness and consistency.
   - If the API producer needs to provide links to external documentation, they
     **should** use the `externalDocumentation`
 
+### Sensitive Field Markings
+
+The OpenAPI `format: password` keyword identifies properties whose value is
+itself a secret. To apply it consistently:
+
+- **Use** `format: password` on any property whose value is itself a secret per
+  [IPA-111 — Sensitive Fields](0111.mdx#sensitive-fields).
+- **Do not use** `format: password` on a redacted sibling property whose value
+  is a masked display (`****`, last-4 digits, etc.). The redacted value is not
+  itself a secret; marking it as such misleads consumers and tooling.
+
 ### Examples
 
 - API producers **must** provide a well-defined schema or example(s)
