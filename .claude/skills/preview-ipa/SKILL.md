@@ -43,4 +43,3 @@ Serve the IPA Docusaurus site locally — the same site CI builds, with hot relo
 
 - For production fidelity (search index + the `onBrokenLinks: "throw"` check CI
   runs), use `npm run docusaurus:build && npm run docusaurus:serve` instead.
-- Requires Node.js 22.x / npm 10.x (pinned in `.tool-versions`).

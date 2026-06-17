@@ -13,7 +13,7 @@
 # reload, so you see <Guideline> components rendered exactly as the production
 # build emits them. Pass --port/-p to avoid a clash with port 3000 (e.g. when
 # comparing two PRs side by side). The <pr-number> form requires the GitHub CLI.
-# Prerequisites: Node.js 22.x / npm 10.x (pinned in .tool-versions).
+# Prerequisites: the Node and npm versions pinned in .tool-versions.
 
 set -euo pipefail
 

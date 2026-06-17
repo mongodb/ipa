@@ -36,36 +36,21 @@ help you understand our development process and requirements.
 
 ## Reviewing a pull request locally
 
-To see how a PR renders the guidelines before approving it, check out the PR
-branch and start the dev server. The helper script does both (it needs the
-[GitHub CLI](https://cli.github.com/)):
+Check out a PR and serve the docs to see how it renders. The helper script does
+both (it needs the [GitHub CLI](https://cli.github.com/)):
 
 ```bash
-scripts/preview-pr.sh <pr-number>
+scripts/preview-pr.sh <pr-number>              # current branch if no number
+scripts/preview-pr.sh <pr-number> --port 3001  # if port 3000 is taken
 ```
 
-Or do it by hand:
+By hand: `gh pr checkout <n>` → `npm ci` (if deps changed) →
+`npm run docusaurus:start`.
 
-```bash
-gh pr checkout <pr-number>
-npm ci                       # only if dependencies changed
-npm run docusaurus:start
-```
-
-Either way the site is served under the `/ipa/` base path, so it opens at
-<http://localhost:3000/ipa/> with hot reload. The dev server renders
-`<Guideline>` components exactly as the production build does, so it is the
-fastest way to confirm an enrichment looks right. A guideline file (e.g.
-`ipa/general/0101.mdx`) renders at `http://localhost:3000/ipa/<id>`, where
-`<id>` is its frontmatter `id` — the IPA number without leading zeros (e.g.
-`101`).
-
-If port 3000 is already in use (for example, previewing two PRs at once), pass
-`--port`:
-
-```bash
-scripts/preview-pr.sh <pr-number> --port 3001
-```
+The site is served under `/ipa/`, so it opens at `http://localhost:<port>/ipa/`
+(default port 3000) with hot reload. A guideline renders at
+`http://localhost:<port>/ipa/<id>`, where `<id>` is the IPA number — the file's
+name without leading zeros (e.g. `ipa/general/0101.mdx` → `/ipa/101`).
 
 > Using Claude Code? The `preview-ipa` skill wraps this flow — just ask it to
 > "preview PR `<number>`".
