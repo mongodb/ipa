@@ -6,6 +6,7 @@
 #   scripts/preview-pr.sh <pr-number>          # check out a PR, then serve it
 #   scripts/preview-pr.sh                      # serve the current branch
 #   scripts/preview-pr.sh <pr> --port 3001     # serve on a specific port
+#   scripts/preview-pr.sh <pr> --no-open       # don't open a browser tab
 #   scripts/preview-pr.sh <pr> --install       # force a clean `npm ci` first
 #
 # Starts the Docusaurus dev server (default http://localhost:3000) with hot
@@ -22,9 +23,11 @@ cd "$(dirname "$0")/.."
 pr=""
 port=""
 force_install=false
+no_open=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -i | --install) force_install=true ;;
+    --no-open) no_open=true ;;
     -p | --port)
       shift
       port="${1:-}"
@@ -33,9 +36,15 @@ while [[ $# -gt 0 ]]; do
         exit 1
       fi
       ;;
-    --port=*) port="${1#*=}" ;;
+    --port=*)
+      port="${1#*=}"
+      if [[ -z "$port" ]]; then
+        echo "error: --port requires a value" >&2
+        exit 1
+      fi
+      ;;
     -h | --help)
-      sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     -*)
@@ -72,8 +81,15 @@ else
 fi
 
 echo "==> Starting Docusaurus dev server at http://localhost:${port:-3000} (Ctrl-C to stop)"
+start_args=()
 if [[ -n "$port" ]]; then
-  npm run docusaurus:start -- --port "$port"
+  start_args+=(--port "$port")
+fi
+if [[ "$no_open" == true ]]; then
+  start_args+=(--no-open)
+fi
+if [[ ${#start_args[@]} -gt 0 ]]; then
+  npm run docusaurus:start -- "${start_args[@]}"
 else
   npm run docusaurus:start
 fi

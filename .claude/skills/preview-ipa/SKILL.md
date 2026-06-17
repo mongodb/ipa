@@ -24,21 +24,26 @@ approving it. This serves the same Docusaurus site CI builds, with hot reload.
    server is long-running and would otherwise block):
 
    ```bash
-   scripts/preview-pr.sh <pr-number>   # omit the number to use the current branch
+   scripts/preview-pr.sh <pr-number> --no-open   # omit the number for the current branch
    ```
 
-   If `gh` is unavailable or the script is missing, fall back to:
-   `gh pr checkout <n>` → `npm ci` (only if deps changed) →
-   `npm run docusaurus:start`.
+   `--no-open` stops the backgrounded server from launching a browser tab; add
+   `--port 3001` if 3000 is busy (see Notes). If `gh` is unavailable or the
+   script is missing, fall back to: `gh pr checkout <n>` → `npm ci` (only if
+   deps changed) → `npm run docusaurus:start -- --no-open`.
 
-3. **Report the URLs.** The site serves at <http://localhost:3000>. Point the
-   reviewer straight at what changed: list the changed guideline files and map
-   each to its page — a file `ipa/<id>.mdx` renders at
-   `http://localhost:3000/<id>` (e.g. `ipa/110.mdx` → `/110`). Get the changed
-   files with `gh pr diff <n> --name-only`, or
-   `git diff --name-only origin/main...HEAD` for the current branch.
+3. **Report the URLs.** The site serves at `http://localhost:<port>` (default
+   `3000`, or whatever `--port` you passed). Point the reviewer straight at what
+   changed: list the changed guideline files and map each to its page — a file
+   `ipa/<id>.mdx` renders at `<base-url>/<id>` (e.g. on the default port,
+   `ipa/110.mdx` → <http://localhost:3000/110>). Get the changed files with
+   `gh pr diff <n> --name-only`, or `git diff --name-only origin/main...HEAD`
+   for the current branch.
 
-4. **Stop** the background dev server when the user is done.
+4. **Stop** the background dev server when the user is done by killing the whole
+   process tree — e.g. `pkill -f docusaurus` — then confirm the port no longer
+   responds. Killing only the launcher can orphan the `node` server and leave
+   the port bound (the "leftover server" the port note warns about).
 
 ## Notes
 
