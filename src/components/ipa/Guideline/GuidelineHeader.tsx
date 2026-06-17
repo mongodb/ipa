@@ -9,7 +9,7 @@ const SPECTRAL_RULESETS_URL =
   "https://github.com/mongodb/openapi/blob/main/tools/spectral/ipa/rulesets";
 
 function spectralFileUrl(id: string): string {
-  const match = id.match(/^IPA-(\d{4})/);
+  const match = id.match(/^IPA-(\d{3})/);
   if (!match) return SPECTRAL_RULESETS_URL;
   const num = parseInt(match[1], 10);
   return `${SPECTRAL_RULESETS_URL}/IPA-${String(num).padStart(3, "0")}.yaml`;

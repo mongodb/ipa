@@ -10,7 +10,7 @@ vi.mock("@docusaurus/plugin-content-docs/client", () => ({
 }));
 
 const minimalGuideline = {
-  id: "IPA-0001-must-test-a",
+  id: "IPA-001-must-test-a",
   informational: true,
   lintable: false,
   implementation: false,
@@ -36,10 +36,10 @@ describe("<Guidelines>", () => {
   it("wraps guidelines in a styled container", () => {
     render(
       <Guidelines>
-        <Guideline {...minimalGuideline} id="IPA-0001-must-test-a">
+        <Guideline {...minimalGuideline} id="IPA-001-must-test-a">
           one
         </Guideline>
-        <Guideline {...minimalGuideline} id="IPA-0001-must-test-b">
+        <Guideline {...minimalGuideline} id="IPA-001-must-test-b">
           two
         </Guideline>
       </Guidelines>,
@@ -47,23 +47,23 @@ describe("<Guidelines>", () => {
 
     const wrapper = screen.getByTestId("guidelines");
     expect(
-      wrapper.querySelector("[data-guideline-id='IPA-0001-must-test-a']"),
+      wrapper.querySelector("[data-guideline-id='IPA-001-must-test-a']"),
     ).toBeInTheDocument();
     expect(
-      wrapper.querySelector("[data-guideline-id='IPA-0001-must-test-b']"),
+      wrapper.querySelector("[data-guideline-id='IPA-001-must-test-b']"),
     ).toBeInTheDocument();
   });
 
   it("renders a circle for each <Guideline> child", () => {
     render(
       <Guidelines>
-        <Guideline {...minimalGuideline} id="IPA-0001-must-test-a">
+        <Guideline {...minimalGuideline} id="IPA-001-must-test-a">
           first
         </Guideline>
-        <Guideline {...minimalGuideline} id="IPA-0001-must-test-b">
+        <Guideline {...minimalGuideline} id="IPA-001-must-test-b">
           second
         </Guideline>
-        <Guideline {...minimalGuideline} id="IPA-0001-must-test-c">
+        <Guideline {...minimalGuideline} id="IPA-001-must-test-c">
           third
         </Guideline>
       </Guidelines>,

@@ -79,13 +79,13 @@ Introductory prose explaining the section.
 
 <Guidelines>
 
-<Guideline id="IPA-0100-must-use-american-english" given="spec" lintable>
+<Guideline id="IPA-100-must-use-american-english" given="spec" lintable>
 
 API producers **must** use American English across the API.
 
 </Guideline>
 
-<Guideline id="IPA-0100-should-follow-style-guide" given="spec">
+<Guideline id="IPA-100-should-follow-style-guide" given="spec">
 
 API producers **should** follow the MongoDB Style Guide for terminology.
 
@@ -99,7 +99,7 @@ More explanatory prose.
 
 <Guidelines>
 
-<Guideline id="IPA-0100-must-not-use-slang" given="spec">
+<Guideline id="IPA-100-must-not-use-slang" given="spec">
 
 ...
 
@@ -120,13 +120,13 @@ check it from the component alone.
 
 **`id`** (required)
 
-A unique identifier in the format `IPA-{nnnn}-{must|should|may}-{slug}`. The
+A unique identifier in the format `IPA-{nnn}-{must|should|may}-{slug}`. The
 four-digit number is the principle number (zero-padded), and the severity token
 must match the bolded keyword in the prose — `must not` maps to `must`,
 `should not` to `should`.
 
 ```text
-IPA-0104-must-resource-has-get
+IPA-104-must-resource-has-get
      ^^^^  ^^^^  ^^^^^^^^^^^^^^^^
      prin  sev   slug (kebab-case description)
 ```
@@ -191,10 +191,10 @@ sense.
 
 ```mdx
 <Guideline
-  id="IPA-0104-must-resource-has-get"
+  id="IPA-104-must-resource-has-get"
   given="resource"
   lintable
-  dependsOn={["IPA-0101-must-resource-oriented-design"]}
+  dependsOn={["IPA-101-must-resource-oriented-design"]}
 >
 ```
 
