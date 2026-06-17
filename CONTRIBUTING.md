@@ -155,9 +155,8 @@ If no alias fits, pass a raw JSONPath starting with `$`.
 
 **`lintable`** (boolean, default false)
 
-Set this when automated checks enforce the guideline. Don't set it speculatively
-for checks that don't exist yet. The component derives the lint rule link from
-the `id` automatically.
+Set this when automated checks enforce the guideline. The component derives the
+lint rule link from the `id` automatically.
 
 **`informational`** (boolean, default false)
 
