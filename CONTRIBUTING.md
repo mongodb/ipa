@@ -34,6 +34,33 @@ help you understand our development process and requirements.
    npm run docusaurus:build
    ```
 
+## Reviewing a pull request locally
+
+To see how a PR renders the guidelines before approving it, check out the PR
+branch and start the dev server. The helper script does both (it needs the
+[GitHub CLI](https://cli.github.com/)):
+
+```bash
+scripts/preview-pr.sh <pr-number>
+```
+
+Or do it by hand:
+
+```bash
+gh pr checkout <pr-number>
+npm ci                       # only if dependencies changed
+npm run docusaurus:start
+```
+
+Either way the site opens at <http://localhost:3000> with hot reload. The dev
+server renders `<Guideline>` components exactly as the production build does, so
+it is the fastest way to confirm an enrichment looks right. A file
+`ipa/<id>.mdx` renders at `http://localhost:3000/<id>` (e.g. `ipa/110.mdx` →
+`/110`).
+
+> Using Claude Code? The `preview-ipa` skill wraps this flow — just ask it to
+> "preview PR `<number>`".
+
 ## Code Quality
 
 Before submitting your changes, ensure they pass our quality checks:
