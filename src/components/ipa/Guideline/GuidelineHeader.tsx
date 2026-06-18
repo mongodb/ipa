@@ -25,12 +25,12 @@ export function GuidelineHeader(): ReactElement | null {
 
   // Nothing to show → render no header at all, so it doesn't leave an empty
   // bar above the body.
-  if (!stateBadge && !guideline.lintable) return null;
+  if (!stateBadge && guideline.enforcement !== "rule") return null;
 
   return (
     <div className={styles.root}>
       {stateBadge && <div className={styles.badges}>{stateBadge}</div>}
-      {guideline.lintable && (
+      {guideline.enforcement === "rule" && (
         <a
           href={spectralFileUrl(guideline.id)}
           target="_blank"
