@@ -50,7 +50,7 @@ export const effortSchema = z.enum(["check", "reason", "explore"]);
 
 // Enforcement mode:
 // "rule"        — Spectral rule exists and is active; renders a "Lint rule ↗" link
-// "automatable" — automatable check, no Spectral rule yet; renders a "Lint rule pending" badge
+// "automatable" — automatable check; either no Spectral rule exists yet, or it is covered by lintable rules referenced via dependsOn
 // "review"      — needs agentic review; no lint link
 // "advisory"    — not enforced; context or guiding principle only
 export const enforcementSchema = z.enum([

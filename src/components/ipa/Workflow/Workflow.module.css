@@ -1,6 +1,4 @@
-.accordion {
-  margin: 1.25rem 0 0.25rem;
-}
+/* No outer margin; the container controls spacing. */
 
 .header {
   padding: 0.7rem 0.75rem;
