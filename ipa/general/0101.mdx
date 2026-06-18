@@ -10,7 +10,7 @@ high-level design principles:
 
 - The fundamental building blocks of an API are
   [individually named resources](0102.mdx) (nouns) and the relationships and
-  hierarchy that exist between them
+  hierarchy that exist between those resources
 - A small number of [standard methods](0103.mdx) (verbs) provide the semantics
   for most common operations
   - [Custom methods](0109.mdx) are available in situations where the standard
@@ -60,8 +60,8 @@ paths:
 <Example.Reason>
   The paths nest the way the data actually nests. A `tasks` collection holds
   individual tasks, and each task owns its own `comments`. Because the ownership
-  is right there in the URL, a client can walk from a parent to its children
-  without being told how things connect.
+  is right there in the URL, the hierarchy can be walked from a parent to its
+  children without external documentation of how things connect.
 </Example.Reason>
 
 </Example.Correct>
@@ -79,33 +79,79 @@ paths:
 ```
 
 <Example.Reason>
-  These are flat RPC calls. Every path is a verb, not a noun, so nothing tells
-  you what resources exist or how they relate. You can't get from a task to its
-  comments by following the URL because the structure describes actions instead
-  of the things they act on.
+  These are flat RPC calls. Every path is a verb, not a noun, so nothing
+  indicates what resources exist or how those resources relate. The path from a
+  task to its comments can't be followed, because the structure describes
+  actions instead of the things acted on.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orgs/{orgId}/billing/invoices:
+    get:
+      operationId: listInvoices
+  /orgs/{orgId}/billing/invoices/{invoiceId}:
+    get:
+      operationId: getInvoice
+  /orgs/{orgId}/billing/payments:
+    get:
+      operationId: listPayments
+```
+
+<Example.Reason>
+
+`billing` is not a resource — it has no identifier, no Get, and no List of its
+own. It is a static label dropped into the middle of the path to group related
+sub-paths by category.
+
+- The segments no longer alternate between collection nouns and resource IDs, so
+  the hierarchy breaks: `orgs/{orgId}` looks like a resource, then `billing`
+  looks like a collection, but there is no `billing/{billingId}` to follow.
+- Making it a real collection (e.g.
+  `/orgs/{orgId}/billingAccounts/{billingAccountId}/invoices`) or removing it
+  entirely (e.g. `/orgs/{orgId}/invoices`) fixes the hierarchy; a bare category
+  word should not stand in for a resource.
+
 </Example.Reason>
 
 </Example.Incorrect>
 
 <Workflow>
   <Workflow.Step>
-    List every entry under `paths` and break each one into its segments.
+    List all entries under `paths` and build a segment tree: split each path on
+    `/` and nest the segments as nodes. For example, `/projects/{projectId}/tasks/{taskId}`
+    becomes `projects` → `{projectId}` → `tasks` → `{taskId}`.
   </Workflow.Step>
   <Workflow.Step>
-    Check that the segments alternate between collection nouns and resource IDs,
-    like `/projects/{projectId}/tasks/{taskId}`, and aren't a verb such as
-    `fetchTaskDetails`.
+    Walk each node in the tree and check the alternating pattern.
+
+    - If the segment is a path parameter (`{id}`-style), its parent must be a plain collection
+    noun.
+    - If it is a plain word, it must either have a path-parameter child
+    somewhere beneath it in the tree, or have operations of its own.
+
+    A plain segment with neither — like `billing` in `/orgs/{orgId}/billing/invoices` —
+    is a bare grouping label with no identity as a resource. Flag it.
+
   </Workflow.Step>
   <Workflow.Step>
-    For each nested path, make sure the nesting matches a real ownership or
-    containment relationship between the parent and the child collection.
+    For each collection/resource pair in the tree, verify the relationship
+    reflects real ownership or containment: a `task` belongs to a `project`, a
+    `comment` belongs to a `task`. If the nesting is arbitrary or purely
+    organisational, flag it.
   </Workflow.Step>
   <Workflow.Step>
-    Make sure each collection segment holds resources of one type.
+    For each collection node, confirm all its resource children are of the same
+    type. A collection should be homogeneous — mixing resource types under one
+    collection segment is a violation.
   </Workflow.Step>
   <Workflow.Step>
-    Flag any path that's flat, verb-shaped, or doesn't fit the resource
-    hierarchy.
+    Flag any path that is flat, verb-shaped, contains a bare grouping segment,
+    or where the nesting does not reflect a real containment relationship.
   </Workflow.Step>
 </Workflow>
 
@@ -119,7 +165,9 @@ Resources **may** have any number of sub-resources.
 
 </Guideline>
 
-<Guideline id="IPA-101-must-use-consistent-resource-schema" given="resource" enforcement="review" effort="reason" dependsOn={["IPA-101-must-support-get", "IPA-101-must-support-list"]}>
+{/* TODO: Depends on IPA-105, IPA-106 - to be documented when those IPAs are enhanced */}
+
+<Guideline id="IPA-101-must-use-consistent-resource-schema" given="resource" enforcement="automatable" dependsOn={["IPA-101-must-support-get", "IPA-101-must-support-list"]}>
 
 The schema for a resource **must** be the same across all methods related to the
 resource
@@ -182,8 +230,8 @@ components:
 <Example.Reason>
   Every method points at the same `#/components/schemas/User`. A field means the
   same thing, has the same type, and keeps the same name no matter which
-  operation hands it back or takes it in. The client writes one `User` model and
-  uses it for Get, List, and Create.
+  operation returns it or accepts it. One `User` model serves Get, List, and
+  Create.
 </Example.Reason>
 
 </Example.Correct>
@@ -233,52 +281,22 @@ components:
 ```
 
 <Example.Reason>
-  List and Get return two different schemas for one resource, and they even
-  rename the shared fields: `userId`/`fullName` here, `id`/`name` there. Now the
-  client has to map one shape onto the other. A resource should be one type, not
-  two.
+  List and Get return two different schemas for one resource, even renaming the
+  shared fields: `userId`/`fullName` here, `id`/`name` there. One shape must
+  then be mapped onto the other. A resource should be one type, not two.
 </Example.Reason>
 
 </Example.Incorrect>
-
-<Workflow>
-  <Workflow.Step>
-    Pick the resource you're checking and gather every operation on it: Get,
-    List, Create, Update, plus any custom methods on the same path.
-  </Workflow.Step>
-  <Workflow.Step>
-    In each operation, find the resource schema in the request body and the
-    success response. For list responses, drill down to the element schema.
-  </Workflow.Step>
-  <Workflow.Step>
-    Check whether those schemas are actually the same definition. The clean case
-    is one `$ref` shared by all of them rather than a separate shape per method.
-  </Workflow.Step>
-  <Workflow.Step>
-    When the schemas do differ, look at any field that shows up in more than one
-    method. Does it keep the same name, type, and meaning? Decide if the
-    difference is fair (an input-only or read-only field) or just the same field
-    redefined inconsistently.
-  </Workflow.Step>
-  <Workflow.Step>
-    Flag any operation whose resource schema drifts from the one the other
-    methods use, whether in structure, field names, or field types.
-  </Workflow.Step>
-</Workflow>
 
 </Guideline.Details>
 
 </Guideline>
 
-<Guideline id="IPA-101-should-not-mirror-database-schema" given="schema" enforcement="review" implementation effort="explore" dependsOn={[
-    "IPA-101-should-model-as-resource-hierarchy",
-    "IPA-101-must-use-consistent-resource-schema",
-  ]}>
+<Guideline id="IPA-101-should-not-mirror-database-schema" given="schema" enforcement="review" implementation effort="explore">
 
-API producers **should not** expect that their API will be reflective of their
-database schema. Having an API that is identical to the underlying database
-schema is an antipattern, as it tightly couples the surface to the underlying
-system
+An API **should not** be expected to reflect the database schema behind it. An
+API that is identical to the underlying database schema is an antipattern, as it
+tightly couples the surface to the underlying system
 
 <Guideline.Details>
 
@@ -310,7 +328,7 @@ components:
   This schema exposes only what a consumer needs: API-level field names and a
   `status` enum that means something in the domain. Storage details like join
   tables, surrogate keys, soft-delete flags, and version counters stay hidden.
-  That lets you rework the persistence layer without breaking any clients.
+  That lets the persistence layer be reworked without breaking any clients.
 </Example.Reason>
 
 </Example.Correct>
@@ -323,30 +341,37 @@ components:
     User:
       type: object
       properties:
-        user_id:
-          type: integer
+        _id:
+          type: string
+          description: MongoDB ObjectId
         full_name:
           type: string
         email_addr:
           type: string
-        is_deleted:
-          type: boolean
-        row_version:
+        deletedAt:
+          type: string
+          format: date-time
+          description:
+            Soft-delete timestamp; null if the document has not been deleted
+        tenantId:
+          type: string
+          description: ObjectId reference to the owning tenant document
+        createdAt:
           type: integer
-        fk_tenant_id:
-          type: integer
-        created_ts:
-          type: integer
-          description: Unix epoch seconds
+          description: Unix epoch milliseconds
 ```
 
 <Example.Reason>
-  This is a database table copied straight onto the wire. The `snake_case`
-  column names, the autoincrement `user_id`, the `fk_tenant_id` foreign key, the
-  `is_deleted` soft-delete flag, and the `row_version` lock counter are all
-  storage mechanics. None of them belong to what a User means to a consumer.
-  Expose them and the table layout becomes the API contract, so the next schema
-  migration breaks your clients.
+
+This is a MongoDB document copied straight onto the wire.
+
+- `_id` is the internal ObjectId the database assigns;
+- `tenantId` is a raw ObjectId reference to another collection.
+
+None of these are domain concepts — these are storage mechanics. Exposing these
+fields makes the collection layout the API contract, so a schema migration
+breaks any downstream tooling or clients.
+
 </Example.Reason>
 
 </Example.Incorrect>
@@ -358,19 +383,20 @@ components:
   </Workflow.Step>
   <Workflow.Step>
     Check the field names. API conventions look like `camelCase` domain names
-    (`createdAt`). Raw column naming looks like `snake_case`, `created_ts`, or
-    table-prefixed identifiers.
+    (`createdAt`). Storage-coupled naming looks like `_id`, `__v`, `deletedAt`
+    used as a soft-delete sentinel, or raw ObjectId references (`tenantId` typed
+    as a string with no domain meaning).
   </Workflow.Step>
   <Workflow.Step>
-    Look for fields that only exist to serve persistence: foreign-key references
-    (`fk_*`, `*_id` joins), soft-delete flags (`is_deleted`, `deleted_at`),
-    optimistic-lock counters (`row_version`, `__v`), and surrogate
-    auto-increment keys. When you see them, the schema is a database projection,
-    not a domain contract.
+    Look for fields that only exist to serve persistence: MongoDB internal
+    identifiers (`_id`), ORM version keys (`__v`), soft-delete timestamps
+    (`deletedAt` used as a null/non-null flag), and raw cross-collection
+    ObjectId references. The presence of such fields marks the schema as a
+    document projection, not a domain contract.
   </Workflow.Step>
   <Workflow.Step>
     Decide whether the exposed fields were chosen for the consumer, or whether
-    someone dumped every column of a table verbatim.
+    every field of a collection document was dumped verbatim.
   </Workflow.Step>
   <Workflow.Step>
     Report any resource whose schema mirrors a database table. Cite the
@@ -410,7 +436,9 @@ standard methods:
 
 <Guidelines>
 
-<Guideline id="IPA-101-must-support-get" given="resource" enforcement="review" effort="reason">
+{/* TODO: Depends on IPA-104, IPA-105, IPA-106, IPA-107, IPA-108 - to be documented when those IPAs are enhanced */}
+
+<Guideline id="IPA-101-must-support-get" given="resource" enforcement="automatable">
 
 A resource **must** support at minimum [Get](0104.mdx)
 
@@ -444,9 +472,8 @@ paths:
 
 <Example.Reason>
   Both resources, `user` and `task`, have an identifier and a Get that returns
-  the resource itself. Get is the cheapest call a client can make to read a
-  single resource's current state. Guarantee it and every resource becomes
-  readable, and callers can check that a resource exists before they act on it.
+  the resource itself. Get is the cheapest call available for reading a single
+  resource's current state.
 </Example.Reason>
 
 </Example.Correct>
@@ -474,51 +501,29 @@ paths:
 ```
 
 <Example.Reason>
-  You can create and delete an `order`, but you can never read one back. There
-  is no GET on `/orders/{orderId}`. So a client holding an order's identifier
-  still can't see its current state, inspect it, or confirm that a mutation
-  worked. A resource you can't read is write-only, and that defeats the
-  read-oriented model.
+  An `order` can be created and deleted, but never read back. There is no GET on
+  `/orders/{orderId}`. So an order's identifier still can't be used to see its
+  current state, inspect the resource, or confirm that a mutation worked. A
+  resource that can't be read is write-only, and that defeats the read-oriented
+  model.
 </Example.Reason>
 
 </Example.Incorrect>
-
-<Workflow>
-  <Workflow.Step>
-    List every resource in the spec. Pair each collection path with its
-    individual-resource path (for example, `/users` and `/users/{userId}`).
-  </Workflow.Step>
-  <Workflow.Step>
-    On each individual-resource path, find the `get` operation under that path
-    item.
-  </Workflow.Step>
-  <Workflow.Step>
-    Check that the Get returns a success response whose body is the resource
-    itself, not a status wrapper or an empty body.
-  </Workflow.Step>
-  <Workflow.Step>
-    Watch for any resource that's only addressed by Create, Update, Delete, or
-    custom methods. If its individual-resource path has no Get, that's a
-    violation.
-  </Workflow.Step>
-  <Workflow.Step>
-    Report every resource missing a Get. Name the resource and the path where
-    the Get should be.
-  </Workflow.Step>
-</Workflow>
 
 </Guideline.Details>
 
 </Guideline>
 
-<Guideline id="IPA-101-must-allow-state-validation-after-mutation" enforcement="advisory">
+<Guideline id="IPA-101-must-allow-state-validation-after-mutation" enforcement="advisory" dependsOn={["IPA-101-must-support-get"]}>
 
 Clients **must** be able to validate the state of resources after performing a
 mutation such as [Create](0106.mdx), [Update](0107.mdx), or [Delete](0108.mdx).
 
 </Guideline>
 
-<Guideline id="IPA-101-must-support-list" given="resource" enforcement="review" effort="reason" dependsOn={["IPA-101-should-model-as-resource-hierarchy"]}>
+{/* TODO: Depends on IPA-105, IPA-113 - to be documented when those IPAs are enhanced */}
+
+<Guideline id="IPA-101-must-support-list" given="resource" enforcement="automatable">
 
 A resource **must** support [List](0105.mdx) except for
 [singleton resources](0113.mdx) where more than one resource is not possible
@@ -575,10 +580,10 @@ paths:
 ```
 
 <Example.Reason>
-  The collection path `/projects/{projectId}/tasks` has a `GET` that returns the
-  tasks in the project. A project can have many tasks, and a caller usually
-  doesn't know the `taskId` up front. List is what lets them find out which
-  tasks exist in the first place.
+  The collection path `/projects/{projectId}/tasks` has a `GET` that lists the
+  tasks in the project. A project can have many tasks, and the `taskId` values
+  usually aren't known up front. List is what surfaces which tasks exist in the
+  first place.
 </Example.Reason>
 
 </Example.Correct>
@@ -629,41 +634,20 @@ paths:
 <Example.Reason>
   A project holds many tasks, but the spec only defines item-level operations on
   `/projects/{projectId}/tasks/{taskId}`. There's no `GET` on the collection
-  path `/projects/{projectId}/tasks`. So a client that doesn't already have a
-  `taskId` can't find out which tasks exist, and has to track the IDs somewhere
-  outside the API.
+  path `/projects/{projectId}/tasks`. So without an already-known `taskId`,
+  there is no way to find out which tasks exist, and the IDs have to be tracked
+  somewhere outside the API.
 </Example.Reason>
 
 </Example.Incorrect>
-
-<Workflow>
-  <Workflow.Step>
-    Walk the resource hierarchy from the `paths`. For each resource, find its
-    collection path: the one that ends in the plural collection name with no
-    trailing identifier parameter.
-  </Workflow.Step>
-  <Workflow.Step>
-    Check whether the resource is a singleton, meaning only one of it can ever
-    exist. A singleton has no identifier parameter and its collection can't hold
-    more than one member. If it's a singleton, List doesn't apply and the
-    resource passes.
-  </Workflow.Step>
-  <Workflow.Step>
-    For every other resource, confirm the collection path has a `GET` that
-    returns a collection of that resource's objects. That's the List method.
-  </Workflow.Step>
-  <Workflow.Step>
-    If a non-singleton resource's collection path has no such `GET`, flag it.
-    Item-level methods like Get, Update, or Delete don't make up for a missing
-    List.
-  </Workflow.Step>
-</Workflow>
 
 </Guideline.Details>
 
 </Guideline>
 
-<Guideline id="IPA-101-should-prefer-standard-methods" given="operation" enforcement="review" effort="reason" dependsOn={["IPA-101-must-support-get", "IPA-101-must-support-list"]}>
+{/* TODO: Depends on IPA-109 - to be documented when that IPA is enhanced */}
+
+<Guideline id="IPA-101-should-prefer-standard-methods" given="operation" enforcement="review" effort="reason">
 
 APIs **should** prefer standard methods over custom methods -
 [Custom methods](0109.mdx) help define functionality that does not cleanly map
@@ -700,10 +684,61 @@ paths:
 
 <Example.Reason>
   Editing an article's fields is a partial update of an existing resource, and
-  that is exactly what the standard Update method covers. Write it as `PATCH
-  /articles/{articleId}` and you get the idempotency and response behavior
-  people already expect, plus SDKs and declarative clients will recognize it as
-  the resource's Update. A custom verb buys you none of that.
+  that is exactly what the standard Update method covers. Written as `PATCH
+  /articles/{articleId}`, it carries the idempotency and response behavior
+  clients already expect, plus SDKs and declarative clients recognize it as the
+  resource's Update. A custom verb provides none of that.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /articles/{articleId}:
+    patch:
+      operationId: updateArticle
+      summary: Update an article
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/merge-patch+json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                status: { type: string }
+      responses:
+        "200":
+          description: The updated article.
+  /articles/{articleId}:publish:
+    post:
+      operationId: publishArticle
+      summary: Publish an article
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The published article.
+```
+
+<Example.Reason>
+  Publishing is a state transition, not a field edit: it validates the draft,
+  stamps a publish time, and makes the article live. No standard method captures
+  that, so a custom `:publish` is justified. The key is that it sits *alongside*
+  the standard `PATCH` Update, not in place of it — ordinary field edits still
+  go through Update, and the custom method covers only the behavior Update can't
+  express. The escape hatch is used without weakening the standard surface.
 </Example.Reason>
 
 </Example.Correct>
@@ -736,10 +771,10 @@ paths:
 
 <Example.Reason>
   Setting one field is still a partial update, so the standard Update method
-  handles it. A custom `:setTitle` verb means you end up with one custom method
-  per field, and tooling that knows the standard methods can't see what the call
-  does. Save the custom-method escape hatch for behavior that has no standard
-  equivalent.
+  handles it. A custom `:setTitle` verb leads to one custom method per field,
+  and tooling that knows the standard methods can't see what the call does. The
+  custom-method escape hatch should be reserved for behavior that has no
+  standard equivalent.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -788,7 +823,9 @@ Read-only resources are resources that cannot be modified by API consumers.
 
 <Guidelines>
 
-<Guideline id="IPA-101-must-have-get-and-list-on-read-only" given="resource" enforcement="review" effort="reason" dependsOn={["IPA-101-must-support-get", "IPA-101-must-support-list"]}>
+{/* TODO: Depends on IPA-104 and IPA-105 */}
+
+<Guideline id="IPA-101-must-have-get-and-list-on-read-only" given="resource" enforcement="automatable">
 
 Read-only resources **must** have [Get](0104.mdx) and [List](0105.mdx) methods
 
@@ -821,9 +858,9 @@ paths:
 ```
 
 <Example.Reason>
-  Consumers can't create or change regions, but they still need to find out
-  which ones exist (List) and look one up by id (Get). Without both, the
-  resource is there but you can't really use it.
+  Consumers can't create or change regions, but still need to find out which
+  ones exist (List) and look one up by id (Get). Without both, the resource is
+  there but not really usable.
 </Example.Reason>
 
 </Example.Correct>
@@ -842,119 +879,23 @@ paths:
 ```
 
 <Example.Reason>
-  You can list the collection, but there's no Get on `/regions/{regionId}`. So
-  if a client already has a region's id, it has no way to fetch just that one.
-  List alone isn't enough; a read-only resource needs Get too.
+  The collection can be listed, but there's no Get on `/regions/{regionId}`. So
+  a known region id has no way to fetch just that one region. List alone isn't
+  enough; a read-only resource needs Get too.
 </Example.Reason>
 
 </Example.Incorrect>
-
-<Workflow>
-  <Workflow.Step>
-    Find every resource in the spec that's read-only, meaning consumers can't
-    modify it through the API.
-  </Workflow.Step>
-  <Workflow.Step>
-    For each one, find the collection path (like `/regions`) and the instance
-    path with its identifier (like `/regions/{regionId}`).
-  </Workflow.Step>
-  <Workflow.Step>
-    Check that the collection path has a List method: a `get` that returns a
-    page or array of resources.
-  </Workflow.Step>
-  <Workflow.Step>
-    Check that the instance path has a Get method: a `get` that takes the
-    resource id as a path parameter and returns the one resource.
-  </Workflow.Step>
-  <Workflow.Step>
-    If either Get or List is missing, flag the resource.
-  </Workflow.Step>
-</Workflow>
 
 </Guideline.Details>
 
 </Guideline>
 
-<Guideline id="IPA-101-must-not-have-mutation-methods-on-read-only" given="resource" enforcement="review" effort="reason" dependsOn={["IPA-101-must-have-get-and-list-on-read-only"]}>
+{/* TODO: Depends on IPA-106, IPA-107, and IPA-108 */}
+
+<Guideline id="IPA-101-must-not-have-mutation-methods-on-read-only" given="resource" enforcement="automatable" effort="reason">
 
 Read-only resources **must not** have [Create](0106.mdx), [Update](0107.mdx), or
 [Delete](0108.mdx) methods
-
-<Guideline.Details>
-
-<Example.Correct>
-
-```yaml
-paths:
-  /auditLogs:
-    get:
-      operationId: listAuditLogs
-  /auditLogs/{auditLogId}:
-    get:
-      operationId: getAuditLog
-```
-
-<Example.Reason>
-  The `auditLog` resource is read-only, and the spec exposes only Get and List.
-  The server produces and owns audit records, so there is nothing for a consumer
-  to create, update, or delete. The contract says exactly that: you can read
-  these records, but you can't touch them.
-</Example.Reason>
-
-</Example.Correct>
-
-<Example.Incorrect>
-
-```yaml
-paths:
-  /auditLogs:
-    get:
-      operationId: listAuditLogs
-    post:
-      operationId: createAuditLog
-  /auditLogs/{auditLogId}:
-    get:
-      operationId: getAuditLog
-    patch:
-      operationId: updateAuditLog
-    delete:
-      operationId: deleteAuditLog
-```
-
-<Example.Reason>
-  The same read-only `auditLog` resource now also exposes Create (`post`),
-  Update (`patch`), and Delete. Consumers can't actually change this resource,
-  so these methods are a lie. Generated SDKs will offer operations the server
-  rejects, and clients stop trusting what the spec says.
-</Example.Reason>
-
-</Example.Incorrect>
-
-<Workflow>
-  <Workflow.Step>
-    Find the read-only resources in the spec — the ones whose state the server
-    owns end to end and consumers can't change.
-  </Workflow.Step>
-  <Workflow.Step>
-    For each read-only resource, list every operation on its collection path and
-    on its individual-resource path.
-  </Workflow.Step>
-  <Workflow.Step>
-    Check for the methods that don't belong: Create (`post` on the collection),
-    Update (`put`/`patch` on the resource), and Delete (`delete` on the
-    resource). None of them should be there.
-  </Workflow.Step>
-  <Workflow.Step>
-    Confirm that only Get, List, and any appropriate custom methods are left on
-    the read-only resource.
-  </Workflow.Step>
-  <Workflow.Step>
-    Flag any read-only resource that defines a Create, Update, or Delete method
-    as a violation.
-  </Workflow.Step>
-</Workflow>
-
-</Guideline.Details>
 
 </Guideline>
 
@@ -964,12 +905,14 @@ Read-only resources **may** have [custom methods](0109.mdx) as appropriate
 
 </Guideline>
 
-<Guideline id="IPA-101-must-mark-all-properties-read-only" given="schema" enforcement="review" effort="reason" dependsOn={["IPA-101-must-have-get-and-list-on-read-only"]}>
+<Guideline id="IPA-101-must-mark-all-properties-read-only" given="schema" enforcement="review" effort="reason">
 
 All response schema properties for read-only resources **must** be marked as
-read-only - In OpenAPI, this means all properties **must** have
-`readOnly:   true` - All fields in read-only resources are server-owned. For
-guidance on server-owned fields, see [IPA-111](0111.mdx#single-owner-fields)
+read-only
+
+- In OpenAPI, this means all properties **must** have `readOnly:   true`
+- All fields in read-only resources are server-owned. For guidance on
+  server-owned fields, see [IPA-111](0111.mdx#single-owner-fields)
 
 <Guideline.Details>
 
@@ -998,7 +941,7 @@ components:
 
 <Example.Reason>
   `AuditEvent` is read-only, so the server owns every field. With `readOnly:
-  true` on each one, generated clients know to leave all of them out of request
+  true` on each one, generated clients leave every field out of request
   payloads. Nothing here is writable, and the schema says so.
 </Example.Reason>
 
@@ -1027,8 +970,8 @@ components:
 
 <Example.Reason>
   `action` and `createdAt` are missing `readOnly: true`, so the schema reads as
-  if clients can set them. They can't — the server owns every field on a
-  read-only resource. Drop the marker on any of them and you get fake writable
+  if those fields are writable. Neither is — the server owns every field on a
+  read-only resource. A missing marker on any field produces fake writable
   fields in the generated clients and docs.
 </Example.Reason>
 
@@ -1036,18 +979,29 @@ components:
 
 <Workflow>
   <Workflow.Step>
-    Confirm the resource is read-only: it has Get and List but no Create,
+    Establish that the resource is genuinely read-only by intent: the server
+    produces and owns all of the resource's state, and consumers supply none of
+    it.
+
+    - The structural tell is a resource with Get (and List) but no Create,
     Update, or Delete.
+    - If any field is consumer-supplied, the resource is
+    writable — this guideline doesn't apply, and per-field ownership is governed
+    by [IPA-111](0111.mdx#single-owner-fields) instead.
+
   </Workflow.Step>
   <Workflow.Step>
-    Find the response schema under `components.schemas` and follow any `$ref`,
-    `allOf`, or composition through to the full property list.
+    Find the Get (and List item) response schema under `components.schemas` and
+    follow any `$ref`, `allOf`, or composition through to the full property list.
   </Workflow.Step>
   <Workflow.Step>
     Walk every property, including the ones inside nested objects and array
-    items, so nothing slips through.
+    items.
   </Workflow.Step>
-  <Workflow.Step>Each property must declare `readOnly: true`.</Workflow.Step>
+  <Workflow.Step>
+    Each property must declare `readOnly: true` — on a read-only resource every
+    field is server-owned, so none can be writable.
+  </Workflow.Step>
   <Workflow.Step>
     Flag any property on a read-only resource that's missing `readOnly: true`.
   </Workflow.Step>
@@ -1057,12 +1011,14 @@ components:
 
 </Guideline>
 
-<Guideline id="IPA-101-should-return-405-for-unsupported-ops" given="operation" enforcement="review" effort="reason" dependsOn={["IPA-101-must-not-have-mutation-methods-on-read-only"]}>
+<Guideline id="IPA-101-should-return-405-for-unsupported-ops" given="operation" enforcement="review" effort="explore" implementation>
 
 Unsupported operations on read-only resources **should** return
-`405 Not   Allowed` - Some declarative-friendly clients require all standard
-methods to be implemented, but we consider documented unsupported methods to be
-in detriment of generated documentation and code
+`405 Not Allowed`
+
+- Some declarative-friendly clients require all standard methods to be
+  implemented, but documented unsupported methods are a detriment to generated
+  documentation and code
 
 <Guideline.Details>
 
@@ -1082,20 +1038,16 @@ paths:
       responses:
         "200":
           description: The requested article.
-    delete:
-      operationId: deleteArticle
-      responses:
-        "405":
-          description: >-
-            Method Not Allowed. Articles are read-only; mutation operations are
-            not supported on this resource.
 ```
 
 <Example.Reason>
-  A `405` says exactly what's true here: the route knows about the method, it
-  just won't run it. That answers a declarative client expecting every standard
-  method to resolve, and it tells the caller up front that the delete is never
-  going to work.
+  The read-only `article` documents only `get` — the unsupported `delete` is
+  kept out of the spec entirely, as the rule against documenting unsupported
+  operations requires. The `405` is a runtime concern, not a documented one: a
+  `DELETE /articles/{articleId}` call still resolves to `405 Not Allowed` at the
+  server, marking the method as recognized but not permitted rather than `404`
+  (resource missing) or `403` (forbidden). The behavior lives in the
+  implementation while the contract stays clean.
 </Example.Reason>
 
 </Example.Correct>
@@ -1125,34 +1077,26 @@ paths:
 
 <Example.Reason>
   A `404` here muddles two different things: the resource doesn't exist, versus
-  the method isn't allowed on it. A client reads that as a missing record and
-  retries with another id. The method is recognized but disallowed, so the
-  honest code is `405`.
+  the method isn't allowed on it. A `404` reads as a missing record, prompting a
+  retry with another id. The method is recognized but disallowed, so the honest
+  code is `405`.
 </Example.Reason>
 
 </Example.Incorrect>
 
 <Workflow>
   <Workflow.Step>
-    Find each path whose resource is read-only: it has Get or List but no
-    supported Create, Update, or Delete.
+    Identify each read-only resource: only Get (and List) are documented, with
+    no Create, Update, or Delete.
   </Workflow.Step>
   <Workflow.Step>
-    On that path, find every mutation operation in the spec: `post`, `put`,
-    `patch`, and `delete`.
+    In the implementation behind that path (routing or controller code), check
+    what an unsupported mutation — `POST`, `PUT`, `PATCH`, or `DELETE` —
+    returns.
   </Workflow.Step>
   <Workflow.Step>
-    For each of those unsupported mutations, check the `responses` map to see
-    what status code comes back when a client calls it.
-  </Workflow.Step>
-  <Workflow.Step>
-    The response for an unsupported mutation should be `405` (Method Not
-    Allowed). That's the right code when the route recognizes the method but
-    won't permit it.
-  </Workflow.Step>
-  <Workflow.Step>
-    Flag any unsupported mutation that documents something other than `405` (say
-    `403`, `404`, or a success status) as a violation.
+    Flag any unsupported mutation that resolves to anything other than `405 Not
+    Allowed` (for example `404`, `403`, or a success code).
   </Workflow.Step>
 </Workflow>
 
@@ -1160,7 +1104,9 @@ paths:
 
 </Guideline>
 
-<Guideline id="IPA-101-must-not-document-unsupported-operations" given="operation" enforcement="review" effort="reason" dependsOn={[
+{/* TODO: Add dependency to lintable rules for checking unsupported operations for DELETE, PATCH and POST */}
+
+<Guideline id="IPA-101-must-not-document-unsupported-operations" given="operation" enforcement="automatable" dependsOn={[
     "IPA-101-must-not-have-mutation-methods-on-read-only",
     "IPA-101-should-return-405-for-unsupported-ops",
   ]}>
@@ -1192,8 +1138,8 @@ paths:
 <Example.Reason>
   This read-only `article` resource lists only what it actually serves:
   `getArticle` and `listArticles`. There are no mutation operations in the spec,
-  so doc generators and SDK builders produce only the methods the API honors. A
-  client never ends up calling an endpoint the server will reject.
+  so doc generators and SDK builders produce only the methods the API honors. No
+  generated call targets an endpoint the server will reject.
 </Example.Reason>
 
 </Example.Correct>
@@ -1229,29 +1175,6 @@ paths:
 </Example.Reason>
 
 </Example.Incorrect>
-
-<Workflow>
-  <Workflow.Step>
-    Find each read-only resource in the spec and gather every operation declared
-    under its paths.
-  </Workflow.Step>
-  <Workflow.Step>
-    For each operation, check its documented responses. Does it only ever return
-    `405 Not Allowed` (or an equivalent unsupported-method status) with no
-    success response?
-  </Workflow.Step>
-  <Workflow.Step>
-    If so, treat it as an unsupported method the API doesn't really serve.
-  </Workflow.Step>
-  <Workflow.Step>
-    Make sure no such operation appears in the spec at all. Documenting one
-    leaks a method that doesn't exist into generated docs and client code.
-  </Workflow.Step>
-  <Workflow.Step>
-    Flag any operation on a read-only resource whose only job is to announce
-    that the method isn't supported.
-  </Workflow.Step>
-</Workflow>
 
 </Guideline.Details>
 
