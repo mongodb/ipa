@@ -34,6 +34,24 @@ help you understand our development process and requirements.
    npm run docusaurus:build
    ```
 
+## Reviewing a pull request locally
+
+Check out a PR and serve the docs to see how it renders. The helper script does
+both (it needs the [GitHub CLI](https://cli.github.com/)):
+
+```bash
+scripts/preview-pr.sh <pr-number>              # current branch if no number
+scripts/preview-pr.sh <pr-number> --port 3001  # if port 3000 is taken
+```
+
+The site is served under `/ipa/`, so it opens at `http://localhost:<port>/ipa/`
+(default port 3000) with hot reload. A guideline renders at
+`http://localhost:<port>/ipa/<id>`, where `<id>` is the IPA number — the file's
+name without leading zeros (e.g. `ipa/general/0101.mdx` → `/ipa/101`).
+
+> Using Claude Code? The `preview-ipa` skill wraps this flow — just ask it to
+> "preview PR `<number>`".
+
 ## Code Quality
 
 Before submitting your changes, ensure they pass our quality checks:
