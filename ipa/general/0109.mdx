@@ -11,59 +11,763 @@ methods.
 
 ## Guidance
 
-- Custom methods **should** only be used for functionality that cannot be easily
-  expressed via standard methods
-  - Prefer standard methods if possible, due to their consistent semantics
-- The name of the method **should** be a verb and **may** be followed by a noun
-- The HTTP method **must** be `GET` or `POST`:
-  - `GET` **must** be used for methods retrieving data or resource state.
-  - `POST` **must** be used if the method has side effects or mutates resources
-    or data
-- Custom methods using the `GET` HTTP method **must** return a
-  [200 OK](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200)
-  response.
-- The HTTP URI **must** use a colon(:) character followed by the custom method
-  name
-  - This aims to clearly distinguish between custom methods and other resources
-  - The custom method name **must** be written in `camelCase`
-- See [Declarative-friendly resources](#declarative-friendly-resources) for
-  further guidance
+<Guidelines>
 
-Example
+<Guideline id="IPA-109-should-use-only-when-needed" given="operation" enforcement="review" effort="reason">
+
+Custom methods **should** only be used for functionality that cannot be easily
+expressed via standard methods. Prefer standard methods if possible, due to
+their consistent semantics.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:cancel:
+    post:
+      operationId: cancelOrder
+```
+
+<Example.Reason>
+  Cancellation is a state transition with side effects that no standard CRUD
+  verb captures, so a custom method is the right tool.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:create:
+    post:
+      operationId: createOrder
+```
+
+<Example.Reason>
+  Creating an order is exactly what a standard `POST /orders` already expresses.
+  A custom method here duplicates standard semantics and breaks the consistency
+  consumers rely on.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every path that contains a colon-delimited custom method.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, read the custom method name and decide which standard method
+    (list, get, create, update, delete) it most resembles.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the action genuinely cannot be modeled as a standard method on the
+    resource — a distinct state transition or side effect, not a renamed CRUD
+    operation.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any custom method whose behavior maps cleanly onto a standard method.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-should-name-method-as-verb" given="paths" enforcement="review" effort="check">
+
+The name of the method **should** be a verb.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:pause:
+    post:
+      operationId: pausePipeline
+```
+
+<Example.Reason>
+  `pause` is a verb, so the method name reads as the action being performed on
+  the resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:status:
+    get:
+      operationId: getPipelineStatus
+```
+
+<Example.Reason>
+  `status` is a noun, so the method name describes a thing rather than an
+  action. A custom method names the operation, which should read as a verb.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every path that contains a colon-delimited custom method.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, extract the method name following the colon.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the leading token of the method name is a verb (an action), not a
+    bare noun.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any custom method whose name does not begin with a verb.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-may-follow-verb-with-noun" enforcement="advisory">
+  The verb in the method name **may** be followed by a noun.
+</Guideline>
+
+<Guideline id="IPA-109-must-use-get-or-post" given="paths" enforcement="rule">
+
+The HTTP method **must** be `GET` or `POST`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:pause:
+    post:
+      operationId: pausePipeline
+```
+
+<Example.Reason>
+  A custom method that mutates state uses `POST`, one of the two HTTP methods
+  allowed for custom methods.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:pause:
+    put:
+      operationId: pausePipeline
+```
+
+<Example.Reason>
+  `PUT` is not permitted for custom methods. Only `GET` and `POST` are allowed,
+  so that custom methods stay distinguishable from standard ones.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-must-use-get-for-reads" given="get-operation" enforcement="review" implementation effort="explore">
+
+`GET` **must** be used for methods retrieving data or resource state.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /reports/{reportId}:export:
+    get:
+      operationId: exportReport
+```
+
+<Example.Reason>
+  `export` reads existing report data without changing it, so it correctly uses
+  `GET`.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /reports/{reportId}:export:
+    post:
+      operationId: exportReport
+```
+
+<Example.Reason>
+  `export` only reads data and has no side effects, so it should use `GET`.
+  Using `POST` for a pure read hides the read-only nature of the operation from
+  caches and clients.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every custom method declared with the `GET` HTTP method.
+  </Workflow.Step>
+  <Workflow.Step>
+    Also collect every custom method that, by its name and description, only
+    retrieves data or resource state.
+  </Workflow.Step>
+  <Workflow.Step>
+    Inspect the implementation or behavior to confirm the operation does not
+    mutate state — read the handler or the described effect, not just the
+    contract.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any read-only custom method that is not declared as `GET`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-must-use-post-for-side-effects" given="post-operation" enforcement="review" implementation effort="explore">
+
+`POST` **must** be used if the method has side effects or mutates resources or
+data.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:cancel:
+    post:
+      operationId: cancelOrder
+```
+
+<Example.Reason>
+  `cancel` changes the order's state, so it correctly uses `POST`.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:cancel:
+    get:
+      operationId: cancelOrder
+```
+
+<Example.Reason>
+  `cancel` mutates the order, so it must use `POST`. Declaring a state-changing
+  operation as `GET` invites caches and crawlers to trigger the side effect.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every custom method declared with the `GET` HTTP method.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, inspect the implementation or described behavior to determine
+    whether the operation has side effects or mutates resources or data.
+  </Workflow.Step>
+  <Workflow.Step>
+    Reading the contract alone is not enough — confirm against the handler or
+    documented effect whether state changes.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any custom method with side effects that is not declared as `POST`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-must-return-200-for-get" given="get-operation" enforcement="automatable" effort="check">
+
+Custom methods using the `GET` HTTP method **must** return a
+[200 OK](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200) response.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /reports/{reportId}:export:
+    get:
+      operationId: exportReport
+      responses:
+        "200":
+          description: The exported report.
+```
+
+<Example.Reason>
+  The `GET` custom method declares a `200` response, the expected success status
+  for a read.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /reports/{reportId}:export:
+    get:
+      operationId: exportReport
+      responses:
+        "202":
+          description: Export accepted.
+```
+
+<Example.Reason>
+  A `GET` custom method declares `202` instead of `200`. Read operations resolve
+  synchronously and return the data with `200`; `202` signals deferred work,
+  which does not fit a `GET`.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every custom method declared with the `GET` HTTP method.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, read the `responses` map and list the declared success status
+    codes.
+  </Workflow.Step>
+  <Workflow.Step>Confirm a `200` response is declared.</Workflow.Step>
+  <Workflow.Step>
+    Report any `GET` custom method that does not declare a `200` response.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-must-use-colon-identifier" given="paths" enforcement="rule">
+
+The HTTP URI **must** use a colon (`:`) character followed by the custom method
+name, to clearly distinguish between custom methods and other resources.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:pause:
+    post:
+      operationId: pausePipeline
+```
+
+<Example.Reason>
+  The method name follows a single colon attached to the resource identifier, so
+  a reader and tooling can tell the custom method apart from a sub-resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}/pause:
+    post:
+      operationId: pausePipeline
+```
+
+<Example.Reason>
+  Using a slash makes `pause` look like a sub-resource rather than a custom
+  method. The colon is what marks the segment as an action on the resource.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-must-use-camel-case-method-name" given="paths" enforcement="rule">
+
+The custom method name **must** be written in `camelCase`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:addStage:
+    post:
+      operationId: addPipelineStage
+```
+
+<Example.Reason>
+  `addStage` is camelCase, matching the casing used for every other method name.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:add_stage:
+    post:
+      operationId: addPipelineStage
+```
+
+<Example.Reason>
+  `add_stage` is snake_case. Custom method names use camelCase so casing stays
+  consistent across the surface.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ```http request
-POST /groups/${groupId}/clusters/${clusterName}:pause
-GET /groups/${groupId}/clusters:search
-POST /groups/${groupId}/clusters/${clusterName}:addNode
-POST /groups/${groupId}/clusters/${clusterName}:removeNode
+POST /accounts/${accountId}/pipelines/${pipelineId}:pause
+GET /accounts/${accountId}/pipelines:search
+POST /accounts/${accountId}/pipelines/${pipelineId}:addStage
+POST /accounts/${accountId}/pipelines/${pipelineId}:removeStage
 ```
 
 ### Naming
 
-- Operation ID **must** be unique
-- Operation ID **must** be in `camelCase`
-- Operation ID **must** start with the custom method verb
-  - Derived from the path section delimited by the colon (:) character
-- Operation ID **should** be followed by a noun or compound nouns
-- The noun(s) in the Operation ID **should** be
-  - The collection identifiers from the resource identifier in singular form
-  - The custom method noun(s)
-    - Derived from the path section delimited by the colon (:) character
+<Guidelines>
 
-| Resource Identifier                                  | Operation ID          |
-| ---------------------------------------------------- | --------------------- |
-| `/groups/${groupId}/clusters/${clusterName}:pause`   | `pauseGroupCluster`   |
-| `/groups/${groupId}/clusters/${clusterName}:addNode` | `addGroupClusterNode` |
-| `/groups/${groupId}/clusters:search`                 | `searchGroupClusters` |
+<Guideline id="IPA-109-must-use-unique-operation-id" given="operation" enforcement="automatable" effort="reason">
+
+Operation ID **must** be unique.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:pause:
+    post:
+      operationId: pausePipeline
+  /pipelines/{pipelineId}:resume:
+    post:
+      operationId: resumePipeline
+```
+
+<Example.Reason>
+  Each operation carries a distinct operationId, so generated clients produce
+  one uniquely named method per operation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:pause:
+    post:
+      operationId: pipelineAction
+  /pipelines/{pipelineId}:resume:
+    post:
+      operationId: pipelineAction
+```
+
+<Example.Reason>
+  Two operations share `pipelineAction`. A duplicated operationId collides in
+  generated SDKs and makes the operation ambiguous to reference.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect the `operationId` of every operation across all paths.
+  </Workflow.Step>
+  <Workflow.Step>Compare them for exact duplicates.</Workflow.Step>
+  <Workflow.Step>
+    Report any `operationId` value that appears on more than one operation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-must-use-camel-case-operation-id" given="operation" enforcement="rule">
+
+Operation ID **must** be in `camelCase`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:pause:
+    post:
+      operationId: pausePipeline
+```
+
+<Example.Reason>
+  `pausePipeline` is camelCase, the casing every operationId uses.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:pause:
+    post:
+      operationId: PausePipeline
+```
+
+<Example.Reason>
+  `PausePipeline` is PascalCase. operationIds use camelCase so generated method
+  names stay consistent.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-must-start-operation-id-with-verb" given="operation" enforcement="rule">
+
+Operation ID **must** start with the custom method verb, derived from the path
+section delimited by the colon (`:`) character.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:pause:
+    post:
+      operationId: pausePipeline
+```
+
+<Example.Reason>
+  The operationId begins with `pause`, the verb taken from the custom method
+  name after the colon.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:pause:
+    post:
+      operationId: pipelinePause
+```
+
+<Example.Reason>
+  The operationId leads with the noun `pipeline` instead of the verb `pause`.
+  Leading with the verb keeps every operationId reading as the action it
+  performs.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-should-follow-operation-id-with-noun" given="operation" enforcement="rule" dependsOn={["IPA-109-must-start-operation-id-with-verb"]}>
+
+Operation ID **should** be followed by a noun or compound nouns.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:pause:
+    post:
+      operationId: pausePipeline
+```
+
+<Example.Reason>
+  The verb `pause` is followed by the noun `pipeline`, naming what the action
+  operates on.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:pause:
+    post:
+      operationId: pause
+```
+
+<Example.Reason>
+  The operationId is the bare verb with no noun, so it does not say what is
+  being paused.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-should-derive-operation-id-nouns" given="operation" enforcement="rule" dependsOn={["IPA-109-should-follow-operation-id-with-noun"]}>
+
+The noun(s) in the Operation ID **should** be the collection identifiers from
+the resource identifier in singular form, plus the custom method noun(s) derived
+from the path section delimited by the colon (`:`) character.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:addStage:
+    post:
+      operationId: addPipelineStage
+```
+
+<Example.Reason>
+  `pipeline` is the singular form of the `pipelines` collection and `Stage` is
+  the custom method noun, so the operationId names the same resource the path
+  does.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /pipelines/{pipelineId}:addStage:
+    post:
+      operationId: addWorkflowTask
+```
+
+<Example.Reason>
+  `Workflow` and `Task` do not match the `pipelines` collection or the `Stage`
+  custom method noun, so the operationId no longer describes the path it belongs
+  to.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+| Resource Identifier                                       | Operation ID              |
+| --------------------------------------------------------- | ------------------------- |
+| `/accounts/${accountId}/pipelines/${pipelineId}:pause`    | `pauseAccountPipeline`    |
+| `/accounts/${accountId}/pipelines/${pipelineId}:addStage` | `addAccountPipelineStage` |
+| `/accounts/${accountId}/pipelines:search`                 | `searchAccountPipelines`  |
 
 ### Declarative-friendly resources
 
-- Declarative-friendly resources **should not** use custom methods. To learn
-  more, see [IPA-127](0127.mdx).
-  - Custom methods require manual curation, implementation, and review for API
-    tooling, which increases feature latency.
-  - Declarative-friendly tools are unable to automatically determine what to do
-    with them
+<Guidelines>
+
+<Guideline id="IPA-109-should-not-use-for-declarative-resources" given="paths" enforcement="review" effort="reason">
+
+Declarative-friendly resources **should not** use custom methods. To learn more,
+see [IPA-127](0127.mdx). Custom methods require manual curation, implementation,
+and review for API tooling, which increases feature latency, and
+declarative-friendly tools are unable to automatically determine what to do with
+them.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /environments/{environmentId}:
+    patch:
+      operationId: updateEnvironment
+```
+
+<Example.Reason>
+  The declarative-friendly resource exposes its state through a standard update,
+  so declarative tooling can reconcile it from the resource representation
+  alone.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /environments/{environmentId}:promote:
+    post:
+      operationId: promoteEnvironment
+```
+
+<Example.Reason>
+  A declarative-friendly resource offers a custom method. Declarative tooling
+  cannot infer when or how to invoke `promote` from the resource state, so the
+  action sits outside the reconcile loop.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the resources marked declarative-friendly (per IPA-127).
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, collect the operations defined on the resource and its sub-paths.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check whether any path uses a colon-delimited custom method.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any declarative-friendly resource that exposes a custom method.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 :::tip
 
