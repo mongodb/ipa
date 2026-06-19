@@ -11,57 +11,482 @@ resource.
 
 ## Guidance
 
-- APIs **should** provide an update method for resources unless it is not
-  valuable for users to do so
-  - [Read-only resources](0101.mdx#read-only-resources) **must not** have an
-    Update method
-  - [Read-only singleton resources](0113.mdx#read-only-singleton-resources)
-    **must not** have an Update method
-  - The purpose of the Update method is to make changes to the resources without
-    causing side effects
-- The HTTP verb **should** be
-  [`PATCH`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PATCH) and
-  support partial resource update
-  - The HTTP verb **may** be
-    [`PUT`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PUT) If
-    the method will only ever support full resource replacement
-  - `PUT` is strongly discouraged because it becomes a backward-incompatible
-    change to add fields to the resource
-- The request body **must** contain the resource being updated, i.e. the
-  resource or parts of the resource returned by the [Get method](0104.mdx)
-  - API producers **should** implement as a `UpdateRequest` suffixed object
-    - A `UpdateRequest` object **must** include only input fields
-      - In OpenAPI, this means that the `UpdateRequest` object **must not**
-        include fields with `readOnly: true`
-- The response body **should** be the same resource returned by the
-  [Get method](0104.mdx)
-  - The Update method **should** return the complete resource to avoid
-    complexities for clients
-- The Update method **must** respect the client provided values, or lack
-  thereof, for all fields in the request (see
-  [Client-owned fields](0111.mdx#single-owner-fields))
-  - For partial resource updates, the Update method **must** only update fields
-    included in the request body and leave all other fields unchanged
-  - For full resource replacements, the Update method **must** update the full
-    resource to match the request
-    - Any fields not included in the request body **must** be unset or set to
-      their default value(s)
-  - If the client explicitly provides `null` for an optional field in the
-    request, the server **should** unset the field or reset it to its default
-    value
-    - The server **should** return a
-      [validation error](0114.mdx#validation-errors) if the client provides
-      `null` for a field that is not nullable and cannot be unset
-- Update operations **must not** accept query parameters
-  - Query parameters are usually a sign of a side effect that standard methods
-    **must not** cause
-- The response status code **should** be
-  [`200 OK`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200)
-  - If the request for a _partial_ update is empty, the Update method **should**
-    return a 200 response with no change to the resource
-- Resources **should** provide a single canonical update operation
-  - If a resource has multiple Update methods, it's possible one, or all of
-    them, **may** be [custom methods](0109.mdx)
+<Guidelines>
+
+<Guideline id="IPA-107-should-provide-update-method" given="resource" enforcement="review" effort="reason">
+
+APIs **should** provide an update method for resources unless it is not valuable
+for users to do so
+
+- [Read-only resources](0101.mdx#read-only-resources) **must not** have an
+  Update method
+- [Read-only singleton resources](0113.mdx#read-only-singleton-resources) **must
+  not** have an Update method
+- The purpose of the Update method is to make changes to the resources without
+  causing side effects
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    patch:
+      operationId: updateGroupCluster
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClusterUpdateRequest"
+      responses:
+        "200":
+          description: The updated cluster.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cluster"
+```
+
+<Example.Reason>
+  A `cluster` is a mutable resource, so consumers need a way to change it. An
+  Update method on the resource URI lets them do that directly, without a custom
+  verb or a side-effecting workaround.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Identify each mutable resource — one whose state consumers are expected to
+    change after creation. Read-only resources and read-only singleton resources
+    are out of scope and must not have an Update method.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each mutable resource, confirm there is an Update method (`PATCH` or
+    `PUT`) on the resource URI.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any mutable resource that has no Update method, unless changing it is
+    genuinely not valuable to users.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-should-use-patch-verb" given="update-operation" enforcement="review" effort="reason">
+
+The HTTP verb **should** be
+[`PATCH`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PATCH) and
+support partial resource update
+
+- The HTTP verb **may** be
+  [`PUT`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PUT) if the
+  method will only ever support full resource replacement
+- `PUT` is strongly discouraged because it becomes a backward-incompatible
+  change to add fields to the resource
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    patch:
+      operationId: updateGroupCluster
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClusterUpdateRequest"
+      responses:
+        "200":
+          description: The updated cluster.
+```
+
+<Example.Reason>
+  `PATCH` allows the client to send only the fields it wants to change. Adding a
+  new field to the resource later is backward-compatible, because existing
+  clients simply omit it. `PUT` would force a full replacement, so a newly added
+  field would be unset by every existing client.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    For each Update operation, read the HTTP verb on the resource path.
+  </Workflow.Step>
+  <Workflow.Step>
+    Prefer `PATCH` with partial-update semantics. `PUT` is acceptable only when
+    the method will only ever support full resource replacement.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag `PUT` used where partial update is expected, and note that adding
+    fields to a `PUT` resource is a backward-incompatible change.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-must-contain-resource-in-request-body" given="update-operation" enforcement="review" effort="reason">
+
+The request body **must** contain the resource being updated, i.e. the resource
+or parts of the resource returned by the [Get method](0104.mdx)
+
+- API producers **should** implement as a `UpdateRequest` suffixed object
+  - A `UpdateRequest` object **must** include only input fields
+    - In OpenAPI, this means that the `UpdateRequest` object **must not**
+      include fields with `readOnly: true`
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    patch:
+      operationId: updateGroupCluster
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClusterUpdateRequest"
+components:
+  schemas:
+    ClusterUpdateRequest:
+      type: object
+      properties:
+        instanceSize:
+          type: string
+        diskSizeGB:
+          type: integer
+```
+
+<Example.Reason>
+  The request body is the cluster resource, expressed as a
+  `ClusterUpdateRequest` object that carries only writable fields. Server-owned
+  fields like `id` or `createdAt` (which would be `readOnly: true` on the
+  resource) are absent, so clients can't try to set values the server controls.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    For each Update operation, read the request body schema.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the body is the resource (or parts of it) as returned by the Get
+    method, ideally modeled as an `UpdateRequest`-suffixed object.
+  </Workflow.Step>
+  <Workflow.Step>
+    Walk the request schema's properties and flag any field that is `readOnly:
+    true` on the resource — an `UpdateRequest` object must include only input
+    fields.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-should-return-resource-in-response-body" given="update-operation" enforcement="review" effort="reason">
+
+The response body **should** be the same resource returned by the
+[Get method](0104.mdx)
+
+- The Update method **should** return the complete resource to avoid
+  complexities for clients
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    patch:
+      operationId: updateGroupCluster
+      responses:
+        "200":
+          description: The updated cluster.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cluster"
+```
+
+<Example.Reason>
+  The Update response returns the full `Cluster`, the same schema the Get method
+  returns. The client sees the resource's complete current state in one round
+  trip and does not have to issue a follow-up Get to learn the result of its
+  change.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    For each Update operation, read the success response schema.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm it is the same resource schema returned by the Get method, and that
+    it is the complete resource rather than a partial projection.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag Update operations that return no body, a partial body, or a schema that
+    differs from the Get resource.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-must-respect-client-provided-values" given="update-operation" enforcement="review" effort="reason">
+
+The Update method **must** respect the client provided values, or lack thereof,
+for all fields in the request (see
+[Client-owned fields](0111.mdx#single-owner-fields))
+
+- For partial resource updates, the Update method **must** only update fields
+  included in the request body and leave all other fields unchanged
+- For full resource replacements, the Update method **must** update the full
+  resource to match the request
+  - Any fields not included in the request body **must** be unset or set to
+    their default value(s)
+- If the client explicitly provides `null` for an optional field in the request,
+  the server **should** unset the field or reset it to its default value
+  - The server **should** return a
+    [validation error](0114.mdx#validation-errors) if the client provides `null`
+    for a field that is not nullable and cannot be unset
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+# PATCH /groups/{groupId}/clusters/{clusterName}
+# Request body:
+{ "diskSizeGB": 100 }
+# Only diskSizeGB changes; instanceSize and every other field
+# keep their existing values.
+```
+
+<Example.Reason>
+  This is a partial (`PATCH`) update. Only `diskSizeGB` appears in the body, so
+  only `diskSizeGB` changes. Fields the client did not send are left untouched,
+  which is exactly what a partial update promises.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Determine whether the operation is a partial update (`PATCH`) or a full
+    replacement (`PUT`).
+  </Workflow.Step>
+  <Workflow.Step>
+    For partial updates, confirm fields absent from the request body are left
+    unchanged. For full replacements, confirm absent fields are unset or reset
+    to their defaults.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check `null` handling: an explicit `null` on an optional field should unset
+    it or reset it to its default, and a `null` on a non-nullable field that
+    cannot be unset should yield a validation error.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any field whose ownership is not respected, cross-checking client-owned
+    fields against [IPA-111](0111.mdx#single-owner-fields).
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-must-not-accept-query-parameters" given="update-operation" enforcement="automatable">
+
+Update operations **must not** accept query parameters
+
+- Query parameters are usually a sign of a side effect that standard methods
+  **must not** cause
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    patch:
+      operationId: updateGroupCluster
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: clusterName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClusterUpdateRequest"
+      responses:
+        "200":
+          description: The updated cluster.
+```
+
+<Example.Reason>
+  Every parameter is a path parameter that identifies the resource. There are no
+  query parameters, so the operation can't smuggle in flags that trigger side
+  effects — it does one thing, update the cluster.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    patch:
+      operationId: updateGroupCluster
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: clusterName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: restart
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: The updated cluster.
+```
+
+<Example.Reason>
+  The `restart` query parameter turns a plain Update into something that also
+  reboots the cluster — a side effect a standard method must not cause. Query
+  parameters on an Update are the usual signature of exactly this kind of hidden
+  behavior.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-should-return-200" given="update-operation" enforcement="automatable">
+
+The response status code **should** be
+[`200 OK`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200)
+
+- If the request for a _partial_ update is empty, the Update method **should**
+  return a 200 response with no change to the resource
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    patch:
+      operationId: updateGroupCluster
+      responses:
+        "200":
+          description: The updated cluster.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cluster"
+```
+
+<Example.Reason>
+  The Update returns `200 OK` with the updated resource in the body. An empty
+  partial-update request is still answered with `200` and the resource left
+  unchanged, so clients get a consistent success code whether or not anything
+  actually changed.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-should-provide-single-canonical-update" given="resource" enforcement="review" effort="reason">
+
+Resources **should** provide a single canonical update operation
+
+- If a resource has multiple Update methods, it's possible one, or all of them,
+  **may** be [custom methods](0109.mdx)
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    patch:
+      operationId: updateGroupCluster
+      responses:
+        "200":
+          description: The updated cluster.
+```
+
+<Example.Reason>
+  The cluster has exactly one canonical Update — `PATCH /groups/{groupId}
+  /clusters/{clusterName}`. Clients have a single, predictable way to change the
+  resource, and there is no ambiguity about which operation performs an ordinary
+  update.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    For each resource, collect all operations that modify it via `PATCH` or
+    `PUT` on the resource URI.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm there is a single canonical Update method for the resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    If multiple Update-like methods exist, check whether the non-canonical ones
+    are properly modeled as [custom methods](0109.mdx) rather than competing
+    standard Updates, and flag any ambiguity.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Example
 
@@ -76,14 +501,148 @@ documentation.
 
 ### Naming
 
-- Operation ID **must** be unique
-- Operation ID **must** be in `camelCase`
-- Operation ID **must** start with the verb “update”
-- Operation ID **should** be followed by a noun or compound noun
+<Guidelines>
+
+<Guideline id="IPA-107-must-have-unique-operation-id" given="update-operation" enforcement="automatable">
+
+Operation ID **must** be unique
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    patch:
+      operationId: updateGroupCluster
+  /groups/{groupId}/settings:
+    patch:
+      operationId: updateGroupSettings
+```
+
+<Example.Reason>
+  Each operation has a distinct `operationId`. Generated SDKs produce one method
+  per operation, so unique IDs are required for the generated method names not
+  to collide.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-must-use-camelcase-operation-id" given="update-operation" enforcement="automatable">
+
+Operation ID **must** be in `camelCase`
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    patch:
+      operationId: updateGroupCluster
+```
+
+<Example.Reason>
+  `updateGroupCluster` is `camelCase`: a lowercase first letter and each
+  subsequent word capitalized. This is the form code generators expect when
+  turning operation IDs into method names.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-must-start-operation-id-with-update" given="update-operation" enforcement="automatable">
+
+Operation ID **must** start with the verb "update"
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    patch:
+      operationId: updateGroupCluster
+```
+
+<Example.Reason>
+  The ID begins with `update`, which marks the operation as the resource's
+  standard Update method. The verb prefix makes the operation's role obvious in
+  generated clients and documentation.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-should-follow-update-with-noun" given="update-operation" enforcement="review" effort="reason">
+
+Operation ID **should** be followed by a noun or compound noun
+
 - The noun(s) in the Operation ID **should** be the collection identifiers from
   the resource identifier in singular form
   - If the resource is a [singleton resource](0113.mdx), the last noun **may**
     be the plural form of the collection identifier
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    patch:
+      operationId: updateGroupCluster
+  /groups/{groupId}/settings:
+    patch:
+      operationId: updateGroupSettings
+```
+
+<Example.Reason>
+  `updateGroupCluster` follows the verb with the collection identifiers
+  (`groups`, `clusters`) in singular form. For the singleton `/groups/{groupId}
+  /settings`, the last noun stays plural (`Settings`), which the singleton
+  exception allows.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    For each Update operation, take the operation ID and strip the leading
+    `update` verb to isolate the noun(s).
+  </Workflow.Step>
+  <Workflow.Step>
+    Derive the expected noun(s) from the resource identifier's collection
+    segments in singular form (e.g. `groups`/`clusters` → `GroupCluster`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare. For singleton resources, allow the last noun to be the plural form
+    of the collection identifier.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag operation IDs whose nouns don't match the resource's collection
+    identifiers.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Examples:
 
