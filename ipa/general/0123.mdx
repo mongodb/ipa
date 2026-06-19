@@ -6,53 +6,512 @@ state: adopt
 # IPA-123: Enums
 
 By leveraging enumerations (enums) whenever a field only accepts a discrete set
-of values and documenting those values we can easily communicate to customers
-the expectation for that data field.
+of values and documenting those values, an API communicates to consumers the
+expectation for that data field.
 
 ## Guidance
 
-- API producers **should** use enumeration objects for sets of values for a
-  field that are expected to remain relatively static
-  - API producers **may** include additional documentation to include an
-    explanation for each of the allowable fields
-- Enumeration values **must** be `UPPER_SNAKE_CASE`
-- API producers **should** default to having enums extensible to freely add more
-  values
-  - Enums **must not** be extended in a non-compatible fashion. I.e. splitting
-    one enum value into two
-- API producers **should** use a string field if allowable enum values change
-  often or exceed **20**
-  - If so, API producers **must** document the allowable values.
-- The API **must not** accept invalid enum values and silently modify them to
-  make them valid. Instead, the API should return a validation error (see
-  [Validation Errors](0114.mdx#validation-errors))
-  - For example, accepting the client-provided value `open` but returning the
-    value `OPEN`
+<Guidelines>
 
-Example:
+<Guideline id="IPA-123-should-use-enum-for-static-value-sets" given="schema" enforcement="review" effort="reason">
 
-- Stable Enum (small, rarely changes)
+API producers **should** use enumeration objects for sets of values for a field
+that are expected to remain relatively static.
+
+<Guideline.Details>
+
+<Example.Correct>
 
 ```yaml
-type: string
-title: Alert Audit Types
-description: Type of alert audit action.
-enum:
-  - ALERT_ACKNOWLEDGED_AUDIT
-  - ALERT_UNACKNOWLEDGED_AUDIT
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - PENDING
+            - SHIPPED
+            - DELIVERED
 ```
 
-- Dynamic or Large Enum Set (changing often or > 20 values)
+<Example.Reason>
+  The set of order statuses is small and stable, so an enum documents the exact
+  values a consumer can expect and lets tooling validate them.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
 
 ```yaml
-type: string
-title: Alert Audit Type
-description: >
-  String identifying the type of alert audit action. The list of allowed values
-  changes frequently or is extensive (>20). Refer to the API documentation for
-  the current list of allowed values.
-example: ALERT_ACKNOWLEDGED_AUDIT
-externalDocs:
-  description: Current list of allowed values for Alert Audit Type
-  url: link/to/docs/Alert+Audit+Types
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        status:
+          type: string
+          description: One of PENDING, SHIPPED, or DELIVERED.
 ```
+
+<Example.Reason>
+  The allowed values live only in prose, so nothing validates them and tooling
+  cannot generate a typed value set from a fixed, stable list.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each schema under `$.components.schemas`, list the string properties
+    that accept a fixed set of values.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each such property, check whether the allowed values are declared as an
+    `enum` or only described in the `description` text.
+  </Workflow.Step>
+  <Workflow.Step>
+    Decide whether the value set is expected to stay relatively static, using
+    the property name, description, and any example.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any property with a small, stable value set whose values are documented
+    only in prose rather than as an `enum`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline
+  id="IPA-123-may-document-each-allowable-value"
+  enforcement="advisory"
+>
+  API producers **may** include additional documentation explaining each of the
+  allowable values.
+</Guideline>
+
+<Guideline id="IPA-123-must-use-upper-snake-case" given="enum" enforcement="rule">
+
+Enumeration values **must** be `UPPER_SNAKE_CASE`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+status:
+  type: string
+  enum:
+    - IN_PROGRESS
+    - ON_HOLD
+    - COMPLETED
+```
+
+<Example.Reason>
+  Every value uses uppercase letters with underscores between words, so the
+  casing is consistent across the whole API.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+status:
+  type: string
+  enum:
+    - inProgress
+    - on-hold
+    - Completed
+```
+
+<Example.Reason>
+  The values mix camelCase, kebab-case, and capitalized words, so casing is
+  inconsistent and harder to predict across endpoints.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-123-should-default-to-extensible-enums" given="schema" enforcement="review" effort="reason">
+
+API producers **should** default to making enums extensible, so new values can
+be added freely.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+priority:
+  type: string
+  description: >
+    Priority of the task. Additional values may be added over time; clients
+    should tolerate values they do not recognize.
+  enum:
+    - LOW
+    - MEDIUM
+    - HIGH
+```
+
+<Example.Reason>
+  Treating the enum as extensible means a later value such as `URGENT` can be
+  added without forcing a breaking change on existing clients.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+priority:
+  type: string
+  description: >
+    Priority of the task. These are the only values that will ever exist and
+    clients may reject anything else.
+  enum:
+    - LOW
+    - MEDIUM
+    - HIGH
+```
+
+<Example.Reason>
+  Declaring the set permanently closed leaves no room to grow, so adding any
+  future value becomes a breaking change.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each enum-typed property in `$.components.schemas`, read its description
+    and any client-facing documentation.
+  </Workflow.Step>
+  <Workflow.Step>
+    Determine whether the documentation treats the value set as fixed and closed
+    or as open to future additions.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag enums that are documented as permanently closed without a stated reason
+    that the set is genuinely fixed.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-123-must-not-extend-incompatibly" given="enum" enforcement="review" implementation effort="explore" dependsOn={["IPA-123-should-default-to-extensible-enums"]}>
+
+Enums **must not** be extended in a non-compatible fashion, such as splitting
+one existing value into two.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+state:
+  type: string
+  enum:
+    - ACTIVE
+    - SUSPENDED
+    - ACTIVE_TRIAL
+```
+
+<Example.Reason>
+  A new value is appended while the existing values keep their meaning, so a
+  consumer that already handles `ACTIVE` is unaffected.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+state:
+  type: string
+  enum:
+    - ACTIVE_PAID
+    - ACTIVE_TRIAL
+    - SUSPENDED
+```
+
+<Example.Reason>
+  The previous `ACTIVE` value was split into `ACTIVE_PAID` and `ACTIVE_TRIAL`,
+  so a value a consumer relied on disappears and existing integrations break.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the enum and retrieve its previously published value set from
+    version control history or the prior released spec.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare the current values against the previous set: list values that were
+    added, removed, or renamed.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each removed or renamed value, check whether its meaning was
+    redistributed across two or more new values.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any change where a previously published value was removed, renamed,
+    or split, since each breaks consumers that depended on the old value.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-123-should-use-string-when-values-exceed-20" given="enum" enforcement="rule">
+
+API producers **should** use a string field rather than an enum when the set of
+allowable values exceeds **20**.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+regionCode:
+  type: string
+  description: >
+    Identifier of the region. The list of allowed values is extensive (>20);
+    refer to the API documentation for the current list.
+  example: NORTH_AMERICA_EAST
+```
+
+<Example.Reason>
+  With more than 20 possible values, a free-form string with documented values
+  avoids an unwieldy enum that must change every time a value is added.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+regionCode:
+  type: string
+  enum:
+    - REGION_01
+    - REGION_02
+    - REGION_03
+    # ...continues past 20 entries
+    - REGION_25
+```
+
+<Example.Reason>
+  An enum with more than 20 entries is hard to maintain and grows with every new
+  region, so a documented string is the better fit.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-123-should-use-string-when-values-change-often" given="enum" enforcement="review" effort="reason" dependsOn={["IPA-123-should-use-string-when-values-exceed-20"]}>
+
+API producers **should** use a string field rather than an enum when the set of
+allowable values changes often.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+categoryCode:
+  type: string
+  description: >
+    Identifier of the document category. The list of allowed values changes
+    frequently; refer to the API documentation for the current list.
+  example: FINANCE_REPORT
+```
+
+<Example.Reason>
+  A frequently changing value set modeled as a documented string avoids a spec
+  change for every new category, which an enum would require.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+categoryCode:
+  type: string
+  enum:
+    - FINANCE_REPORT
+    - HR_POLICY
+    - LEGAL_NOTICE
+```
+
+<Example.Reason>
+  The category set turns over frequently, so pinning it to an enum forces a
+  breaking spec change each time a category is added or retired.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each enum-typed property in `$.components.schemas`, gather how often its
+    value set has changed across recent spec revisions.
+  </Workflow.Step>
+  <Workflow.Step>
+    Use the property description and release history to judge whether the values
+    turn over frequently.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any enum whose value set changes often, since a documented string field
+    is the better model for it.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-123-must-document-values-for-string-field" given="schema" enforcement="review" effort="reason" dependsOn={["IPA-123-should-use-string-when-values-exceed-20", "IPA-123-should-use-string-when-values-change-often"]}>
+
+When a string field is used in place of an enum, API producers **must** document
+the allowable values.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+categoryCode:
+  type: string
+  description: >
+    Identifier of the document category. Refer to the API documentation for the
+    current list of allowed values.
+  example: FINANCE_REPORT
+  externalDocs:
+    description: Current list of allowed category codes
+    url: https://example.com/docs/category-codes
+```
+
+<Example.Reason>
+  The description and `externalDocs` point a consumer to the authoritative list,
+  so the allowable values remain discoverable even though they are not
+  enumerated.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+categoryCode:
+  type: string
+```
+
+<Example.Reason>
+  The string carries no description, example, or link to the allowed values, so
+  a consumer has no way to know which values are valid.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each schema under `$.components.schemas`, find string properties that
+    stand in for an enum because the value set is large or changes often.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each such property, check that the allowable values are documented
+    through the `description`, an `example`, or an `externalDocs` link to the
+    current list.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any such string property that omits documentation of its allowable
+    values.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-123-must-not-silently-coerce-invalid-values" given="enum" enforcement="review" implementation effort="explore">
+
+The API **must not** accept invalid enum values and silently modify them to make
+them valid; instead it returns a validation error (see
+[Validation Errors](0114.mdx#validation-errors)).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+# Request body sends status: "open"
+# Response:
+status: 400
+body:
+  error: VALIDATION_ERROR
+  detail: "status must be one of: OPEN, CLOSED"
+```
+
+<Example.Reason>
+  An invalid value is rejected with a validation error, so the caller learns the
+  input was wrong rather than having it changed without notice.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+# Request body sends status: "open"
+# Response:
+status: 200
+body:
+  status: OPEN
+```
+
+<Example.Reason>
+  The invalid `open` is silently coerced to `OPEN`, so the caller never learns
+  the input was wrong and the silent rewrite can mask real client bugs.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate the enum-typed request fields and their declared value sets.
+  </Workflow.Step>
+  <Workflow.Step>
+    From the source or by exercising the endpoint, submit a value that is
+    invalid only by casing or formatting, such as a lowercase variant of a valid
+    value.
+  </Workflow.Step>
+  <Workflow.Step>
+    Inspect the response: confirm the request is rejected with a validation
+    error rather than accepted and normalized to a valid value.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any endpoint that rewrites an invalid enum value into a valid one
+    instead of returning a validation error.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
