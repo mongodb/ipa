@@ -13,171 +13,2046 @@ will promote clarity, completeness and consistency.
 
 ### Descriptions
 
-- API producers **must** provide descriptions for:
-  - Properties
-  - Operations
-  - Parameters
-  - Tags
-- API producers **may** provide descriptions for:
-  - Schemas
-- Descriptions **should** be complete but brief
-  - Descriptions **should** aim to cover
-    - What it is
-    - How to use it
-    - Default values
-    - Optional or required behavior
-    - Common errors
-  - Descriptions **should** avoid overly technical language
-  - Descriptions **must** avoid company internal language conventions
-  - Descriptions **should** prefer simple syntax that can easily be translated
-    for non-English speakers
-- Descriptions **should** describe fields in terms meaningful to API consumers,
-  not in terms of API mechanics. Referencing other API-specific constructs
-  couples the description to tooling context that is not visible to end users of
-  generated clients and forces downstream tooling to override the text.
+<Guidelines>
 
-  **Anti-pattern** (references an operation ID and endpoint path):
+<Guideline id="IPA-117-must-describe-properties-operations-parameters-tags" given={["schema", "operation", "parameter", "tag"]} enforcement="rule">
 
-  > Unique 24-hexadecimal digit string that identifies the organization that
-  > contains your projects. Use the
-  > [`/orgs`](https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag/Organizations/operation/listOrganizations)
-  > endpoint to retrieve all organizations to which the authenticated user has
-  > access.
+API producers **must** provide descriptions for properties, operations,
+parameters, and tags.
 
-  **Preferred** (consumer-facing, no API mechanics):
+<Guideline.Details>
 
-  > Unique 24-hexadecimal digit string that identifies the organization that
-  > contains your projects.
+<Example.Correct>
 
-- When the same property appears in multiple polymorphic variants unified by
-  `oneOf` with a discriminator (see [IPA-125](0125.mdx)), that property's
-  description **should** be identical across variants. Variant-specific context
-  **should** be documented in the variant schema's own `description`, not by
-  diverging the property's description between variants.
-- See
-  [Description Object](https://www.learnjsonschema.com/2020-12/meta-data/description/)
-- Documentation **may** link to external documentation when more in-depth
-  information is pertinent
-  - See
-    [External Documentation Object](https://swagger.io/specification/#external-documentation-object)
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      summary: Return One Order
+      description: Returns a single order by its unique identifier.
+      parameters:
+        - name: orderId
+          in: path
+          description: Unique identifier of the order to return.
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  The operation, the parameter, and (elsewhere) every property each carry a
+  description, so a consumer reading the generated reference learns what each
+  element is without inspecting the implementation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      summary: Return One Order
+      parameters:
+        - name: orderId
+          in: path
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  Neither the operation nor the parameter has a description, leaving a consumer
+  to guess what the endpoint does and what `orderId` means.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-may-describe-schemas" enforcement="advisory">
+  API producers **may** provide descriptions for schemas.
+</Guideline>
+
+<Guideline id="IPA-117-should-be-complete-but-brief" given={["schema", "operation", "parameter", "tag"]} enforcement="review" effort="reason">
+
+Descriptions **should** be complete but brief. A good description aims to cover
+what the element is, how to use it, default values, optional or required
+behavior, and common errors.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+properties:
+  status:
+    type: string
+    description: >-
+      Current state of the order. Defaults to PENDING when an order is created.
+      Transitions to SHIPPED once fulfillment begins and to CANCELED if the
+      order is withdrawn before shipping.
+    enum: [PENDING, SHIPPED, CANCELED]
+    default: PENDING
+```
+
+<Example.Reason>
+  The description names the field, its default, and the meaning of each state in
+  a few sentences, so a consumer needs nothing else to use it correctly.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+properties:
+  status:
+    type: string
+    description: The status.
+    enum: [PENDING, SHIPPED, CANCELED]
+    default: PENDING
+```
+
+<Example.Reason>
+  The description restates the field name and omits the default and the meaning
+  of each state, so it is brief but not complete.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every `description` on properties, operations, parameters, and tags.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each description, check that it covers the applicable facets: what the
+    element is, how to use it, default value, whether it is optional or
+    required, and common errors. Not every facet applies to every element.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the description stays brief: a few sentences, no padding that merely
+    restates the field name or type.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report descriptions that are empty of substance, that restate the name, or
+    that omit an applicable facet such as a default value.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-should-avoid-overly-technical-language" given={["schema", "operation", "parameter", "tag"]} enforcement="review" effort="reason">
+
+Descriptions **should** avoid overly technical language and **should** prefer
+simple syntax that can easily be translated for non-English speakers.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+properties:
+  retryCount:
+    type: integer
+    description: Number of times the job was retried after a failure.
+```
+
+<Example.Reason>
+  Plain wording and a simple sentence convey the meaning to a non-specialist and
+  translate cleanly.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+properties:
+  retryCount:
+    type: integer
+    description: >-
+      Cardinality of idempotent re-invocations dispatched by the orchestrator
+      subsequent to a non-terminal fault condition.
+```
+
+<Example.Reason>
+  Jargon and a dense clause obscure a simple idea and resist translation.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>Collect every `description` across the spec.</Workflow.Step>
+  <Workflow.Step>
+    Flag descriptions that rely on jargon, acronyms, or nested clauses where a
+    plain sentence would convey the same meaning.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report descriptions that a non-native English reader, or a translation tool,
+    would struggle to parse.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-must-avoid-internal-language" given={["schema", "operation", "parameter", "tag"]} enforcement="review" effort="reason">
+
+Descriptions **must** avoid company internal language conventions.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+properties:
+  ownerId:
+    type: string
+    description: Unique identifier of the user who owns this project.
+```
+
+<Example.Reason>
+  The wording uses terms a public consumer understands rather than an internal
+  codename or team-specific shorthand.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+properties:
+  ownerId:
+    type: string
+    description: The principal ref from the legacy AuthZ blob, see PROJ-204.
+```
+
+<Example.Reason>
+  Internal codenames, ticket numbers, and team jargon are meaningless to an
+  external consumer and leak implementation context.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>Collect every `description` across the spec.</Workflow.Step>
+  <Workflow.Step>
+    Flag descriptions containing internal codenames, ticket references, team
+    names, or shorthand that only an employee would recognize.
+  </Workflow.Step>
+  <Workflow.Step>Report each such description as a violation.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-should-describe-in-consumer-terms" given={["schema", "operation", "parameter", "tag"]} enforcement="review" effort="reason">
+
+Descriptions **should** describe fields in terms meaningful to API consumers,
+not in terms of API mechanics. Referencing other API-specific constructs couples
+the description to tooling context that is not visible to end users of generated
+clients and forces downstream tooling to override the text.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+properties:
+  organizationId:
+    type: string
+    description: >-
+      Unique 24-hexadecimal digit string that identifies the organization that
+      contains the projects.
+```
+
+<Example.Reason>
+  The description explains the field on its own terms, so it reads the same in a
+  generated SDK as in the raw spec.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+properties:
+  organizationId:
+    type: string
+    description: >-
+      Unique 24-hexadecimal digit string that identifies the organization. Use
+      the listOrganizations operation on the /orgs endpoint to retrieve all
+      organizations to which the authenticated user has access.
+```
+
+<Example.Reason>
+  Naming an operationId and endpoint path ties the text to API mechanics that a
+  consumer of a generated client never sees, forcing tooling to rewrite the
+  description.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every property `description` across the spec.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag descriptions that reference operationIds, endpoint paths, or other
+    spec-internal constructs instead of explaining the field in consumer terms.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report each such description so the API mechanics can be removed or moved to
+    external documentation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-should-keep-polymorphic-property-descriptions-identical" given="schema" enforcement="review" effort="reason" dependsOn={["IPA-125"]}>
+
+When the same property appears in multiple polymorphic variants unified by
+`oneOf` with a discriminator (see [IPA-125](0125.mdx)), that property's
+description **should** be identical across variants. Variant-specific context
+**should** be documented in the variant schema's own `description`, not by
+diverging the property's description between variants.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    CardPayment:
+      type: object
+      properties:
+        amount:
+          type: integer
+          description: Total charged, in the smallest currency unit.
+    BankPayment:
+      type: object
+      properties:
+        amount:
+          type: integer
+          description: Total charged, in the smallest currency unit.
+```
+
+<Example.Reason>
+  The shared `amount` property reads identically in every variant, so a consumer
+  sees one consistent definition regardless of which variant is returned.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    CardPayment:
+      type: object
+      properties:
+        amount:
+          type: integer
+          description: Total charged to the card, in the smallest currency unit.
+    BankPayment:
+      type: object
+      properties:
+        amount:
+          type: integer
+          description: Amount of the transfer in cents after fees are deducted.
+```
+
+<Example.Reason>
+  The same property carries diverging descriptions across variants, so the
+  generated docs show conflicting definitions for one field; the card-specific
+  note belongs on the variant schema, not on `amount`.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Find every `oneOf` with a discriminator and collect the variant schemas it
+    unifies.
+  </Workflow.Step>
+  <Workflow.Step>
+    Across those variants, group properties that share a name.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each shared property, compare its `description` across variants and flag
+    any divergence.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report shared properties whose descriptions differ, and check that any
+    variant-specific note lives on the variant schema's own `description`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+See
+[Description Object](https://www.learnjsonschema.com/2020-12/meta-data/description/).
+
+<Guidelines>
+
+<Guideline
+  id="IPA-117-may-link-to-external-documentation"
+  enforcement="advisory"
+>
+  Documentation **may** link to external documentation, using the `externalDocs`
+  object, when more in-depth information is pertinent. See [External
+  Documentation
+  Object](https://swagger.io/specification/#external-documentation-object).
+</Guideline>
+
+</Guidelines>
 
 #### Description Formatting
 
-- Description **may** use [CommonMark](https://commonmark.org/)
-- Descriptions **must** start with Uppercase and end with a full stop(.)
-- Descriptions **must not** use raw HTML
-- Descriptions **should not** include inline tables as this may not work well
-  with all tools and in particular generated client code
-  - Consider using lists over tables
-  - Descriptions **may** contain CommonMark lists if the lists are short
-  - If a comprehensive description with tables is needed, consider having a
-    short description and using the `externalDocumentation`
-- Descriptions **should not** include inline links
-  - If the API producer needs to provide links to external documentation, they
-    **should** use the `externalDocumentation`
+<Guidelines>
+
+<Guideline id="IPA-117-may-use-commonmark" enforcement="advisory">
+  Descriptions **may** use [CommonMark](https://commonmark.org/).
+</Guideline>
+
+<Guideline id="IPA-117-must-start-with-uppercase" given={["schema", "operation", "parameter", "tag"]} enforcement="rule">
+
+Descriptions **must** start with an uppercase letter.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+parameters:
+  - name: status
+    in: query
+    description: Filter results by order status.
+    schema:
+      type: string
+```
+
+<Example.Reason>
+  The description begins with a capital letter, matching prose conventions
+  across the reference.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+parameters:
+  - name: status
+    in: query
+    description: filter results by order status.
+    schema:
+      type: string
+```
+
+<Example.Reason>
+  A lowercase opening reads as an unfinished fragment and breaks the consistent
+  sentence style of the reference.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-must-end-with-period" given={["schema", "operation", "parameter", "tag"]} enforcement="rule">
+
+Descriptions **must** end with a full stop (`.`).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+parameters:
+  - name: status
+    in: query
+    description: Filter results by order status.
+    schema:
+      type: string
+```
+
+<Example.Reason>
+  The terminating period marks the description as a complete sentence.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+parameters:
+  - name: status
+    in: query
+    description: Filter results by order status
+    schema:
+      type: string
+```
+
+<Example.Reason>
+  Without a final period the description reads as a truncated fragment and
+  diverges from the rest of the reference.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-must-not-use-raw-html" given={["schema", "operation", "parameter", "tag"]} enforcement="rule">
+
+Descriptions **must not** use raw HTML.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+properties:
+  notes:
+    type: string
+    description: |
+      Free-form notes about the order. Supports the following:
+
+      - shipping instructions
+      - gift messages
+```
+
+<Example.Reason>
+  CommonMark renders consistently across the tools that consume the spec,
+  including generated client documentation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+properties:
+  notes:
+    type: string
+    description: >-
+      Free-form notes about the order. Supports <ul><li>shipping
+      instructions</li><li>gift messages</li></ul>.
+```
+
+<Example.Reason>
+  Raw HTML tags are not rendered uniformly by spec tooling and often surface as
+  literal text in generated clients.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-should-not-use-inline-tables" given={["schema", "operation", "parameter", "tag"]} enforcement="rule">
+
+Descriptions **should not** include inline tables, as these may not work well
+with all tools and in particular generated client code. Consider using lists
+over tables; if a comprehensive description with tables is needed, prefer a
+short description plus `externalDocs`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+properties:
+  tier:
+    type: string
+    description: |
+      Service tier for the account. Available tiers:
+
+      - FREE: no monthly cost, limited quota
+      - PRO: monthly cost, expanded quota
+```
+
+<Example.Reason>
+  A short list conveys the same information as a table and renders reliably in
+  generated client documentation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+properties:
+  tier:
+    type: string
+    description: |
+      Service tier for the account.
+
+      | Tier | Cost    | Quota    |
+      | ---- | ------- | -------- |
+      | FREE | none    | limited  |
+      | PRO  | monthly | expanded |
+```
+
+<Example.Reason>
+  Inline tables are rendered inconsistently across tools and frequently collapse
+  into unreadable text in generated clients.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-should-not-use-inline-links" given={["schema", "operation", "parameter", "tag"]} enforcement="rule">
+
+Descriptions **should not** include inline links. When links to external
+documentation are needed, use the `externalDocs` object instead.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+properties:
+  region:
+    type: string
+    description: Geographic region where the resource is hosted.
+    externalDocs:
+      description: Supported regions
+      url: https://example.com/docs/regions
+```
+
+<Example.Reason>
+  Moving the link to `externalDocs` keeps the description plain text that every
+  tool can render and translate.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+properties:
+  region:
+    type: string
+    description: >-
+      Geographic region where the resource is hosted. See [supported
+      regions](https://example.com/docs/regions).
+```
+
+<Example.Reason>
+  An inline link embeds markup that some tools strip or mangle in generated
+  clients; the structured `externalDocs` object survives the round trip.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ### Examples
 
-- API producers **must** provide a well-defined schema or example(s)
-  - Tools can leverage schemas and field examples to generate request and
-    response examples
-  - For APIs where fields can be mutually exclusive, API producers **should**
-    provide correct examples to consumers on how to use the API
-  - For APIs that respond with plain text, for example, csv, API producers
-    **must** provide an example
-    - Some tools are not able to generate examples for such responses
-- See [schema example](https://spec.openapis.org/oas/v3.0.3#schemaExample)
+<Guidelines>
+
+<Guideline id="IPA-117-must-provide-schema-or-example" given={["schema", "operation", "parameter"]} enforcement="rule">
+
+API producers **must** provide a well-defined schema or example(s) for objects,
+request and response bodies, and parameters. Tools can leverage schemas and
+field examples to generate request and response examples.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    post:
+      summary: Create One Order
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Order"
+      responses:
+        "201":
+          description: Order created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+```
+
+<Example.Reason>
+  Both the request and response bodies reference a defined schema, so tooling
+  can generate accurate examples and consumers know the exact shape.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    post:
+      summary: Create One Order
+      requestBody:
+        content:
+          application/json: {}
+      responses:
+        "201":
+          description: Order created.
+          content:
+            application/json: {}
+```
+
+<Example.Reason>
+  Neither body declares a schema or example, so the expected format is undefined
+  and no tooling can describe or validate it.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-should-provide-correct-mutually-exclusive-examples" given="operation" enforcement="review" effort="reason">
+
+For APIs where fields can be mutually exclusive, API producers **should**
+provide correct examples to consumers on how to use the API.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+requestBody:
+  content:
+    application/json:
+      schema:
+        oneOf:
+          - $ref: "#/components/schemas/PriceByAmount"
+          - $ref: "#/components/schemas/PriceByPercentage"
+      examples:
+        byAmount:
+          value: { amount: 500 }
+        byPercentage:
+          value: { percentage: 10 }
+```
+
+<Example.Reason>
+  Each mutually exclusive variant has its own example, so a consumer sees a
+  valid payload for each branch instead of guessing which fields combine.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+requestBody:
+  content:
+    application/json:
+      schema:
+        oneOf:
+          - $ref: "#/components/schemas/PriceByAmount"
+          - $ref: "#/components/schemas/PriceByPercentage"
+      example:
+        amount: 500
+        percentage: 10
+```
+
+<Example.Reason>
+  A single example sets both mutually exclusive fields at once, modeling an
+  invalid payload and misleading consumers about how the variants are used.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Find request and response bodies whose schema uses `oneOf` or otherwise
+    marks fields as mutually exclusive.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, check that examples demonstrate a valid combination for every
+    branch and never set mutually exclusive fields together.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report bodies that lack per-variant examples or whose example violates the
+    exclusivity constraint.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-must-provide-plaintext-response-example" given="operation" enforcement="rule">
+
+For APIs that respond with plain text, for example CSV, API producers **must**
+provide an example, since some tools are not able to generate examples for such
+responses.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+responses:
+  "200":
+    description: Export of all invoices as CSV.
+    content:
+      text/csv:
+        schema:
+          type: string
+        example: |
+          id,total,status
+          inv_1,500,PAID
+          inv_2,750,OPEN
+```
+
+<Example.Reason>
+  The plain-text response carries an explicit example, so tooling that cannot
+  synthesize one still shows consumers the expected output.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+responses:
+  "200":
+    description: Export of all invoices as CSV.
+    content:
+      text/csv:
+        schema:
+          type: string
+```
+
+<Example.Reason>
+  A bare `type: string` gives tooling nothing to render for a CSV body, leaving
+  consumers without a sample of the format.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+See [schema example](https://spec.openapis.org/oas/v3.0.3#schemaExample).
 
 ### Default values
 
-- API producers **must** document default values
-  - See
-    [Default Values](https://www.learnjsonschema.com/2020-12/meta-data/default/)
+<Guidelines>
+
+<Guideline id="IPA-117-must-document-default-values" given="schema" enforcement="review" effort="reason">
+
+API producers **must** document default values.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+properties:
+  pageSize:
+    type: integer
+    description: Number of items returned per page.
+    default: 100
+```
+
+<Example.Reason>
+  The field declares its default with `default`, so a consumer who omits it
+  knows the value that applies.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+properties:
+  pageSize:
+    type: integer
+    description: Number of items returned per page. Defaults to 100 if omitted.
+```
+
+<Example.Reason>
+  The default is buried in prose rather than declared with `default`, so tooling
+  and generated clients cannot surface or validate it.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify properties and parameters whose description or behavior implies a
+    value that applies when the field is omitted.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each such field declares that value with the `default` keyword
+    rather than only mentioning it in prose.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report fields that have an implicit default but no `default` keyword.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+See
+[Default Values](https://www.learnjsonschema.com/2020-12/meta-data/default/).
 
 ### Validation Keywords
 
-- API producers **must** detail the required/optional nature of the field and
-  any conditions in both responses and requests
-  - See
-    [required fields](https://www.learnjsonschema.com/2020-12/validation/required/)
-- For string values API producers **may** document:
-  - [minLength](https://www.learnjsonschema.com/2020-12/validation/minlength/)
-  - [maxLength](https://www.learnjsonschema.com/2020-12/validation/maxlength/)
-  - [patterns](https://www.learnjsonschema.com/2020-12/validation/pattern/), for
-    example `/^[a-zA-Z0-9][a-zA-Z0-9-]*$/`
-    - API producers **should** avoid overly specific patterns since changes to a
-      pattern can be considered a breaking change
-- For numeric values API producers **may** document
-  - [minimum](https://www.learnjsonschema.com/2020-12/validation/minimum/),
-  - [minimum (exclusive)](https://www.learnjsonschema.com/2020-12/validation/exclusiveminimum/)
-  - [maximum](https://www.learnjsonschema.com/2020-12/validation/maximum/),
-  - [maximum (exclusive)](https://www.learnjsonschema.com/2020-12/validation/exclusivemaximum/)
-- For array fields API producers **may** document
-  - [minItems](https://www.learnjsonschema.com/2020-12/validation/minitems/)
-  - [maxItems](https://www.learnjsonschema.com/2020-12/validation/maxitems/)
-- API producers **must not** combine unrelated validation keywords
-- See [validations](https://www.learnjsonschema.com/2020-12/validation/) for a
-  full list of available validations
+<Guidelines>
+
+<Guideline id="IPA-117-must-document-required-optional-nature" given={["schema", "parameter"]} enforcement="review" effort="reason">
+
+API producers **must** detail the required or optional nature of the field and
+any conditions in both responses and requests.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Order:
+      type: object
+      required: [customerId, total]
+      properties:
+        customerId:
+          type: string
+        total:
+          type: integer
+        note:
+          type: string
+```
+
+<Example.Reason>
+  The `required` list states which fields must be present, so a consumer knows
+  exactly what each request and response guarantees.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        customerId:
+          type: string
+        total:
+          type: integer
+        note:
+          type: string
+```
+
+<Example.Reason>
+  With no `required` list a consumer cannot tell which fields are mandatory,
+  leaving the contract ambiguous in both directions.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each request and response schema, list its properties.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the schema marks mandatory fields with `required` and that
+    conditional requirements are documented in the description or schema
+    composition.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report schemas where the required or optional status of a field cannot be
+    determined from the spec.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-may-document-string-validations" enforcement="advisory">
+
+For string values API producers **may** document
+[minLength](https://www.learnjsonschema.com/2020-12/validation/minlength/),
+[maxLength](https://www.learnjsonschema.com/2020-12/validation/maxlength/), and
+[patterns](https://www.learnjsonschema.com/2020-12/validation/pattern/), for
+example `/^[a-zA-Z0-9][a-zA-Z0-9-]*$/`.
+
+</Guideline>
+
+<Guideline id="IPA-117-should-avoid-overly-specific-patterns" given="schema" enforcement="review" effort="reason">
+
+API producers **should** avoid overly specific patterns, since changes to a
+pattern can be considered a breaking change.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+properties:
+  slug:
+    type: string
+    pattern: "^[a-zA-Z0-9][a-zA-Z0-9-]*$"
+```
+
+<Example.Reason>
+  A broad shape constraint validates input without locking the API into details
+  that may need to loosen later.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+properties:
+  slug:
+    type: string
+    pattern: "^(prod|stg|dev)-[a-z]{3}-[0-9]{4}$"
+```
+
+<Example.Reason>
+  A pattern that encodes exact prefixes and lengths must change whenever those
+  details evolve, and tightening or loosening it is a breaking change.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>Collect every `pattern` constraint in the spec.</Workflow.Step>
+  <Workflow.Step>
+    Flag patterns that encode narrow business specifics — fixed prefixes, exact
+    lengths, enumerated segments — rather than a general shape.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report each overly specific pattern, since later edits to it would break
+    existing clients.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-may-document-numeric-validations" enforcement="advisory">
+
+For numeric values API producers **may** document
+[minimum](https://www.learnjsonschema.com/2020-12/validation/minimum/),
+[exclusive minimum](https://www.learnjsonschema.com/2020-12/validation/exclusiveminimum/),
+[maximum](https://www.learnjsonschema.com/2020-12/validation/maximum/), and
+[exclusive maximum](https://www.learnjsonschema.com/2020-12/validation/exclusivemaximum/).
+
+</Guideline>
+
+<Guideline id="IPA-117-may-document-array-validations" enforcement="advisory">
+
+For array fields API producers **may** document
+[minItems](https://www.learnjsonschema.com/2020-12/validation/minitems/) and
+[maxItems](https://www.learnjsonschema.com/2020-12/validation/maxitems/).
+
+</Guideline>
+
+<Guideline id="IPA-117-must-not-combine-unrelated-validations" given="schema" enforcement="review" effort="reason">
+
+API producers **must not** combine unrelated validation keywords.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+properties:
+  name:
+    type: string
+    minLength: 1
+    maxLength: 64
+```
+
+<Example.Reason>
+  Every keyword applies to the declared `string` type, so the constraints are
+  coherent and enforceable.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+properties:
+  name:
+    type: string
+    minLength: 1
+    minimum: 0
+    minItems: 1
+```
+
+<Example.Reason>
+  `minimum` and `minItems` apply to numbers and arrays, not strings, so mixing
+  them onto a string field is meaningless and confuses both readers and
+  validators.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each schema, read its declared `type` and the validation keywords it
+    sets.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check that every keyword applies to that type: string keywords on strings,
+    numeric keywords on numbers, array keywords on arrays.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any schema that carries validation keywords belonging to an unrelated
+    type.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+See [validations](https://www.learnjsonschema.com/2020-12/validation/) for a
+full list of available validations.
 
 ### Operation Summary
 
 Operation summaries are titles describing an API operation.
 
-- Operation summaries **must** be concise
-- Operation summaries **should** describe what an operation does, but **should
-  not** describe in-depths information about how to use it or nuances in
-  behavior
-  - For additional details about the behaviour of the operations, refer to
-    [Descriptions](#descriptions)
+<Guidelines>
+
+<Guideline id="IPA-117-must-keep-summaries-concise" given="operation" enforcement="review" effort="check">
+
+Operation summaries **must** be concise.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      summary: Return One Order
+```
+
+<Example.Reason>
+  A short title names the operation at a glance, which is all a summary is for.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      summary: >-
+        Return One Order by Its Identifier Including All Line Items and the
+        Current Shipping Status for the Authenticated Caller
+```
+
+<Example.Reason>
+  A summary stuffed with behavioral detail stops being a title; that detail
+  belongs in the description.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>For each operation, read its `summary`.</Workflow.Step>
+  <Workflow.Step>
+    Confirm the summary is a short title — roughly a noun phrase, not a sentence
+    of behavioral detail.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report summaries that carry usage detail or nuance that belongs in the
+    description.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-should-describe-what-not-how" given="operation" enforcement="review" effort="reason">
+
+Operation summaries **should** describe what an operation does, but **should
+not** describe in-depth information about how to use it or nuances in behavior.
+For additional details about the behavior of the operations, refer to
+[Descriptions](#descriptions).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/members:
+    post:
+      summary: Add One Member to One Project
+      description: >-
+        Adds a member to the project. The caller must have the project owner
+        role. Members added this way inherit the default project role.
+```
+
+<Example.Reason>
+  The summary states what the operation does; the how-to-use detail lives in the
+  description where consumers expect it.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/members:
+    post:
+      summary: >-
+        Add One Member to One Project, Which Requires the Owner Role and Applies
+        the Default Project Role to the New Member
+```
+
+<Example.Reason>
+  The summary absorbs behavioral nuance that belongs in the description, so it
+  no longer reads as a title.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each operation, read its `summary` and `description`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the summary states what the operation does and that usage detail or
+    behavioral nuance lives in the description instead.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report summaries that carry how-to-use or edge-case detail.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 #### Formatting
 
-- Summaries **must** use [Title Case](https://en.wikipedia.org/wiki/Title_case)
-- Summaries **must not** end with a period
-- Summaries **must not** use [CommonMark](https://commonmark.org/)
+<Guidelines>
+
+<Guideline id="IPA-117-must-use-title-case-summaries" given="operation" enforcement="rule">
+
+Summaries **must** use [Title Case](https://en.wikipedia.org/wiki/Title_case).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      summary: Return One Order
+```
+
+<Example.Reason>
+  Title Case matches the convention used for every operation title in the
+  reference.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      summary: Return one order
+```
+
+<Example.Reason>
+  Sentence case breaks the consistent title styling readers rely on to scan the
+  operation list.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-must-not-end-summary-with-period" given="operation" enforcement="rule">
+
+Summaries **must not** end with a period.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      summary: Return One Order
+```
+
+<Example.Reason>
+  A title is not a sentence, so it carries no terminating punctuation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      summary: Return One Order.
+```
+
+<Example.Reason>
+  A trailing period treats the title as a sentence and diverges from the rest of
+  the operation list.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-must-not-use-commonmark-in-summaries" given="operation" enforcement="rule">
+
+Summaries **must not** use [CommonMark](https://commonmark.org/).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      summary: Return One Order
+```
+
+<Example.Reason>
+  A plain-text title renders identically everywhere a summary appears.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      summary: Return One `Order`
+```
+
+<Example.Reason>
+  Markdown in a title surfaces as literal backticks or markup in tools that do
+  not render CommonMark in summary fields.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 #### Language
 
-- API Producers **must** use "One" when referring to a single item instead of
-  "a" or "specified"
-- "Remove" vs. "Delete"
-  - API Producers **should** use "Delete" when the operation is destroying a
-    resource e.g. "Delete One Identity Provider"
-  - API Producers **should** use "Remove" when the resource itself isn't being
-    destroyed, e.g. "Remove One MongoDB Cloud User from One Project"
-- "Add" vs. "Create"
-  - API Producers **should** use "Create" when the operation is creating a
-    resource e.g. "Create One Identity Provider"
-  - API Producers **should** use "Add" when the resource itself isn't being
-    created, e.g. "Add One MongoDB Cloud User to One Project"
-- API Producers **must not** use abbreviations and technical formatting
-  - "Line Items" instead of "lineItems"
-  - "Organization Configuration" instead of "Org Config"
-  - "Feature Compatibility Version" instead of "FCV"
-- API Producers **must** use "by" when referring to _how_ something should be
-  queried
-  - "Return One Event by ID" instead of "Return One Event Using Its ID"
-- API Producers **should** avoid unnecessary filler words e.g. "possible",
-  "available", "current"
-- API Producers **must** use "Return" instead of "Get" or "List"
-  - API Producers **must not** use "Return All" unless the API can really return
-    _all_ items in a collection
-    - Collections may contain an unbounded number of entries and must be
-      paginated (see [Pagination](0110.mdx)). If the total number of entries can
-      exceed the page size and prevent the client from accessing the full set,
-      do not use "all."
-- API Producers **must** use only one main action verb e.g. "Create," "Update,"
-  "Delete," "Add," "Remove"
-- API Producers **must** use "Update" instead of "Modify" or "Change"
-- API Producers **must** use "Reset" when the operation is restoring a resource
-  to its default state
-  - E.g. "Reset Project Settings for One MongoDB Cloud User"
-- API Producers **must** use "in" for actions operating within the parent
-  (retrieving, updating, creating) and "from" for removing/disassociating
-  - "Remove One MongoDB Cloud User from One Project" instead of "Remove One
-    MongoDB Cloud User in One Project"
-  - "Update One MongoDB Cloud User in One Project" instead of "Update One
-    MongoDB Cloud User from One Project"
+<Guidelines>
+
+<Guideline id="IPA-117-must-use-one-for-single-item" given="operation" enforcement="rule">
+
+API producers **must** use "One" when referring to a single item instead of "a"
+or "specified".
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      summary: Return One Order
+```
+
+<Example.Reason>
+  "One" states the cardinality plainly and matches the wording used for every
+  single-item operation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      summary: Return a Specified Order
+```
+
+<Example.Reason>
+  "a" and "Specified" are vaguer and inconsistent ways to say the same thing
+  that "One" expresses directly.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-must-use-return-verb" given="get-operation" enforcement="rule">
+
+API producers **must** use "Return" instead of "Get" or "List".
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    get:
+      summary: Return All Orders
+```
+
+<Example.Reason>
+  "Return" is the single read verb used across the API, so consumers scan for
+  one word rather than several synonyms.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    get:
+      summary: List Orders
+```
+
+<Example.Reason>
+  "List" and "Get" are interchangeable synonyms for the same read action and
+  fragment the vocabulary consumers must learn.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-must-not-overstate-return-all" given="get-operation" enforcement="review" effort="reason" dependsOn={["IPA-110", "IPA-117-must-use-return-verb"]}>
+
+API producers **must not** use "Return All" unless the API can really return
+_all_ items in a collection. Collections may contain an unbounded number of
+entries and must be paginated (see [Pagination](0110.mdx)); if the total number
+of entries can exceed the page size and prevent the client from accessing the
+full set, do not use "All".
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    get:
+      summary: Return All Orders
+      description:
+        Returns every order. The result set is bounded and not paginated.
+```
+
+<Example.Reason>
+  "All" is accurate only because the operation genuinely returns the entire
+  bounded collection in one response.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    get:
+      summary: Return All Orders
+      parameters:
+        - name: pageNum
+          in: query
+          schema:
+            type: integer
+        - name: itemsPerPage
+          in: query
+          schema:
+            type: integer
+```
+
+<Example.Reason>
+  The operation is paginated, so a single call returns one page rather than
+  every order; "All" overstates what the consumer receives.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Find get operations whose summary starts with "Return All".
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, determine whether the operation is paginated or otherwise capped
+    below the full collection size — look for page or limit parameters and the
+    response envelope.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any "Return All" summary on an operation that cannot return the
+    entire collection in one response.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-must-use-update-verb" given="update-operation" enforcement="rule">
+
+API producers **must** use "Update" instead of "Modify" or "Change".
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    patch:
+      summary: Update One Order
+```
+
+<Example.Reason>
+  "Update" is the single mutation verb used across the API for editing an
+  existing resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    patch:
+      summary: Modify One Order
+```
+
+<Example.Reason>
+  "Modify" and "Change" are synonyms for "Update" that add vocabulary without
+  adding meaning.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-should-use-delete-or-remove" given="delete-operation" enforcement="rule">
+
+API producers **should** use "Delete" when the operation is destroying a
+resource, and **should** use "Remove" when the resource itself is not being
+destroyed.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    delete:
+      summary: Delete One Order
+  /projects/{projectId}/members/{userId}:
+    delete:
+      summary: Remove One Member from One Project
+```
+
+<Example.Reason>
+  "Delete" marks the destruction of the order, while "Remove" marks
+  disassociating a member who continues to exist, so the verb signals the
+  effect.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/members/{userId}:
+    delete:
+      summary: Delete One Member from One Project
+```
+
+<Example.Reason>
+  "Delete" implies the member is destroyed, but the operation only removes the
+  member from the project, so "Remove" is the accurate verb.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-should-use-create-or-add" given="create-operation" enforcement="rule">
+
+API producers **should** use "Create" when the operation is creating a resource,
+and **should** use "Add" when the resource itself is not being created.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    post:
+      summary: Create One Order
+  /projects/{projectId}/members:
+    post:
+      summary: Add One Member to One Project
+```
+
+<Example.Reason>
+  "Create" marks bringing a new order into existence, while "Add" marks
+  associating an existing user with a project, so the verb signals the effect.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/members:
+    post:
+      summary: Create One Member in One Project
+```
+
+<Example.Reason>
+  "Create" implies a new member resource is brought into being, but the
+  operation only associates an existing user, so "Add" is the accurate verb.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-must-use-reset-verb" given="operation" enforcement="review" effort="check">
+
+API producers **must** use "Reset" when the operation is restoring a resource to
+its default state.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/settings:reset:
+    post:
+      summary: Reset Settings for One Project
+```
+
+<Example.Reason>
+  "Reset" names the effect precisely: the settings return to their default state
+  rather than being edited or removed.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/settings:reset:
+    post:
+      summary: Update Settings for One Project to Default
+```
+
+<Example.Reason>
+  "Update" describes an arbitrary edit, hiding that the operation restores the
+  default state, which "Reset" conveys directly.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Find operations whose behavior restores a resource to its default state.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each such summary uses "Reset" rather than "Update" or another verb.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report restore-to-default operations whose summary uses a different verb.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-must-use-only-one-action-verb" given="operation" enforcement="review" effort="check">
+
+API producers **must** use only one main action verb, for example "Create",
+"Update", "Delete", "Add", or "Remove".
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    patch:
+      summary: Update One Order
+```
+
+<Example.Reason>
+  A single action verb states exactly one effect, so the summary is unambiguous.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    patch:
+      summary: Update and Reset One Order
+```
+
+<Example.Reason>
+  Two action verbs describe two effects in one title, leaving a consumer unsure
+  what the operation actually does.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each operation, read its `summary` and identify the action verbs it
+    contains.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm exactly one main action verb is present.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report summaries that chain more than one action verb.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-must-not-use-abbreviations" given="operation" enforcement="review" effort="check">
+
+API producers **must not** use abbreviations and technical formatting in
+summaries — for example "Line Items" instead of "lineItems", "Organization
+Configuration" instead of "Org Config", and "Feature Compatibility Version"
+instead of "FCV".
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}/line-items:
+    get:
+      summary: Return All Line Items for One Order
+```
+
+<Example.Reason>
+  Spelled-out words in normal title casing read as prose to any consumer, not as
+  code identifiers.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}/line-items:
+    get:
+      summary: Return All lineItems for One Order
+```
+
+<Example.Reason>
+  A camelCase identifier and a code-style abbreviation leak technical formatting
+  into a human-facing title.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>For each operation, read its `summary`.</Workflow.Step>
+  <Workflow.Step>
+    Flag camelCase or snake_case identifiers, code-style tokens, and unexpanded
+    abbreviations.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report summaries that use technical formatting where spelled-out words
+    belong.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-must-use-by-for-query-criteria" given="operation" enforcement="review" effort="check">
+
+API producers **must** use "by" when referring to _how_ something should be
+queried — for example "Return One Event by ID" instead of "Return One Event
+Using Its ID".
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /events/{eventId}:
+    get:
+      summary: Return One Event by ID
+```
+
+<Example.Reason>
+  "by" is the consistent connector for query criteria across the API.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /events/{eventId}:
+    get:
+      summary: Return One Event Using Its ID
+```
+
+<Example.Reason>
+  "Using Its" is a wordier connector that says the same thing as "by" and breaks
+  the consistent phrasing.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Find summaries that name the criterion used to select a resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the connector is "by" rather than a wordier phrase such as "using
+    its" or "with".
+  </Workflow.Step>
+  <Workflow.Step>
+    Report summaries that express query criteria with a connector other than
+    "by".
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-must-use-in-and-from-correctly" given="operation" enforcement="review" effort="reason">
+
+API producers **must** use "in" for actions operating within the parent
+(retrieving, updating, creating) and "from" for removing or disassociating — for
+example "Update One Member in One Project" and "Remove One Member from One
+Project".
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/members/{userId}:
+    patch:
+      summary: Update One Member in One Project
+    delete:
+      summary: Remove One Member from One Project
+```
+
+<Example.Reason>
+  "in" marks an action within the parent and "from" marks disassociation, so the
+  preposition signals the relationship the operation has with the parent.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/members/{userId}:
+    delete:
+      summary: Remove One Member in One Project
+```
+
+<Example.Reason>
+  "in" describes acting within the project, but removal disassociates the member
+  from it, so "from" is the accurate preposition.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Find summaries that relate a sub-resource to a parent resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, check the preposition: "in" for retrieving, updating, or creating
+    within the parent; "from" for removing or disassociating.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report summaries whose preposition does not match the action.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-should-avoid-filler-words" given="operation" enforcement="review" effort="check">
+
+API producers **should** avoid unnecessary filler words, for example "possible",
+"available", or "current".
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    get:
+      summary: Return All Orders
+```
+
+<Example.Reason>
+  Every word in the title carries meaning, so nothing distracts from what the
+  operation does.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    get:
+      summary: Return All Currently Available Orders
+```
+
+<Example.Reason>
+  "Currently" and "Available" add no information beyond "Return All Orders" and
+  pad the title.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>For each operation, read its `summary`.</Workflow.Step>
+  <Workflow.Step>
+    Flag filler words such as "possible", "available", or "current" that do not
+    change the meaning of the title.
+  </Workflow.Step>
+  <Workflow.Step>Report summaries that carry such filler.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ## Further reading
 
