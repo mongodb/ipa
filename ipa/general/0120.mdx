@@ -7,26 +7,423 @@ state: adopt
 
 API producers should avoid incrementing the API version where possible,
 prioritizing supporting the current API version unless absolutely necessary.
-This philosophy reduces exposing our clients to the friction of migrating
-versions and multiple versions complicates maintenance, testing and
-documentation for MongoDB.
+This philosophy reduces exposing clients to the friction of migrating versions,
+and multiple versions complicate maintenance, testing, and documentation.
 
 ## Guidance
 
-- API producers **should** consider whether their changes warrant a new version
-  or can be made backward compatible
-  - API producers **should** refer to backwards compatibility
-    ([IPA-116](0116.mdx)) prior to versioning their API
-  - API producers **should not** version their API if the desired functionality
-    can be achieved in a backwards compatible fashion
-  - API producers **should** consider whether introducing a new endpoint
-    alongside existing, in lieu of a new version
-  - API producers **should** avoid versioning an API solely to rename existing
-    fields or paths
-- API producers **may** coordinate to sunset old versions faster than the
-  default timeline of one-year
-- API producers **must** coordinate with clients to transition to new versions
-  to avoid impact
+<Guidelines>
+
+<Guideline id="IPA-120-should-evaluate-backward-compatible-alternative" given="spec" enforcement="review" effort="reason">
+
+An API producer **should** consider whether a change warrants a new version or
+can instead be made in a backward-compatible fashion, referring to backward
+compatibility ([IPA-116](0116.mdx)) before versioning the API.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /users/{userId}:
+    get:
+      operationId: getUser
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  email:
+                    type: string
+```
+
+<Example.Reason>
+  Adding the optional `email` field to an existing response is additive and
+  backward compatible, so the change lands in the current version instead of
+  forcing a new one.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /v2/users/{userId}:
+    get:
+      operationId: getUserV2
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  email:
+                    type: string
+```
+
+<Example.Reason>
+  A whole new version is spun up to carry one additive field that the current
+  version could already accept, splitting clients across versions for no
+  compatibility reason.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the change under review and the version it targets — a new version
+    path/prefix, a new version-tagged operation, or a header-selected version.
+  </Workflow.Step>
+  <Workflow.Step>
+    Classify the change against IPA-116: adding optional fields, new optional
+    parameters, or new operations is additive; removing or renaming
+    fields/paths, tightening types, or changing required-ness is breaking.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm that any change introducing a new version is one that cannot be
+    expressed additively in the current version.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any new version whose change is additive and could have stayed in the
+    current version.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-120-should-not-version-when-backward-compatible" given="spec" enforcement="review" effort="reason" dependsOn={["IPA-120-should-evaluate-backward-compatible-alternative"]}>
+
+An API producer **should not** version the API when the desired functionality
+can be achieved in a backward-compatible fashion.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      parameters:
+        - name: includeItems
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: An order.
+```
+
+<Example.Reason>
+  The new behavior is opt-in through an optional query parameter on the existing
+  operation, so the functionality ships without a version bump.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      responses:
+        "200":
+          description: An order.
+  /v2/orders/{orderId}:
+    get:
+      operationId: getOrderV2
+      parameters:
+        - name: includeItems
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: An order with items.
+```
+
+<Example.Reason>
+  The same opt-in behavior is delivered by duplicating the operation under a new
+  version, even though an optional parameter on the existing operation would
+  have been backward compatible.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each newly introduced version, list the functionality it adds relative
+    to the prior version.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each added capability, determine whether it could be expressed in the
+    current version through additive means: an optional parameter, an optional
+    response field, or a new operation.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any version whose entire delta is achievable backward-compatibly in the
+    current version.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-120-should-consider-new-endpoint-over-version" given="paths" enforcement="review" effort="reason">
+
+An API producer **should** consider introducing a new endpoint alongside the
+existing one, in lieu of a new version.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/reports:
+    get:
+      operationId: listReports
+  /projects/{projectId}/reports/summary:
+    get:
+      operationId: getReportSummary
+```
+
+<Example.Reason>
+  The new summarized behavior is exposed as an additional endpoint next to the
+  existing collection, so neither the operation nor the version has to change.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/reports:
+    get:
+      operationId: listReports
+  /v2/projects/{projectId}/reports:
+    get:
+      operationId: listReportsV2
+```
+
+<Example.Reason>
+  A distinct capability is delivered by re-versioning the same resource rather
+  than adding a sibling endpoint, which would have left existing consumers
+  untouched.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each new version, identify the resources or operations it introduces.
+  </Workflow.Step>
+  <Workflow.Step>
+    Determine whether each new capability represents distinct functionality that
+    could live at its own path alongside the existing endpoints.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag versions whose additions are new capabilities that a sibling endpoint
+    in the current version could have carried.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-120-should-not-version-to-rename" given="spec" enforcement="review" effort="reason">
+
+An API producer **should** avoid versioning an API solely to rename existing
+fields or paths.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /invoices/{invoiceId}:
+    get:
+      operationId: getInvoice
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: number
+                  amount:
+                    type: number
+                    deprecated: true
+```
+
+<Example.Reason>
+  A clearer name is added while the old field is kept and marked deprecated, so
+  the rename happens without a version bump and without breaking existing
+  clients.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /v2/invoices/{invoiceId}:
+    get:
+      operationId: getInvoiceV2
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: number
+```
+
+<Example.Reason>
+  A new version exists only to rename `amount` to `total`, which forces every
+  client to migrate for a purely cosmetic change.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each new version, diff its fields and paths against the prior version.
+  </Workflow.Step>
+  <Workflow.Step>
+    Determine whether the only differences are renamed fields or paths with no
+    change in behavior, type, or semantics.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any version whose sole change is a rename of existing fields or paths.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-120-may-sunset-faster-than-default" enforcement="advisory">
+  An API producer **may** coordinate to sunset old versions faster than the
+  default timeline of one year.
+</Guideline>
+
+<Guideline id="IPA-120-must-coordinate-version-transition" given="spec" enforcement="review" implementation effort="explore">
+
+An API producer **must** coordinate with clients to transition to new versions
+to avoid impact.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /v1/users/{userId}:
+    get:
+      operationId: getUserV1
+      deprecated: true
+      responses:
+        "200":
+          headers:
+            Sunset:
+              schema:
+                type: string
+                format: date
+          description: A user. This version is deprecated; migrate to v2.
+  /v2/users/{userId}:
+    get:
+      operationId: getUserV2
+      responses:
+        "200":
+          description: A user.
+```
+
+<Example.Reason>
+  The superseded version stays available, is marked `deprecated`, and advertises
+  a `Sunset` date, giving consumers a signalled window to move before the old
+  version is withdrawn.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /v2/users/{userId}:
+    get:
+      operationId: getUserV2
+      responses:
+        "200":
+          description: A user.
+```
+
+<Example.Reason>
+  The previous version was removed outright with no deprecation marker or sunset
+  signal, so consumers still on it break the moment it disappears.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Compare the spec against the previously published version to find any
+    operations or versions that were removed or replaced.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each superseded version, confirm the prior version remains available
+    during a transition window rather than being dropped at once.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the superseded operations are marked `deprecated` and advertise a
+    sunset signal (such as a `Sunset` header or a deprecation date in the
+    description).
+  </Workflow.Step>
+  <Workflow.Step>
+    Inspect release notes, changelogs, or client-communication records to
+    confirm consumers were notified ahead of the transition.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any version transition that removes a prior version without a
+    deprecation period, sunset signal, and evidence of client coordination.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ## Further Reading
 
