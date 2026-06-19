@@ -10,9 +10,165 @@ standardized ISO codes to facilitate a uniform customer experience.
 
 ## Guidance
 
-- API producers **must** use
-  [ISO 3166-1-alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)
-  two-letter country code format for country data fields
-- API producers **must** use
-  [ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes) two
-  letter language code format for language data fields
+<Guidelines>
+
+<Guideline id="IPA-122-must-use-iso-3166-country-codes" given="schema" enforcement="review" effort="reason">
+
+A country data field **must** use the
+[ISO 3166-1-alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2)
+two-letter country code format.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Address:
+      type: object
+      properties:
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code.
+          minLength: 2
+          maxLength: 2
+          example: US
+```
+
+<Example.Reason>
+  The country field constrains its value to a two-letter ISO 3166-1 alpha-2
+  code, so every producer and consumer interprets the same field the same way.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Address:
+      type: object
+      properties:
+        country:
+          type: string
+          description: Country of residence.
+          example: United States
+```
+
+<Example.Reason>
+  The country field carries a free-form name. The same country can be written as
+  "United States", "USA", or "U.S.", so values cannot be compared or validated
+  across consumers.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each schema under `components.schemas`, list its properties, including
+    properties nested inside objects and array items.
+  </Workflow.Step>
+  <Workflow.Step>
+    Identify the country fields using the property name (`country`,
+    `countryCode`, `nationality`, `region` when it denotes a nation), the
+    description, and any example value.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each country field, confirm the value is constrained to an ISO 3166-1
+    alpha-2 code: a two-character `string` (`minLength` and `maxLength` of 2, an
+    `enum` of alpha-2 codes, or a `pattern` such as `^[A-Z]{2}$`), with a
+    description or example that names the ISO 3166-1 alpha-2 format.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any country field that allows full country names, three-letter codes,
+    numeric codes, or an unconstrained string.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-122-must-use-iso-639-language-codes" given="schema" enforcement="review" effort="reason">
+
+A language data field **must** use the
+[ISO 639-1](https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes)
+two-letter language code format.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    UserPreferences:
+      type: object
+      properties:
+        language:
+          type: string
+          description: ISO 639-1 language code.
+          minLength: 2
+          maxLength: 2
+          example: en
+```
+
+<Example.Reason>
+  The language field constrains its value to a two-letter ISO 639-1 code, giving
+  every consumer one canonical representation of a language to validate against.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    UserPreferences:
+      type: object
+      properties:
+        language:
+          type: string
+          description: Preferred language.
+          example: English
+```
+
+<Example.Reason>
+  The language field accepts a free-form name. "English", "english", and "Eng"
+  all denote the same language but cannot be matched, so consumers cannot rely
+  on the value.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each schema under `components.schemas`, list its properties, including
+    properties nested inside objects and array items.
+  </Workflow.Step>
+  <Workflow.Step>
+    Identify the language fields using the property name (`language`,
+    `languageCode`, `locale`, `lang`), the description, and any example value.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each language field, confirm the value is constrained to an ISO 639-1
+    code: a two-character `string` (`minLength` and `maxLength` of 2, an `enum`
+    of alpha-2 codes, or a `pattern` such as `^[a-z]{2}$`), with a description
+    or example that names the ISO 639-1 format.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any language field that allows full language names, three-letter codes,
+    or an unconstrained string. A locale that combines a language and a region
+    (such as `en-US`) is acceptable only when its language part is an ISO 639-1
+    code.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
