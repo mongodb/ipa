@@ -11,25 +11,294 @@ and minimizes potential customer impact involved in versioning.
 
 ## Guidance
 
-- API producers **should** default to multi-cloud support when implementing
-  features
-  - API producers **may** support only one cloud producer at implementation and
-    note behavior in documentation
-  - API producers **should** consider the API design in the context of all
-    currently supported Atlas cloud partners, to avoid later rework
-  - API producers **should** prefer vendor neutral terms
-    - For example, blob storage over s3
-  - When using a provider field or param API producers **should not** define a
-    default value
-    - As providers are added, having a default value can impact usability
+<Guidelines>
 
-Example
+<Guideline id="IPA-119-should-default-to-multi-cloud" given="spec" enforcement="review" implementation effort="explore">
 
-- Example multi-cloud object
+API producers **should** default to multi-cloud support when implementing
+features.
 
-```json
-{
-  "provider": "string", // allowed values AWS, AZURE, GCP
-  "region": "string" // dependent on cloud provider selected
-}
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Backup:
+      type: object
+      properties:
+        provider:
+          type: string
+          enum: [PROVIDER_A, PROVIDER_B, PROVIDER_C]
+        region:
+          type: string
 ```
+
+<Example.Reason>
+  The provider field accepts every partner the platform supports, so a feature
+  built on this schema works across all of them from the first release.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Backup:
+      type: object
+      properties:
+        region:
+          type: string
+```
+
+<Example.Reason>
+  The schema hard-codes a single provider implicitly by omitting any provider
+  field. Adding a second provider later forces a breaking change to a model that
+  was shipped as single-provider.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the feature's request and response schemas and the operations that
+    expose them.
+  </Workflow.Step>
+  <Workflow.Step>
+    Inspect the backing implementation and configuration to determine which
+    providers the feature can actually serve, not only what the spec admits.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the spec admits every supported provider — an open provider field or
+    enum covering all partners — rather than encoding one provider.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any feature whose schema or implementation is limited to a single
+    provider without a documented reason.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline
+  id="IPA-119-may-support-single-cloud-at-launch"
+  enforcement="advisory"
+>
+  API producers **may** support only one cloud provider at implementation and
+  note that behavior in documentation.
+</Guideline>
+
+<Guideline id="IPA-119-should-design-for-all-cloud-partners" given="spec" enforcement="review" effort="reason">
+
+API producers **should** consider the API design in the context of all currently
+supported cloud partners, to avoid later rework.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    StorageTarget:
+      type: object
+      properties:
+        provider:
+          type: string
+        bucket:
+          type: string
+        region:
+          type: string
+```
+
+<Example.Reason>
+  The fields are common to every partner, so the same shape holds as providers
+  are added and no per-provider variant of the schema is needed.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    StorageTarget:
+      type: object
+      properties:
+        providerAResourceName:
+          type: string
+        providerAAccessKeyId:
+          type: string
+```
+
+<Example.Reason>
+  The schema is shaped around one provider's identifiers. A second partner
+  cannot reuse these fields, forcing a new model and a version bump that
+  designing for all partners up front would have avoided.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect the schemas, parameters, and operations that carry provider-specific
+    data.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, check whether the shape is generic across partners or modeled
+    around one provider's concepts and identifiers.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare the design against the full set of currently supported partners and
+    determine whether each could be expressed without a new model.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any field, parameter, or schema that would require restructuring or a
+    new version to admit another supported partner.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-119-should-prefer-vendor-neutral-terms" given="spec" enforcement="review" effort="reason">
+
+API producers **should** prefer vendor-neutral terms.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Backup:
+      type: object
+      properties:
+        blobStorageUri:
+          type: string
+        blobStorageRegion:
+          type: string
+```
+
+<Example.Reason>
+  Blob storage is a neutral term that reads the same regardless of which partner
+  fulfills the request, so the field names stay accurate as partners are added.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Backup:
+      type: object
+      properties:
+        s3Uri:
+          type: string
+        s3Region:
+          type: string
+```
+
+<Example.Reason>
+  The field names borrow one vendor's product name for a concept every partner
+  provides. The names become misleading once a different partner backs the same
+  feature.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate field names, parameter names, enum values, and descriptions across
+    the spec.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any token that names a specific vendor or a vendor's branded product
+    (for example a vendor object-storage brand) where a generic concept is
+    meant.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each flagged token, identify the neutral equivalent that describes the
+    concept rather than the vendor (object or blob storage instead of a branded
+    bucket service).
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any vendor-specific term used for a concept that is shared across
+    partners.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-119-should-not-default-provider-value" given={["parameter", "schema"]} enforcement="rule" effort="check">
+
+When using a provider field or parameter, API producers **should not** define a
+default value.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Backup:
+      type: object
+      required: [provider]
+      properties:
+        provider:
+          type: string
+          enum: [PROVIDER_A, PROVIDER_B, PROVIDER_C]
+        region:
+          type: string
+```
+
+<Example.Reason>
+  The provider field has no default, so the caller states the provider
+  explicitly and adding a new partner does not silently change which provider an
+  unset value resolves to.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Backup:
+      type: object
+      properties:
+        provider:
+          type: string
+          enum: [PROVIDER_A, PROVIDER_B, PROVIDER_C]
+          default: PROVIDER_A
+        region:
+          type: string
+```
+
+<Example.Reason>
+  The default pins the provider to one partner when the field is omitted. As
+  partners are added the baked-in default skews usage toward the original
+  provider and obscures the choice from callers.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
