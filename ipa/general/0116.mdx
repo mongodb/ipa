@@ -13,58 +13,1462 @@ change.
 
 ## Guidance
 
-- Existing client code written against a revision **must not** be broken by
-  minor changes to the service
-- API producers **must** consider syntax breaking changes
-- API producers **must** consider semantic breaking changes
-- API producers **must** not break backwards compatibility with a change without
-  issuing a new API version
-- API producers **should** leverage extensible design where applicable
-- New functionality **may** be added to existing versions, granted there are no
-  incompatibilities introduced
+<Guidelines>
+
+<Guideline id="IPA-116-must-not-break-existing-clients" given="spec" enforcement="review" effort="reason">
+
+Existing client code written against a published version **must not** be broken
+by minor changes to the service.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /users/{userId}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                  nickname: # newly added optional field
+                    type: string
+```
+
+<Example.Reason>
+  A new optional response field is additive. A client that ignores unknown
+  fields keeps working unchanged, so the existing contract still holds.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /users/{userId}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  # name was removed from the response
+```
+
+<Example.Reason>
+  Removing a field a client already reads breaks code that depends on it, even
+  though the change looks small from the producer side.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Take the previously published version of the spec and the proposed new
+    revision of the same version.
+  </Workflow.Step>
+  <Workflow.Step>
+    Diff the two: for every operation, compare request and response schemas,
+    parameters, status codes, and media types.
+  </Workflow.Step>
+  <Workflow.Step>
+    Classify each difference as additive (new optional element) or
+    subtractive/altering (removed, renamed, retyped, newly required).
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any subtractive or altering change as a break of the existing
+    contract.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-consider-syntax-breaking-changes" given="spec" enforcement="review" effort="reason">
+
+An API producer **must** consider syntax breaking changes before publishing a
+revision.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+# Two versions side by side; the v2 path adds an optional query parameter only.
+paths:
+  /orders:
+    get:
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  The revision was reviewed against the prior shape and limited to an additive,
+  optional parameter, so no caller's existing request becomes invalid.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    get:
+      parameters:
+        - name: status
+          in: query
+          required: true # was optional in the published version
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  The revision shipped without comparing against the published shape. Promoting
+  an existing parameter to required rejects requests that omit it.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the previously published version and the proposed revision of the
+    same major version.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each operation, inspect the wire-level shape: parameters, request body
+    schema, response schema, status codes, media types, and required flags.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm a documented comparison exists and that every shape difference was
+    classified as breaking or non-breaking.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any revision that altered the wire shape without that comparison
+    having been done.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-consider-semantic-breaking-changes" given="spec" enforcement="review" implementation effort="explore">
+
+An API producer **must** consider semantic breaking changes before publishing a
+revision, even when the wire shape is unchanged.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /jobs/{jobId}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [PENDING, RUNNING, DONE, FAILED]
+                    description: >-
+                      Lifecycle state. The set of values and the meaning of each
+                      value is stable across this version.
+```
+
+<Example.Reason>
+  The meaning of each value is fixed for the life of the version, so a client
+  that branches on `status` keeps interpreting responses correctly.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /jobs/{jobId}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [PENDING, RUNNING, DONE, FAILED]
+                    description: >-
+                      DONE now means "accepted for processing" rather than
+                      "completed". The shape is identical to the prior version.
+```
+
+<Example.Reason>
+  The shape is unchanged but the meaning of `DONE` flipped, so existing logic
+  that treats `DONE` as finished now misbehaves. Detecting this requires
+  understanding server behavior, not just the spec.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify operations whose wire shape is unchanged between the published
+    version and the revision.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, read the implementation and changelog to find changed behavior:
+    altered field semantics, changed defaults applied server-side, reordered or
+    filtered results, changed side effects.
+  </Workflow.Step>
+  <Workflow.Step>
+    Assess whether existing client logic that relied on the prior behavior would
+    now produce wrong outcomes.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any behavioral change that alters the meaning of a response without a
+    corresponding new version.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-not-break-without-new-version" given="spec" enforcement="review" effort="reason">
+
+Backwards compatibility **must not** be broken by a change without issuing a new
+API version.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+# A breaking rename is delivered under a new version, leaving the old one intact.
+paths:
+  /v1/users/{userId}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserV1"
+  /v2/users/{userId}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserV2"
+```
+
+<Example.Reason>
+  The incompatible shape lives in a new version. Callers on the old version are
+  untouched and migrate on their own schedule.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+# The published v1 response shape is changed in place.
+paths:
+  /v1/users/{userId}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserV2" # breaking change in v1
+```
+
+<Example.Reason>
+  An incompatible change was applied to a published version. Every caller breaks
+  at once with no opt-in and no migration path.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Diff each published version against its proposed revision and collect every
+    breaking difference.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each breaking difference, confirm it is introduced under a new version
+    identifier and that the prior version retains its old behavior.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any breaking change applied in place to an already published version.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-should-use-extensible-design" given="schema" enforcement="review" effort="reason">
+
+An API **should** leverage extensible design where applicable, so that future
+additions do not force a breaking change.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Notification:
+      type: object
+      properties:
+        channel:
+          type: string
+          enum: [EMAIL, SMS] # open-ended set, callers tolerate new values
+        details:
+          type: object
+          additionalProperties: true
+```
+
+<Example.Reason>
+  Modeling `channel` as an extensible enum and `details` as an open object lets
+  new channels and fields land additively, without an incompatible change.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Notification:
+      type: object
+      properties:
+        emailOnly:
+          type: boolean # bakes in a single channel
+      additionalProperties: false
+      required: [emailOnly]
+```
+
+<Example.Reason>
+  A boolean and a closed object hard-code today's behavior. Supporting another
+  channel later requires removing or reshaping a required field, which is
+  breaking.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify schema points where future growth is likely: status and type
+    fields, mode flags, and containers for variable detail.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check whether those points are modeled extensibly: enums that callers can
+    tolerate adding to, objects rather than booleans for concepts that may grow,
+    and nested objects for groups of related fields.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag designs where a foreseeable addition would require a breaking change
+    because the current model is closed.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-may-add-compatible-functionality" enforcement="advisory">
+
+New functionality **may** be added to existing versions, provided no
+incompatibilities are introduced.
+
+</Guideline>
+
+</Guidelines>
 
 ### Syntax Breaking Changes
 
 Changes considered breaking include:
 
-- New required fields **must not** be added to an existing version of an API
-- Optional fields **must not** be removed from the request or response of an
-  existing version of an API version
-- Guaranteed output fields **must not** be omitted (become nullable)
-- Existing API components **must not** be renamed or removed from an existing
-  version of an API
-- Default values provided for a field **must not** change
-- Changes to path, query request headers or body content **must not** be made
-- Field names **must not** change or be removed
-- Field types **must not** be changed
-- Status codes **must not** change
-- Operation Ids **must not** be updated or deleted
-- Operation Tags **must not** be updated or deleted
-- HTTP Verbs **must not** be changed or deleted
-- Media type **must not** be changed or deleted
-- Existing resources **must not** be moved to a new URI
-- Existing resources **must not** be removed without previously being marked as
-  sunsetting
-- Existing options within enum fields **must not** be changed or removed
+<Guidelines>
+
+<Guideline id="IPA-116-must-not-add-required-fields" given="schema" enforcement="automatable" effort="reason">
+
+New required fields **must not** be added to an existing version of an API.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+# Added field is optional in the new revision.
+components:
+  schemas:
+    CreateOrderRequest:
+      type: object
+      properties:
+        items:
+          type: array
+        couponCode: # added, not required
+          type: string
+      required: [items]
+```
+
+<Example.Reason>
+  An added optional field leaves prior requests valid, because omitting it is
+  still accepted.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    CreateOrderRequest:
+      type: object
+      properties:
+        items:
+          type: array
+        couponCode:
+          type: string
+      required: [items, couponCode] # newly required
+```
+
+<Example.Reason>
+  Marking a new field required rejects every existing request that omits it.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each request schema, diff the `required` array between the published
+    version and the revision.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any entry present in the revision's `required` list but not in the
+    published one.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report each newly required request field as a breaking change.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-not-remove-optional-fields" given="schema" enforcement="automatable" effort="reason">
+
+Optional fields **must not** be removed from the request or response of an
+existing API version.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        nickname: # optional field retained
+          type: string
+```
+
+<Example.Reason>
+  Keeping the optional field preserves the shape callers already read and send.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        # nickname was deleted
+```
+
+<Example.Reason>
+  Deleting an optional field breaks callers that read it from responses or set
+  it in requests.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each request and response schema, list its declared properties in the
+    published version and in the revision.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any property present in the published version but absent from the
+    revision.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report each removed property as a breaking change.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-not-omit-guaranteed-output-fields" given="schema" enforcement="review" effort="reason">
+
+Guaranteed output fields **must not** be omitted or made nullable in an existing
+version.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    InvoiceResponse:
+      type: object
+      properties:
+        total:
+          type: number
+      required: [total] # always returned, never null
+```
+
+<Example.Reason>
+  A field guaranteed in the published version stays required and non-nullable,
+  so callers can keep reading it unconditionally.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    InvoiceResponse:
+      type: object
+      properties:
+        total:
+          type: number
+          nullable: true # was always present before
+```
+
+<Example.Reason>
+  Allowing a previously guaranteed field to be null forces callers to handle a
+  case that never used to occur, breaking code that assumed a value.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each response schema, identify fields that were guaranteed in the
+    published version (present and non-nullable, typically in `required`).
+  </Workflow.Step>
+  <Workflow.Step>
+    In the revision, confirm each such field is still present, required, and not
+    marked `nullable`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any guaranteed output field that became optional, nullable, or
+    absent.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-not-rename-or-remove-components" given="spec" enforcement="automatable" effort="reason">
+
+Existing API components **must not** be renamed or removed from an existing
+version of an API.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    UserResponse: # name unchanged across the version
+      type: object
+      properties:
+        id:
+          type: string
+```
+
+<Example.Reason>
+  Stable component names keep `$ref` targets and generated client types intact.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    UserPayload: # renamed from UserResponse
+      type: object
+      properties:
+        id:
+          type: string
+```
+
+<Example.Reason>
+  Renaming a component breaks every `$ref` to the old name and the generated
+  types clients compiled against.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate the keys under `components` (schemas, parameters, responses, and
+    so on) in the published version.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each key still exists under the same name in the revision.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any component key that was renamed or removed.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-not-change-default-values" given="schema" enforcement="automatable" effort="reason">
+
+Default values provided for a field **must not** change.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    ListProjectsQuery:
+      type: object
+      properties:
+        pageSize:
+          type: integer
+          default: 100 # unchanged from the published version
+```
+
+<Example.Reason>
+  A stable default keeps the behavior of requests that omit the field identical
+  to before.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    ListProjectsQuery:
+      type: object
+      properties:
+        pageSize:
+          type: integer
+          default: 20 # was 100
+```
+
+<Example.Reason>
+  Changing the default silently alters the result of every request that relied
+  on the old default.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each schema property, read its `default` in the published version and
+    the revision.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any property whose `default` value differs between the two versions.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report each changed default as a breaking change.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-not-change-request-shape" given="operation" enforcement="review" effort="reason">
+
+Changes to path, query, request headers, or body content **must not** be made to
+an existing version.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    post:
+      parameters:
+        - name: dryRun
+          in: query
+          required: false # additive only
+          schema:
+            type: boolean
+```
+
+<Example.Reason>
+  Only an optional query parameter is added; the path and existing body and
+  headers are untouched, so existing requests still succeed.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/work-items: # path renamed from /tasks
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [priority] # body now demands a new field
+```
+
+<Example.Reason>
+  Renaming the path and demanding a new body field invalidates requests written
+  against the published version.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each operation, compare the path template, query parameters, request
+    headers, and request body schema between versions.
+  </Workflow.Step>
+  <Workflow.Step>
+    Classify each difference as additive-and-optional or as an alteration to an
+    existing element.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any non-additive change to path, query, request headers, or body.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-not-rename-or-remove-fields" given="schema" enforcement="automatable" effort="reason">
+
+Field names **must not** change or be removed.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        createdAt: # name preserved
+          type: string
+          format: date-time
+```
+
+<Example.Reason>
+  A stable field name keeps serialization and deserialization working for
+  existing callers.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        creationTime: # renamed from createdAt
+          type: string
+          format: date-time
+```
+
+<Example.Reason>
+  Renaming a field means existing callers send and read a name the server no
+  longer recognizes.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each schema, list its property names in the published version and the
+    revision.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any name that disappeared or whose value moved under a differently
+    named property.
+  </Workflow.Step>
+  <Workflow.Step>Report each renamed or removed field.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-not-change-field-types" given="schema" enforcement="automatable" effort="reason">
+
+Field types **must not** be changed.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Product:
+      type: object
+      properties:
+        price:
+          type: number # type unchanged
+```
+
+<Example.Reason>
+  Holding the declared type steady keeps the value parseable by clients
+  generated against the published version.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Product:
+      type: object
+      properties:
+        price:
+          type: string # was number
+```
+
+<Example.Reason>
+  Changing the type breaks typed clients and any caller that parsed the value as
+  the original type.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each property present in both versions, read its `type` and `format`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any property whose `type` or `format` differs between the versions.
+  </Workflow.Step>
+  <Workflow.Step>Report each changed field type.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-not-change-status-codes" given="operation" enforcement="automatable" effort="reason">
+
+Status codes **must not** change.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      responses:
+        "200": # still returned on success
+          description: OK
+        "404":
+          description: Not found
+```
+
+<Example.Reason>
+  A stable set of status codes lets callers keep branching on the same outcomes.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      responses:
+        "204": # success code changed from 200
+          description: No content
+        "404":
+          description: Not found
+```
+
+<Example.Reason>
+  Changing the success status code breaks callers that check for the original
+  code.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each operation, list the response status codes declared in the published
+    version and the revision.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any code that was removed or whose meaning was reassigned (a former
+    success code dropped in favor of another).
+  </Workflow.Step>
+  <Workflow.Step>Report each altered or removed status code.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-not-change-operation-ids" given="operation" enforcement="automatable" effort="reason">
+
+Operation ids **must not** be updated or deleted.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /users/{userId}:
+    get:
+      operationId: getUser # unchanged
+```
+
+<Example.Reason>
+  A stable `operationId` keeps generated method names and tooling references
+  intact.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /users/{userId}:
+    get:
+      operationId: fetchUser # renamed from getUser
+```
+
+<Example.Reason>
+  Renaming an `operationId` breaks generated SDK method names and any code that
+  calls them.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every `operationId` in the published version.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each one still exists, unchanged, on the same operation in the
+    revision.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any `operationId` that was renamed or deleted.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-not-change-operation-tags" given="operation" enforcement="automatable" effort="reason">
+
+Operation tags **must not** be updated or deleted.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /users/{userId}:
+    get:
+      operationId: getUser
+      tags: [Users] # unchanged
+```
+
+<Example.Reason>
+  Stable tags keep generated client grouping and documentation structure
+  consistent for callers.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /users/{userId}:
+    get:
+      operationId: getUser
+      tags: [Accounts] # changed from Users
+```
+
+<Example.Reason>
+  Changing a tag reorganizes generated SDK namespaces and documentation that
+  callers navigate by.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each operation, list its `tags` in the published version and the
+    revision.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any tag that was renamed or removed from an existing operation.
+  </Workflow.Step>
+  <Workflow.Step>Report each altered or deleted operation tag.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-not-change-http-verbs" given="operation" enforcement="automatable" effort="reason">
+
+HTTP verbs **must not** be changed or deleted.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /users/{userId}:
+    get: # verb preserved
+      operationId: getUser
+```
+
+<Example.Reason>
+  Keeping the verb on a path means existing requests reach the same operation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /users/{userId}:
+    post: # was get
+      operationId: getUser
+```
+
+<Example.Reason>
+  Moving an operation to a different verb makes every request that used the old
+  verb fail to route.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each path, list the HTTP methods defined in the published version.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each method still exists on the same path in the revision.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any verb that was removed or whose operation moved to a different
+    verb.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-not-change-media-type" given="operation" enforcement="automatable" effort="reason">
+
+Media types **must not** be changed or deleted.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /reports/{reportId}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json: # media type preserved
+              schema:
+                type: object
+```
+
+<Example.Reason>
+  A stable media type keeps content negotiation and client parsing working as
+  before.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /reports/{reportId}:
+    get:
+      responses:
+        "200":
+          content:
+            application/xml: # was application/json
+              schema:
+                type: object
+```
+
+<Example.Reason>
+  Changing the media type breaks clients that send the old `Accept` header or
+  parse the old format.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each request body and response, list the media type keys under `content`
+    in the published version.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each media type still exists in the revision.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any media type that was changed or removed.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-not-move-resources-to-new-uri" given="paths" enforcement="automatable" effort="reason">
+
+Existing resources **must not** be moved to a new URI.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}: # path preserved
+    get:
+      operationId: getTask
+```
+
+<Example.Reason>
+  Keeping the URI stable means existing client requests still resolve to the
+  same resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /tasks/{taskId}: # moved out from under /projects/{projectId}
+    get:
+      operationId: getTask
+```
+
+<Example.Reason>
+  Moving a resource to a new URI makes every request to the old path return a
+  not-found error.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate every path template in the published version.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each path still exists in the revision (matching the same operation
+    by `operationId`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any operation whose path template changed.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-not-remove-resource-without-sunset" given="paths" enforcement="review" effort="reason">
+
+Existing resources **must not** be removed without previously being marked as
+sunsetting.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      deprecated: true
+      responses:
+        "200":
+          headers:
+            Sunset: # announced before removal
+              schema:
+                type: string
+                format: date-time
+```
+
+<Example.Reason>
+  The resource is marked deprecated and announces a sunset date, giving callers
+  a defined window to migrate before it is removed.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /invoices/{invoiceId}:
+    # the entire path was deleted in this revision with no prior sunset notice
+    get:
+      operationId: getInvoice
+```
+
+<Example.Reason>
+  Deleting a live resource that was never marked sunsetting breaks callers with
+  no warning and no migration window.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify paths present in the published version but absent from the
+    revision.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each removed path, check the prior version's history for a `deprecated:
+    true` marking and a `Sunset` header announced ahead of removal.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any resource removed without a prior sunset announcement.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-116-must-not-change-enum-options" given="enum" enforcement="automatable" effort="reason">
+
+Existing options within enum fields **must not** be changed or removed.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Subscription:
+      type: object
+      properties:
+        tier:
+          type: string
+          enum: [FREE, PRO, ENTERPRISE] # existing options retained
+```
+
+<Example.Reason>
+  Keeping existing enum values lets callers that send or branch on them keep
+  working.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Subscription:
+      type: object
+      properties:
+        tier:
+          type: string
+          enum: [FREE, PREMIUM] # PRO renamed, ENTERPRISE removed
+```
+
+<Example.Reason>
+  Renaming or dropping an enum value rejects requests carrying the old value and
+  breaks callers that match on it in responses.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each enum field, list its values in the published version and the
+    revision.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any value present in the published version but missing from the
+    revision (removed or renamed).
+  </Workflow.Step>
+  <Workflow.Step>
+    Report each removed or changed enum option. New options added alongside the
+    existing ones are allowed.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Changes considered non-breaking include:
 
-- New output fields **may** be added to existing versions
-- Optional input parameters **may** be added to existing versions
-- Updates/Changes to underlying logic that results in different results  
-  WITHOUT affecting the shape of the response **may** be added to existing
-  versions
-- Changes to unstructured human-readable string values **may**  
-  be added to existing versions (Exceptions for machine codes or formatted
-  strings i.e., dates)
-- Response headers **may** be added to existing versions
-- Changes to a resources authorization **may** be added to existing versions
-- New options **may** be added to existing enums
-- Input and output fields **may** be marked as deprecated in existing versions
+<Guidelines>
+
+<Guideline id="IPA-116-may-add-output-fields" enforcement="advisory">
+
+New output fields **may** be added to existing versions.
+
+</Guideline>
+
+<Guideline id="IPA-116-may-add-optional-input-parameters" enforcement="advisory">
+
+Optional input parameters **may** be added to existing versions.
+
+</Guideline>
+
+<Guideline id="IPA-116-may-change-underlying-logic" enforcement="advisory">
+
+Updates to underlying logic that produce different results without affecting the
+shape of the response **may** be added to existing versions.
+
+</Guideline>
+
+<Guideline id="IPA-116-may-change-unstructured-strings" enforcement="advisory">
+
+Changes to unstructured, human-readable string values **may** be added to
+existing versions, except for machine codes or formatted strings such as dates.
+
+</Guideline>
+
+<Guideline id="IPA-116-may-add-response-headers" enforcement="advisory">
+
+Response headers **may** be added to existing versions.
+
+</Guideline>
+
+<Guideline id="IPA-116-may-change-authorization" enforcement="advisory">
+
+Changes to a resource's authorization **may** be added to existing versions.
+
+</Guideline>
+
+<Guideline id="IPA-116-may-add-enum-options" enforcement="advisory">
+
+New options **may** be added to existing enums.
+
+</Guideline>
+
+<Guideline id="IPA-116-may-mark-fields-deprecated" enforcement="advisory">
+
+Input and output fields **may** be marked as deprecated in existing versions.
+
+</Guideline>
+
+</Guidelines>
 
 ### Semantic Breaking Changes
 
-Semantic-based breaking changes capture situations in which behavior of a
+Semantic-based breaking changes capture situations in which the behavior of a
 resource is changing without necessarily including a syntax-based breaking
 change that would produce a top-level error. These situations often require
 intensive data analysis and discovery to fully understand the extent of customer
