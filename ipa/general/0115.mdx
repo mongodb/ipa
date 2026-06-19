@@ -12,16 +12,165 @@ any relevant details that would normally be in the response headers.
 
 ## Guidance
 
-- Resources **may** support a boolean `envelope` query parameter
-- `envelope` **must** default to false
-- If `envelope` is set to `true` for individual resources
-  - The response **must** include the field `status` as the HTTP status code
-  - The response **must** include the field `content` as the requested resource
-- If `envelope` is set to `true` for [Paginated](0110.mdx) resources the
-  existing response **must** include the field `status` as the HTTP status code
+<Guidelines>
+
+<Guideline id="IPA-115-may-support-envelope-parameter" enforcement="advisory">
+
+Resources **may** support a boolean `envelope` query parameter.
+
+</Guideline>
+
+<Guideline id="IPA-115-must-default-envelope-to-false" given="parameter" enforcement="automatable" effort="check">
+
+`envelope` **must** default to false.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+parameters:
+  - name: envelope
+    in: query
+    schema:
+      type: boolean
+      default: false
+```
+
+<Example.Reason>
+  The `envelope` parameter declares `default: false`, so a client that omits it
+  receives the unwrapped response.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-115-must-wrap-individual-resources" given="operation" enforcement="review" effort="explore" implementation>
+
+If `envelope` is set to `true` for individual resources, the response **must**
+include the field `status` as the HTTP status code and the field `content` as
+the requested resource.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```json
+{
+  "status": 200,
+  "content": {
+    "id": "5f1b...",
+    "name": "Cluster0"
+  }
+}
+```
+
+<Example.Reason>
+  With `envelope=true`, the response wraps the requested resource under
+  `content` and surfaces the HTTP status code under `status`, so a client that
+  cannot read response headers still has both.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Call the individual resource operation with `envelope=true`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the response body includes a `status` field carrying the HTTP status
+    code.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the requested resource is nested under the `content` field.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-115-must-wrap-paginated-resources" given="operation" enforcement="review" effort="explore" implementation>
+
+If `envelope` is set to `true` for [Paginated](0110.mdx) resources the existing
+response **must** include the field `status` as the HTTP status code.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```json
+{
+  "status": 200,
+  "results": [],
+  "totalCount": 0
+}
+```
+
+<Example.Reason>
+  For a paginated resource, the existing response shape is preserved and only a
+  `status` field is added carrying the HTTP status code, so the envelope does
+  not reshape the pagination response.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Call the paginated resource operation with `envelope=true`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the existing paginated response body is preserved and a `status`
+    field carrying the HTTP status code is added.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ### Generated API Clients
 
-- Generated clients **must not** support envelope
-  - Conditionally changing the shape of a response is not supported by code
-    generation tools
+<Guidelines>
+
+<Guideline id="IPA-115-must-not-support-envelope-in-generated-clients" given="spec" enforcement="review" effort="reason">
+
+Generated clients **must not** support envelope.
+
+- Conditionally changing the shape of a response is not supported by code
+  generation tools
+
+<Guideline.Details>
+
+<Example.Correct>
+
+{/* TODO: add example */}
+
+<Example.Reason>
+  Generated clients expect a single, stable response shape per operation.
+  Because the envelope conditionally changes that shape, code generation tools
+  cannot represent it, so generated clients must not support envelope.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Identify which clients are produced by code generation tools.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm those generated clients do not expose or set the `envelope`
+    parameter, since it conditionally changes the response shape.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
