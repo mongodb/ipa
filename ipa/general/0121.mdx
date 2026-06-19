@@ -7,11 +7,143 @@ state: adopt
 
 Datetime can be confusing as timezones and calendars come into play. To help
 clients understand how datetime is being used, its format should be uniform
-across the API platform
+across the API platform.
 
 ## Guidance
 
-- API producers must use
-  [ISO 8601](https://www.iso.org/obp/ui/#iso:std:iso:8601:-1:ed-1:v1:en)
-  datetime format in UTC for all time stamps
-  - Documentation **must** note datetime format for clients
+<Guidelines>
+
+<Guideline id="IPA-121-must-use-iso-8601-utc" given={["schema", "parameter"]} enforcement="review" effort="reason">
+
+All timestamp values **must** use the
+[ISO 8601](https://www.iso.org/obp/ui/#iso:std:iso:8601:-1:ed-1:v1:en) datetime
+format in UTC.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation time of the order in ISO 8601 format and UTC.
+          example: "2026-01-15T09:30:00Z"
+```
+
+<Example.Reason>
+  The value is an ISO 8601 datetime with a `Z` offset, so every client reads the
+  same instant regardless of local timezone, and `format: date-time` lets
+  tooling parse it as a timestamp.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          description: Creation time of the order.
+          example: "01/15/2026 09:30 PST"
+```
+
+<Example.Reason>
+  The value is a locale-specific string in a local timezone, so the same instant
+  serializes differently across regions and cannot be parsed as a standard
+  timestamp. A consumer cannot tell when the order was created without knowing
+  the producer's calendar and timezone conventions.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate every schema property and parameter whose name, description, or
+    example indicates it carries a point in time (`createdAt`, `updatedAt`,
+    `expiresAt`, `timestamp`, `startTime`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each such field is typed `string` with `format: date-time` rather
+    than a bare string, integer epoch, or locale-specific date string.
+  </Workflow.Step>
+  <Workflow.Step>
+    Inspect every example value. Confirm it is an ISO 8601 datetime ending in a
+    UTC designator (`Z` or `+00:00`), not a local-time or offset-bearing value.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any timestamp field that is not ISO 8601, or whose example is expressed
+    in a non-UTC timezone.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-121-must-document-datetime-format" given={["schema", "parameter"]} enforcement="rule" dependsOn={["IPA-121-must-use-iso-8601-utc"]}>
+
+The datetime format **must** be noted in the description so that clients know
+how the value is encoded.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation time of the order in ISO 8601 format and UTC.
+```
+
+<Example.Reason>
+  The description states both the encoding (ISO 8601) and the timezone (UTC), so
+  a consumer reading the documentation knows exactly how to interpret and
+  produce the value.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+          description: Creation time of the order.
+```
+
+<Example.Reason>
+  The field is a datetime, but the description says nothing about ISO 8601 or
+  UTC, so a consumer must guess the encoding from an example or trial and error
+  rather than from the documentation.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
