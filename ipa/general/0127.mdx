@@ -28,16 +28,297 @@ require extra, stricter guidance to support IaC tooling automation.
 
 ## Guidance
 
-- A resource **must** be strongly consistent with the **Resource-Oriented
-  Design** ([IPA-101](0101.mdx))
-- A resource **must** have `CREATE`, `DELETE`, `GET`, `LIST` methods, except for
-  [singleton resources](0113.mdx) and
-  [read-only resources](0101.mdx#read-only-resources) which **must** have `GET`
-  and `LIST` methods.
-- A resource **should not** have custom methods ([IPA-109](0109.mdx)). Any
-  complementary functionality of a resource exposed through custom methods will
-  not be supported through automation. Deviation from this guidance requires a
-  strong justification and review by the governing API body.
+<Guidelines>
+
+<Guideline id="IPA-127-must-follow-resource-oriented-design" given="resource" enforcement="review" effort="reason">
+
+A resource **must** be strongly consistent with the **Resource-Oriented Design**
+([IPA-101](0101.mdx)).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects:
+    get:
+      operationId: listProjects
+    post:
+      operationId: createProject
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+    delete:
+      operationId: deleteProject
+```
+
+<Example.Reason>
+  Paths form a noun hierarchy and each verb maps to a standard method on the
+  resource, so the resource can be expressed as a desired state rather than a
+  sequence of actions.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /createProject:
+    post:
+      operationId: createProject
+  /deleteProjectById:
+    post:
+      operationId: deleteProjectById
+```
+
+<Example.Reason>
+  The paths name actions instead of a resource. An action-shaped interface
+  cannot be reconciled to a desired state, which is what IaC tooling depends on.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate every entry under `paths` and group the paths by their resource
+    segment.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each path alternates collection nouns and resource identifiers
+    rather than encoding a verb or action.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each operation maps to a standard method on its resource (the verb
+    matches the resource semantics, not an arbitrary RPC).
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any path or operation that models an action instead of a resource as
+    a deviation from Resource-Oriented Design.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-127-must-have-standard-methods" given="resource" enforcement="review" effort="reason">
+
+A resource **must** have `CREATE`, `DELETE`, `GET`, and `LIST` methods.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+    post:
+      operationId: createOrder
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+    delete:
+      operationId: deleteOrder
+```
+
+<Example.Reason>
+  The collection exposes `LIST` and `CREATE` and the item exposes `GET` and
+  `DELETE`, so the full lifecycle of the resource can be driven declaratively.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+```
+
+<Example.Reason>
+  `LIST` and `DELETE` are missing. Without `LIST`, an IaC tool cannot discover
+  existing resources to reconcile; without `DELETE`, removed configuration
+  cannot be applied.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Group the paths by resource: a collection path and its corresponding item
+    path with a path parameter.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each resource, collect the operations on the collection path (`get` for
+    `LIST`, `post` for `CREATE`) and on the item path (`get` for `GET`, `delete`
+    for `DELETE`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm all four standard methods are present for the resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any resource that is missing one or more of `CREATE`, `DELETE`,
+    `GET`, or `LIST`, unless it qualifies as a singleton or read-only resource.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-127-must-have-get-and-list-for-restricted-resources" given="resource" enforcement="review" effort="reason" dependsOn={["IPA-127-must-have-standard-methods"]}>
+
+[Singleton resources](0113.mdx) and
+[read-only resources](0101.mdx#read-only-resources) **must** have `GET` and
+`LIST` methods.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /audit-events:
+    get:
+      operationId: listAuditEvents
+  /audit-events/{eventId}:
+    get:
+      operationId: getAuditEvent
+```
+
+<Example.Reason>
+  Audit events are read-only, so the resource correctly exposes only `GET` and
+  `LIST` and omits the mutating methods that do not apply.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /audit-events:
+    post:
+      operationId: createAuditEvent
+  /audit-events/{eventId}:
+    delete:
+      operationId: deleteAuditEvent
+```
+
+<Example.Reason>
+  A read-only resource exposes mutating methods and omits `GET` and `LIST`. The
+  required read methods are absent, and the mutating methods imply a lifecycle
+  the resource does not have.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify resources that are singletons (no collection path with a list
+    operation, accessed at a fixed path) or read-only (state is server-owned and
+    not client-mutable).
+  </Workflow.Step>
+  <Workflow.Step>
+    For each such resource, confirm a `GET` method is present (`get` on the item
+    path) and a `LIST` method is present (`get` on the collection path).
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm no mutating methods (`CREATE`, `DELETE`) are exposed where the
+    resource cannot be created or removed by the client.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any singleton or read-only resource that is missing `GET` or `LIST`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-127-should-not-use-custom-methods" given="resource" enforcement="review" effort="reason">
+
+A resource **should not** have custom methods ([IPA-109](0109.mdx)). Any
+complementary functionality of a resource exposed through custom methods will
+not be supported through automation.
+
+Deviation from this guidance requires a strong justification and review by the
+governing API body.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /jobs:
+    post:
+      operationId: createJob
+  /jobs/{jobId}:
+    get:
+      operationId: getJob
+    patch:
+      operationId: updateJob
+```
+
+<Example.Reason>
+  State that would otherwise be set by a custom action is modeled as a standard
+  update, so the resource can be reconciled to a desired state by an IaC tool.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /jobs/{jobId}:
+    get:
+      operationId: getJob
+  "/jobs/{jobId}:cancel":
+    post:
+      operationId: cancelJob
+```
+
+<Example.Reason>
+  `cancel` is a custom method expressing an action rather than a state. IaC
+  tooling cannot represent invoking an action, so this behavior falls outside
+  automation.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate the operations under `paths` and identify any custom methods, such
+    as a path segment of the form `:verb` or an operation that does not map to a
+    standard `CREATE`, `READ`, `UPDATE`, `DELETE`, or `LIST` method.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each custom method, determine whether the same outcome could be
+    expressed as a state change on a standard method (for example, a status
+    field updated via `PATCH`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag every custom method on a resource. Each occurrence is a deviation that
+    requires explicit justification and review by the governing API body.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ### Motivation and Strategic Goals
 
