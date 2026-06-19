@@ -6,36 +6,672 @@ state: adopt
 # IPA-106: Create
 
 In REST APIs, it is customary to make a `POST` request to a collection's URI
-(for example, `/groups/{groupId}/clusters`) to create a new resource within that
-collection.
+(for example, `/projects/{projectId}/tasks`) to create a new resource within
+that collection.
 
 ## Guidance
 
-- APIs **should** provide a create method for resources unless it is not
-  valuable for users to do so
-  - [Read-only resources](0101.mdx#read-only-resources) **must not** have a
-    Create method
-  - [Singleton resources](0113.mdx) **must not** have a Create method
-  - The purpose of the create method is to create a new resource in a collection
-- The HTTP verb **must** be
-  [`POST`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST)
-- The resource **must** be the request body
-  - API producers **should** implement as a `Request` suffixed object
-    - A `Request` object **must** include only input fields
-      - In OpenAPI, this means that the `Request` object **must not** include
-        fields with `readOnly: true`
-- The response body **should** be the same resource returned by the
-  [Get](0104.mdx) method
-- Create operations **must not** accept query parameters
-  - Query parameters are usually a sign of a side effect that standard methods
-    **must not** cause
-- The response status code **must** be
-  [201 Created](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/201)
+<Guidelines>
+
+<Guideline id="IPA-106-should-provide-create-method" given="resource" enforcement="review" effort="reason">
+
+APIs **should** provide a create method for resources unless it is not valuable
+for consumers to do so. The purpose of the create method is to create a new
+resource in a collection.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjectTasks
+    post:
+      operationId: createProjectTask
+      responses:
+        "201":
+          description: Created
+```
+
+<Example.Reason>
+  The `tasks` collection exposes a `POST` that adds a new task, so the resource
+  can be created through the standard method rather than an out-of-band process.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjectTasks
+    # no post: tasks can only be created by an internal job
+```
+
+<Example.Reason>
+  The collection can be listed but never has members added through the API, so a
+  consumer who needs to create a task has no standard method and must rely on a
+  side channel.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate every resource collection path under `paths`.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each collection, check whether a `post` operation is defined on the
+    collection URI.
+  </Workflow.Step>
+  <Workflow.Step>
+    For a collection with no `post`, determine from the description and
+    surrounding resources whether creation is genuinely not valuable to
+    consumers (for example a system-managed or read-only collection).
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any collection that lacks a create method without a clear reason that
+    creation is not valuable.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-must-not-create-on-read-only-resource" given="create-operation" enforcement="rule" effort="explore">
+
+[Read-only resources](0101.mdx#read-only-resources) **must not** have a Create
+method.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /audit-events/{eventId}:
+    get:
+      operationId: getAuditEvent
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditEvent"
+  /audit-events:
+    get:
+      operationId: listAuditEvents
+components:
+  schemas:
+    AuditEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        action:
+          type: string
+          readOnly: true
+```
+
+<Example.Reason>
+  Every property of `AuditEvent` is `readOnly`, so the resource is read-only and
+  the collection exposes only read methods.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /audit-events:
+    post:
+      operationId: createAuditEvent
+      responses:
+        "201":
+          description: Created
+components:
+  schemas:
+    AuditEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        action:
+          type: string
+          readOnly: true
+```
+
+<Example.Reason>
+  The resource is entirely read-only, yet a create method is defined, implying
+  clients can author a resource whose fields are all server-controlled.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each collection with a `post`, locate the standard `get` method and its
+    response schema.
+  </Workflow.Step>
+  <Workflow.Step>
+    Follow `$ref`s into the resource schema and inspect each property for
+    `readOnly: true`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Classify the resource as read-only when every property in the Get response
+    is `readOnly: true`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any read-only resource that defines a create method.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-must-not-create-on-singleton-resource" given="create-operation" enforcement="review" effort="reason">
+
+[Singleton resources](0113.mdx) **must not** have a Create method.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/settings:
+    get:
+      operationId: getProjectSettings
+    patch:
+      operationId: updateProjectSettings
+```
+
+<Example.Reason>
+  `settings` is a singleton sub-resource of a project. It is read and updated in
+  place and is never created as a collection member, so it has no create method.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/settings:
+    get:
+      operationId: getProjectSettings
+    post:
+      operationId: createProjectSettings
+      responses:
+        "201":
+          description: Created
+```
+
+<Example.Reason>
+  A singleton exists implicitly with its parent and has no collection to add to,
+  so a create method on it has no meaning.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each path with a `post`, determine whether the addressed resource is a
+    singleton: it has no collection URI of its own and is addressed directly
+    under its parent rather than by an id.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the resource is created and managed only as part of its parent, not
+    as a collection member.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any singleton resource that defines a create method.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-must-use-post" given="create-operation" enforcement="review" effort="check">
+
+The HTTP verb **must** be
+[`POST`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      responses:
+        "201":
+          description: Created
+```
+
+<Example.Reason>
+  A new order is added to the `orders` collection with `POST`, the verb defined
+  for creation in a collection.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    put:
+      operationId: createOrder
+      responses:
+        "201":
+          description: Created
+```
+
+<Example.Reason>
+  `PUT` against the collection is not the create verb. Creation into a
+  collection is expressed with `POST`.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each create method, identify the HTTP verb declared on the collection
+    path.
+  </Workflow.Step>
+  <Workflow.Step>Confirm the verb is `post`.</Workflow.Step>
+  <Workflow.Step>
+    Report any create operation expressed with a verb other than `post`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-must-use-resource-as-request-body" given="create-operation" enforcement="review" effort="reason">
+
+The resource **must** be the request body.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+```
+
+<Example.Reason>
+  The request body carries the order being created, so the resource is supplied
+  in the body rather than assembled from scattered parameters.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      parameters:
+        - name: customerName
+          in: query
+          schema:
+            type: string
+        - name: total
+          in: query
+          schema:
+            type: number
+```
+
+<Example.Reason>
+  The fields of the order are spread across query parameters with no request
+  body, so the resource being created is not represented as a single body.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each create method, locate its `requestBody`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm a request body is present and its schema represents the resource
+    being created.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any create operation with no request body or whose body does not
+    represent the resource.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-should-use-request-suffixed-object" given="create-operation" enforcement="rule" effort="reason">
+
+API producers **should** implement the request body as a `Request` suffixed
+object.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+```
+
+<Example.Reason>
+  The body references a named, predefined schema whose name ends in `Request`,
+  marking it as the input shape distinct from the stored resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                customerName:
+                  type: string
+```
+
+<Example.Reason>
+  The body is an inline, unnamed schema with no `Request` suffix, so the input
+  shape is not a reusable, clearly labeled request object.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-must-not-include-readonly-fields-in-request" given="create-operation" enforcement="rule" effort="reason">
+
+The request object **must** include only input fields. In OpenAPI, this means
+the request object **must not** include fields with `readOnly: true`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    CreateOrderRequest:
+      type: object
+      properties:
+        customerName:
+          type: string
+        total:
+          type: number
+```
+
+<Example.Reason>
+  The request schema lists only fields a client supplies, leaving
+  server-assigned fields like `id` or `createdAt` out of the input shape.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    CreateOrderRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        customerName:
+          type: string
+```
+
+<Example.Reason>
+  A `readOnly` `id` appears in the request object even though it is
+  server-assigned, so the input shape advertises a field a client cannot set.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-should-return-get-resource" given="create-operation" enforcement="rule" effort="reason" dependsOn={["IPA-104"]}>
+
+The response body **should** be the same resource returned by the
+[Get](0104.mdx) method.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /orders:
+    post:
+      operationId: createOrder
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+```
+
+<Example.Reason>
+  Create and Get return the identical `Order` schema, so the representation a
+  client gets back from creation is the same one it will see on subsequent
+  reads.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /orders:
+    post:
+      operationId: createOrder
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateOrderResult"
+```
+
+<Example.Reason>
+  Create returns a different schema than Get, so the shape seen at creation
+  diverges from the shape seen on every later read of the same resource.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-must-not-accept-query-parameters" given="create-operation" enforcement="rule" effort="check">
+
+Create operations **must not** accept query parameters, since query parameters
+are usually a sign of a side effect that standard methods **must not** cause.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+      responses:
+        "201":
+          description: Created
+```
+
+<Example.Reason>
+  The create operation declares no query parameters, so its input is carried
+  entirely in the request body and it triggers no parameter-driven side effect.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      parameters:
+        - name: notify
+          in: query
+          schema:
+            type: boolean
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+```
+
+<Example.Reason>
+  The `notify` query parameter steers behavior outside the created resource, the
+  kind of side effect a standard create method must not introduce.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-must-return-201" given="create-operation" enforcement="rule" effort="check">
+
+The response status code **must** be
+[201 Created](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/201).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      responses:
+        "201":
+          description: Created
+```
+
+<Example.Reason>
+  A successful create returns `201`, the status that signals a new resource was
+  created.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  A `200` response does not convey that a resource was created, so the success
+  code for a create method is wrong.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Example
 
 ```http request
-POST /groups/${groupId}/clusters
+POST /projects/${projectId}/tasks
 ```
 
 ### Error Handling
@@ -45,15 +681,199 @@ documentation.
 
 ### Naming
 
-- Operation ID **must** be unique
-- Operation ID **must** be in `camelCase`
-- Operation ID **must** start with the verb “create”
-- Operation ID **should** be followed by a noun or compound noun
-- The noun(s) in the Operation ID **should** be the collection identifiers from
-  the resource identifier in singular form
+<Guidelines>
+
+<Guideline id="IPA-106-must-use-unique-operation-id" given="create-operation" enforcement="review" effort="reason">
+
+Operation ID **must** be unique.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+  /invoices:
+    post:
+      operationId: createInvoice
+```
+
+<Example.Reason>
+  Each create operation carries a distinct `operationId`, so generated client
+  methods do not collide.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: create
+  /invoices:
+    post:
+      operationId: create
+```
+
+<Example.Reason>
+  Two operations share the `operationId` `create`, so the identifier no longer
+  names a single operation and code generation breaks.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every `operationId` defined across all operations in the spec.
+  </Workflow.Step>
+  <Workflow.Step>Compare them for exact duplicates.</Workflow.Step>
+  <Workflow.Step>
+    Report any `operationId` that appears on more than one operation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-must-use-camelcase-operation-id" given="create-operation" enforcement="rule" effort="check">
+
+Operation ID **must** be in `camelCase`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    post:
+      operationId: createProjectTask
+```
+
+<Example.Reason>
+  `createProjectTask` is `camelCase`: a lowercase first letter and capitalized
+  word boundaries, matching the casing convention for operation ids.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    post:
+      operationId: create_project_task
+```
+
+<Example.Reason>
+  `create_project_task` is snake_case, not `camelCase`, so it does not follow
+  the operation id casing convention.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-must-start-operation-id-with-create" given="create-operation" enforcement="rule" effort="check">
+
+Operation ID **must** start with the verb "create".
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+```
+
+<Example.Reason>
+  The create operation's id begins with `create`, so the verb matches the
+  method.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: addOrder
+```
+
+<Example.Reason>
+  The id begins with `add` rather than `create`, so the verb does not match the
+  standard create method.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-106-should-follow-operation-id-with-noun" given="create-operation" enforcement="rule" effort="reason" dependsOn={["IPA-106-must-start-operation-id-with-create"]}>
+
+Operation ID **should** be followed by a noun or compound noun, and the noun(s)
+**should** be the collection identifiers from the resource identifier in
+singular form.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    post:
+      operationId: createProjectTask
+```
+
+<Example.Reason>
+  After `create`, the id uses the singular collection identifiers `Project` and
+  `Task` drawn from the resource path, so the operation name mirrors the
+  resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    post:
+      operationId: createTasks
+```
+
+<Example.Reason>
+  The noun is plural and drops the parent collection, so it neither matches the
+  resource hierarchy nor uses the singular form.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Examples:
 
-| Resource Identifier           | Operation ID         |
-| ----------------------------- | -------------------- |
-| `/groups/${groupId}/clusters` | `createGroupCluster` |
+| Resource Identifier            | Operation ID        |
+| ------------------------------ | ------------------- |
+| `/projects/${projectId}/tasks` | `createProjectTask` |
