@@ -6,67 +6,982 @@ state: adopt
 # IPA-107: Update
 
 In REST APIs, it is customary to make a `PATCH` or `PUT` request to a resource's
-URI (for example, `/groups/{groupId}/clusters/{clusterName}`) to update that
+URI (for example, `/projects/{projectId}/tasks/{taskId}`) to update that
 resource.
 
 ## Guidance
 
-- APIs **should** provide an update method for resources unless it is not
-  valuable for users to do so
-  - [Read-only resources](0101.mdx#read-only-resources) **must not** have an
-    Update method
-  - [Read-only singleton resources](0113.mdx#read-only-singleton-resources)
-    **must not** have an Update method
-  - The purpose of the Update method is to make changes to the resources without
-    causing side effects
-- The HTTP verb **should** be
-  [`PATCH`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PATCH) and
-  support partial resource update
-  - The HTTP verb **may** be
-    [`PUT`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PUT) If
-    the method will only ever support full resource replacement
-  - `PUT` is strongly discouraged because it becomes a backward-incompatible
-    change to add fields to the resource
-- The request body **must** contain the resource being updated, i.e. the
-  resource or parts of the resource returned by the [Get method](0104.mdx)
-  - API producers **should** implement as a `UpdateRequest` suffixed object
-    - A `UpdateRequest` object **must** include only input fields
-      - In OpenAPI, this means that the `UpdateRequest` object **must not**
-        include fields with `readOnly: true`
-- The response body **should** be the same resource returned by the
-  [Get method](0104.mdx)
-  - The Update method **should** return the complete resource to avoid
-    complexities for clients
-- The Update method **must** respect the client provided values, or lack
-  thereof, for all fields in the request (see
-  [Client-owned fields](0111.mdx#single-owner-fields))
-  - For partial resource updates, the Update method **must** only update fields
-    included in the request body and leave all other fields unchanged
-  - For full resource replacements, the Update method **must** update the full
-    resource to match the request
-    - Any fields not included in the request body **must** be unset or set to
-      their default value(s)
-  - If the client explicitly provides `null` for an optional field in the
-    request, the server **should** unset the field or reset it to its default
-    value
-    - The server **should** return a
-      [validation error](0114.mdx#validation-errors) if the client provides
-      `null` for a field that is not nullable and cannot be unset
-- Update operations **must not** accept query parameters
-  - Query parameters are usually a sign of a side effect that standard methods
-    **must not** cause
-- The response status code **should** be
-  [`200 OK`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200)
-  - If the request for a _partial_ update is empty, the Update method **should**
-    return a 200 response with no change to the resource
-- Resources **should** provide a single canonical update operation
-  - If a resource has multiple Update methods, it's possible one, or all of
-    them, **may** be [custom methods](0109.mdx)
+<Guidelines>
+
+<Guideline id="IPA-107-should-provide-update-method" given="resource" enforcement="review" effort="reason">
+
+APIs **should** provide an update method for resources unless it is not valuable
+for consumers to do so. The purpose of the Update method is to make changes to
+the resource without causing side effects.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+    patch:
+      operationId: updateProject
+```
+
+<Example.Reason>
+  A mutable resource exposes an Update method, so the fields a consumer set at
+  creation can be changed later without deleting and recreating the resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+    delete:
+      operationId: deleteProject
+```
+
+<Example.Reason>
+  The resource has fields a consumer can reasonably want to change, yet the only
+  path to a change is delete-and-recreate. The absence of an Update method
+  forces a destructive workaround.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every single-resource path (a path ending in a resource identifier)
+    and its declared methods.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each resource, determine from its Get response schema whether any field
+    is writable rather than entirely server-owned.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm a resource with writable fields defines a `PATCH` or `PUT` method.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any mutable resource that offers no update method, unless updating it
+    is genuinely not valuable.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-must-not-update-read-only-resource" given="resource" enforcement="rule">
+
+[Read-only resources](0101.mdx#read-only-resources) **must not** have an Update
+method.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /reports/{reportId}:
+    get:
+      operationId: getReport
+```
+
+<Example.Reason>
+  Every field of the report is server-generated, so the resource is read-only
+  and exposes only a Get method.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /reports/{reportId}:
+    get:
+      operationId: getReport
+    patch:
+      operationId: updateReport
+```
+
+<Example.Reason>
+  The report has no writable fields, yet it defines an Update method. Nothing
+  can actually be changed through it, so the method misleads consumers.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-must-not-update-read-only-singleton" given="resource" enforcement="rule">
+
+[Read-only singleton resources](0113.mdx#read-only-singleton-resources) **must
+not** have an Update method.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/usage:
+    get:
+      operationId: getProjectUsage
+```
+
+<Example.Reason>
+  The usage singleton reports server-computed values only, so it is read-only
+  and defines no Update method.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/usage:
+    get:
+      operationId: getProjectUsage
+    put:
+      operationId: updateProjectUsage
+```
+
+<Example.Reason>
+  The usage singleton holds only computed values, so an Update method has
+  nothing writable to act on.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-should-use-patch" given="update-operation" enforcement="review" effort="check">
+
+The HTTP verb **should** be
+[`PATCH`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PATCH) and
+support partial resource update.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: updateProject
+```
+
+<Example.Reason>
+  `PATCH` lets a consumer send only the fields that change, and new fields can
+  be added to the resource later without breaking existing requests.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    put:
+      operationId: updateProject
+```
+
+<Example.Reason>
+  `PUT` requires the full resource on every update. Adding a field later becomes
+  a backward-incompatible change, because older requests omit the new field and
+  so unset it.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the update operation on each single-resource path.
+  </Workflow.Step>
+  <Workflow.Step>Check whether the verb is `PATCH` or `PUT`.</Workflow.Step>
+  <Workflow.Step>
+    For a `PATCH`, confirm the request body is described as a partial update
+    (optional fields, no requirement to send the whole resource).
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any update modeled as `PUT`, or as a `PATCH` that demands the
+    complete resource.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline
+  id="IPA-107-may-use-put"
+  given="update-operation"
+  enforcement="advisory"
+>
+  The HTTP verb **may** be
+  [`PUT`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PUT) if the
+  method will only ever support full resource replacement. `PUT` is strongly
+  discouraged because adding fields to the resource becomes a
+  backward-incompatible change.
+</Guideline>
+
+<Guideline id="IPA-107-must-request-body-is-the-resource" given="update-operation" enforcement="rule">
+
+The request body **must** contain the resource being updated, that is, the
+resource or parts of the resource returned by the [Get method](0104.mdx).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectUpdateRequest"
+```
+
+<Example.Reason>
+  The update request carries the same fields the Get method returns (minus
+  read-only ones), so a consumer reads the resource, edits fields, and sends
+  them back under the same names and types.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameCommand"
+```
+
+<Example.Reason>
+  The request body is a command shape unrelated to the resource. The fields a
+  consumer reads back from Get cannot be sent to the update, so the two halves
+  of the round trip do not line up.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-should-use-update-request-suffixed-object" given="update-operation" enforcement="rule" dependsOn={["IPA-107-must-request-body-is-the-resource"]}>
+
+API producers **should** implement the request body as a schema with an
+`UpdateRequest` suffix.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectUpdateRequest"
+```
+
+<Example.Reason>
+  The referenced schema name ends in `UpdateRequest`, which marks it as the
+  input-only shape for the update and keeps it distinct from the resource
+  returned by Get.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Project"
+```
+
+<Example.Reason>
+  The update reuses the full resource schema as its request body. The input
+  shape is not separated from the resource, so read-only fields leak into the
+  request and the schema name gives no signal that it is update input.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-must-update-request-input-fields-only" given="update-operation" enforcement="rule" dependsOn={["IPA-107-should-use-update-request-suffixed-object"]}>
+
+An `UpdateRequest` object **must** include only input fields. In OpenAPI this
+means the `UpdateRequest` object **must not** include fields with
+`readOnly: true`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    ProjectUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+```
+
+<Example.Reason>
+  The request schema lists only writable fields. Server-owned values such as
+  `id` or `createdAt` are absent, so a consumer cannot send a value the server
+  would ignore.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    ProjectUpdateRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+```
+
+<Example.Reason>
+  The request schema includes `id`, a read-only field. A consumer can put a
+  value on the wire that the server must silently discard, which makes the
+  contract ambiguous about what an update actually changes.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-should-response-body-is-the-resource" given="update-operation" enforcement="rule">
+
+The response body **should** be the same resource returned by the
+[Get method](0104.mdx), and the Update method **should** return the complete
+resource to avoid complexities for clients.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+    patch:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+```
+
+<Example.Reason>
+  The update returns the same `Project` schema the Get method returns, so a
+  consumer sees the full, current resource state without a follow-up read.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+    patch:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateAck"
+```
+
+<Example.Reason>
+  The update returns an acknowledgement rather than the resource. A consumer
+  must issue a second Get to learn the resulting state, which the resource
+  response was meant to provide.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-must-respect-client-provided-values" given="update-operation" enforcement="review" implementation effort="explore">
+
+The Update method **must** respect the values the client provided, or the lack
+thereof, for all fields in the request (see
+[Client-owned fields](0111.mdx#single-owner-fields)).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+# PATCH /projects/{projectId}
+# request body:
+#   { "name": "renamed" }
+# stored resource afterward:
+#   { "id": "p1", "name": "renamed", "description": "unchanged" }
+```
+
+<Example.Reason>
+  Only `name` was sent, so only `name` changed. The field omitted from the
+  request kept its prior value, which is the behavior a partial update promises.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+# PATCH /projects/{projectId}
+# request body:
+#   { "name": "renamed" }
+# stored resource afterward:
+#   { "id": "p1", "name": "renamed", "description": null }
+```
+
+<Example.Reason>
+  `description` was not sent yet the server cleared it. The update did not
+  respect the absence of the field, so a partial request silently destroyed
+  data.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the update operation and its request schema for the resource under
+    review.
+  </Workflow.Step>
+  <Workflow.Step>
+    Because the OpenAPI contract alone cannot show this, inspect the handler
+    source or exercise the running endpoint to observe how a request maps to
+    stored state.
+  </Workflow.Step>
+  <Workflow.Step>
+    Send a request that sets some fields and omits others, then read the
+    resource back and confirm the omitted fields are unchanged.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any field whose stored value changed despite being absent from the
+    request.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-must-partial-update-only-included-fields" given="update-operation" enforcement="review" implementation effort="explore" dependsOn={["IPA-107-must-respect-client-provided-values"]}>
+
+For partial resource updates, the Update method **must** only update fields
+included in the request body and leave all other fields unchanged.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+# PATCH /orders/{orderId}
+# before: { "id": "o1", "status": "OPEN", "note": "rush" }
+# request: { "status": "SHIPPED" }
+# after:  { "id": "o1", "status": "SHIPPED", "note": "rush" }
+```
+
+<Example.Reason>
+  The partial update touched only `status`. `note`, absent from the request, was
+  left as it was.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+# PATCH /orders/{orderId}
+# before: { "id": "o1", "status": "OPEN", "note": "rush" }
+# request: { "status": "SHIPPED" }
+# after:  { "id": "o1", "status": "SHIPPED", "note": "" }
+```
+
+<Example.Reason>
+  `note` was reset even though the request never mentioned it. A partial update
+  that rewrites untouched fields behaves like a full replacement.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Confirm the operation is a partial update (a `PATCH`, or a method documented
+    as partial).
+  </Workflow.Step>
+  <Workflow.Step>
+    Inspect the handler source or exercise the endpoint, since the contract
+    cannot reveal write behavior.
+  </Workflow.Step>
+  <Workflow.Step>
+    Submit a request setting one field, then read the resource and confirm every
+    field absent from the request is unchanged.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any untouched field that the partial update modified.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-must-full-replacement-matches-request" given="update-operation" enforcement="review" implementation effort="explore" dependsOn={["IPA-107-must-respect-client-provided-values"]}>
+
+For full resource replacements, the Update method **must** update the full
+resource to match the request, and any fields not included in the request body
+**must** be unset or set to their default values.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+# PUT /orders/{orderId}
+# before: { "id": "o1", "status": "OPEN", "note": "rush" }
+# request: { "status": "SHIPPED" }
+# after:  { "id": "o1", "status": "SHIPPED", "note": null }
+```
+
+<Example.Reason>
+  A full replacement defines the entire resource from the request. `note` was
+  omitted, so it was unset, leaving stored state equal to the request.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+# PUT /orders/{orderId}
+# before: { "id": "o1", "status": "OPEN", "note": "rush" }
+# request: { "status": "SHIPPED" }
+# after:  { "id": "o1", "status": "SHIPPED", "note": "rush" }
+```
+
+<Example.Reason>
+  The replacement kept `note` from the prior state even though the request
+  omitted it. Stored state no longer matches the request, so the operation
+  behaves like a partial update rather than the full replacement its verb
+  promised.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Confirm the operation is a full replacement (typically a `PUT`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Inspect the handler source or exercise the endpoint, since replacement
+    semantics are not visible in the contract.
+  </Workflow.Step>
+  <Workflow.Step>
+    Send a request that omits some optional fields, then read the resource back.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm every omitted field is unset or reset to its default, and report any
+    field that retained its prior value.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-should-unset-on-explicit-null" given="update-operation" enforcement="review" implementation effort="explore" dependsOn={["IPA-107-must-respect-client-provided-values"]}>
+
+If the client explicitly provides `null` for an optional field in the request,
+the server **should** unset the field or reset it to its default value.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+# PATCH /projects/{projectId}
+# before: { "id": "p1", "description": "old" }
+# request: { "description": null }
+# after:  { "id": "p1", "description": null }
+```
+
+<Example.Reason>
+  An explicit `null` is a request to clear the field, distinct from omitting it.
+  The server unset `description` accordingly.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+# PATCH /projects/{projectId}
+# before: { "id": "p1", "description": "old" }
+# request: { "description": null }
+# after:  { "id": "p1", "description": "old" }
+```
+
+<Example.Reason>
+  The explicit `null` was ignored and the old value kept. A consumer has no way
+  to clear an optional field, since `null` and omission are treated the same.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For the update operation, list the optional, nullable fields in the request
+    schema.
+  </Workflow.Step>
+  <Workflow.Step>
+    Inspect the handler source or exercise the endpoint, since null handling is
+    a runtime behavior.
+  </Workflow.Step>
+  <Workflow.Step>
+    Send a request with an explicit `null` for one such field, then read the
+    resource and confirm the field is unset or reset to its default.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any field where an explicit `null` left the prior value in place.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-should-error-on-null-for-non-nullable" given="update-operation" enforcement="review" implementation effort="explore" dependsOn={["IPA-107-should-unset-on-explicit-null"]}>
+
+The server **should** return a [validation error](0114.mdx#validation-errors) if
+the client provides `null` for a field that is not nullable and cannot be unset.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+# PATCH /projects/{projectId}
+# request: { "name": null }   # name is required, non-nullable
+# response: 400 Bad Request with a validation error
+```
+
+<Example.Reason>
+  `name` cannot be cleared, so an explicit `null` is rejected with a validation
+  error rather than silently ignored.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+# PATCH /projects/{projectId}
+# request: { "name": null }   # name is required, non-nullable
+# response: 200 OK, name unchanged
+```
+
+<Example.Reason>
+  A `null` for a non-nullable field was accepted and quietly dropped. The
+  consumer believes the field was cleared while it was not, hiding a malformed
+  request.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    List the request fields that are non-nullable or cannot be unset.
+  </Workflow.Step>
+  <Workflow.Step>
+    Inspect the handler source or exercise the endpoint, since this is runtime
+    validation behavior.
+  </Workflow.Step>
+  <Workflow.Step>
+    Send a request with an explicit `null` for such a field and observe the
+    response.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm a validation error is returned, and report any case where the `null`
+    was accepted or silently ignored.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-must-not-accept-query-parameters" given="update-operation" enforcement="rule">
+
+Update operations **must not** accept query parameters. Query parameters are
+usually a sign of a side effect that standard methods must not cause.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: updateProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  The only parameter is the path identifier. The update changes the addressed
+  resource and nothing else.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: updateProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: notify
+          in: query
+          schema:
+            type: boolean
+```
+
+<Example.Reason>
+  The `notify` query parameter steers a side effect of the update. A standard
+  update should change only the resource, so behavior toggles do not belong on
+  it.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-should-return-200-ok" given="update-operation" enforcement="rule">
+
+The response status code **should** be
+[`200 OK`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200). If the
+request for a _partial_ update is empty, the Update method **should** return a
+200 response with no change to the resource.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      responses:
+        "200":
+          description: The updated project.
+```
+
+<Example.Reason>
+  The update returns `200 OK` carrying the updated resource, the expected
+  success status for a synchronous standard update.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      responses:
+        "204":
+          description: No content.
+```
+
+<Example.Reason>
+  A `204` returns no body, so the updated resource the response should carry is
+  absent, forcing a follow-up read.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-should-provide-single-canonical-update" given="resource" enforcement="review" effort="reason">
+
+Resources **should** provide a single canonical update operation. If a resource
+has multiple Update methods, it is possible one, or all, of them **may** be
+[custom methods](0109.mdx).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: updateProject
+  /projects/{projectId}:archive:
+    post:
+      operationId: archiveProject
+```
+
+<Example.Reason>
+  The resource has one standard update, and the additional mutation is expressed
+  as a clearly named custom method rather than a second standard update.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: updateProject
+    put:
+      operationId: replaceProject
+```
+
+<Example.Reason>
+  Two standard update methods cover the same resource, so it is ambiguous which
+  is canonical. A second mutation belongs in a custom method, not a rival
+  standard update.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Group all operations by the resource they act on.
+  </Workflow.Step>
+  <Workflow.Step>
+    Count the standard update methods (`PATCH` or `PUT`) on each resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    For a resource with more than one, check whether the extra operations are
+    custom methods (a `resource:verb` path).
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any resource carrying more than one standard, non-custom update
+    method.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Example
 
 ```http request
-PATCH /groups/${groupId}/clusters/{clusterName}
+PATCH /projects/{projectId}/tasks/{taskId}
 ```
 
 ### Error Handling
@@ -76,18 +991,188 @@ documentation.
 
 ### Naming
 
-- Operation ID **must** be unique
-- Operation ID **must** be in `camelCase`
-- Operation ID **must** start with the verb “update”
-- Operation ID **should** be followed by a noun or compound noun
-- The noun(s) in the Operation ID **should** be the collection identifiers from
-  the resource identifier in singular form
-  - If the resource is a [singleton resource](0113.mdx), the last noun **may**
-    be the plural form of the collection identifier
+<Guidelines>
 
-Examples:
+<Guideline id="IPA-107-must-operation-id-unique" given="update-operation" enforcement="rule">
 
-| Resource Identifier                          | Operation ID          |
-| -------------------------------------------- | --------------------- |
-| `/groups/${groupId}/clusters/${clusterName}` | `updateGroupCluster`  |
-| (Singleton) `/groups/${groupId}/settings`    | `updateGroupSettings` |
+Operation ID **must** be unique.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: updateProject
+  /orders/{orderId}:
+    patch:
+      operationId: updateOrder
+```
+
+<Example.Reason>
+  Each operation carries a distinct `operationId`, so generated client methods
+  do not collide.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: update
+  /orders/{orderId}:
+    patch:
+      operationId: update
+```
+
+<Example.Reason>
+  Two operations share the `operationId` `update`. A generated client cannot
+  tell the two methods apart.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-must-operation-id-camel-case" given="update-operation" enforcement="rule">
+
+Operation ID **must** be in `camelCase`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: updateProject
+```
+
+<Example.Reason>
+  `updateProject` is camelCase, which generates idiomatic method names across
+  the client languages.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: update_project
+```
+
+<Example.Reason>
+  `update_project` is snake_case. A mix of casing styles across operations
+  yields inconsistent generated method names.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-must-operation-id-start-with-update" given="update-operation" enforcement="rule">
+
+Operation ID **must** start with the verb "update".
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: updateProject
+```
+
+<Example.Reason>
+  The `operationId` begins with `update`, so the verb signals a standard update
+  consistently across the API.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: modifyProject
+```
+
+<Example.Reason>
+  `modifyProject` uses a synonym instead of `update`. Varying the verb breaks
+  the predictable naming generated clients rely on.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-107-should-operation-id-followed-by-noun" given="update-operation" enforcement="rule" dependsOn={["IPA-107-must-operation-id-start-with-update"]}>
+
+Operation ID **should** be followed by a noun or compound noun, and the noun(s)
+**should** be the collection identifiers from the resource identifier in
+singular form. If the resource is a [singleton resource](0113.mdx), the last
+noun **may** be the plural form of the collection identifier.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    patch:
+      operationId: updateProjectTask
+  /projects/{projectId}/settings:
+    put:
+      operationId: updateProjectSettings
+```
+
+<Example.Reason>
+  `updateProjectTask` uses the singular collection identifiers from the path,
+  and the `settings` singleton keeps its plural last noun, so each name mirrors
+  the resource identifier.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    patch:
+      operationId: updateTasks
+```
+
+<Example.Reason>
+  The name drops the parent `project`, and `tasks` is plural for a single
+  resource. The `operationId` no longer reflects the resource hierarchy of the
+  path.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
