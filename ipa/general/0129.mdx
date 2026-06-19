@@ -13,73 +13,807 @@ specified way.
 
 ## Guidance
 
-- API Producers **may** use query parameters for:
-  - Filtering
-  - Searching
-  - [Pagination](0110.mdx)
-  - [The envelope object](0115.mdx)
-  - [Cascading delete](0108.mdx#cascading-delete)
-- Query parameters **must not** be used in place of request body fields for
-  [Create](0106.mdx) and [Update](0107.mdx) Methods, i.e. when the value causes
-  a side-effect
-- Query parameters **must not** be required
-- API Producers **should** document the possible length of query parameter
-  values
-  - For string query parameters, API Producers **should** document the maximum
-    allowed length of the value
-- The number of distinct query parameters for a method **must not** exceed 10
-  - A high number of query parameters may lead to performance issues
-  - Some browsers and servers may have limits for URI lengths
+<Guidelines>
+
+<Guideline id="IPA-129-may-use-query-parameters" enforcement="advisory">
+API Producers **may** use query parameters for:
+
+- Filtering
+- Searching
+- [Pagination](0110.mdx)
+- [The envelope object](0115.mdx)
+- [Cascading delete](0108.mdx#cascading-delete)
+
+</Guideline>
+
+<Guideline id="IPA-129-must-not-use-for-side-effects" given="operation" enforcement="review" effort="reason">
+Query parameters **must not** be used in place of request body fields for
+[Create](0106.mdx) and [Update](0107.mdx) Methods, i.e. when the value causes a
+side-effect.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                customerId:
+                  type: string
+                total:
+                  type: number
+```
+
+<Example.Reason>
+  The values that create the order live in the request body, so the side-effect
+  is described by the payload rather than by the URI.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      parameters:
+        - name: customerId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: total
+          in: query
+          required: true
+          schema:
+            type: number
+```
+
+<Example.Reason>
+  The fields that mutate state are passed as query parameters. State-changing
+  input belongs in the request body, where it is not exposed in URIs, logs, or
+  browser history.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every `POST` (Create) and `PUT`/`PATCH` (Update) operation in the
+    spec.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, list its parameters where `in: query`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Determine whether any query parameter supplies a value that mutates resource
+    state rather than shaping the response (such as filtering or pagination).
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any Create or Update operation that takes state-changing input
+    through a query parameter instead of the request body.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-129-must-not-require-query-parameters" given="operation" enforcement="automatable" effort="check">
+Query parameters **must not** be required.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+parameters:
+  - name: status
+    in: query
+    required: false
+    schema:
+      type: string
+```
+
+<Example.Reason>
+  The parameter is optional, so the request stays valid when the parameter is
+  omitted.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+parameters:
+  - name: status
+    in: query
+    required: true
+    schema:
+      type: string
+```
+
+<Example.Reason>
+  A required query parameter forces every caller to supply it, turning an
+  optional refinement into a mandatory part of the contract.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate every parameter in the spec where `in: query`, both on path items
+    and on individual operations.
+  </Workflow.Step>
+  <Workflow.Step>For each, read its `required` field.</Workflow.Step>
+  <Workflow.Step>
+    Report any query parameter whose `required` is `true`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-129-should-document-value-length" given="parameter" enforcement="review" effort="check">
+API Producers **should** document the possible length of query parameter values.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+parameters:
+  - name: tag
+    in: query
+    required: false
+    description: A label to filter by. Up to 64 characters.
+    schema:
+      type: string
+      maxLength: 64
+```
+
+<Example.Reason>
+  The bound on the value is stated in the description and pinned with
+  `maxLength`, so a consumer knows what the server will accept before sending a
+  request.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+parameters:
+  - name: tag
+    in: query
+    required: false
+    schema:
+      type: string
+```
+
+<Example.Reason>
+  Nothing states how long the value may be, so a consumer cannot tell whether a
+  long value will be accepted or rejected.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>Enumerate every parameter where `in: query`.</Workflow.Step>
+  <Workflow.Step>
+    For each, check whether the description or schema documents a bound on the
+    value length.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any query parameter whose value length is left undocumented.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-129-should-document-string-max-length" given="parameter" enforcement="automatable" effort="check">
+For string query parameters, API Producers **should** document the maximum
+allowed length of the value.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+parameters:
+  - name: search
+    in: query
+    required: false
+    schema:
+      type: string
+      maxLength: 256
+```
+
+<Example.Reason>
+  `maxLength` makes the upper bound on a string value machine-readable, so
+  validators and generated clients enforce it without prose.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+parameters:
+  - name: search
+    in: query
+    required: false
+    schema:
+      type: string
+```
+
+<Example.Reason>
+  A string query parameter with no `maxLength` declares no upper bound, so
+  tooling cannot validate the size of the value.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate every parameter where `in: query` whose `schema.type` is `string`.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, check whether `schema.maxLength` is set.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any string query parameter that omits `maxLength`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-129-must-not-exceed-ten-parameters" given="operation" enforcement="automatable" effort="check">
+The number of distinct query parameters for a method **must not** exceed 10. A
+high number of query parameters can lead to performance issues, and some browsers
+and servers limit URI length.
+
+<Guideline.Details>
+
+<Workflow>
+  <Workflow.Step>
+    For each operation, collect its `in: query` parameters, including any
+    inherited from the path item.
+  </Workflow.Step>
+  <Workflow.Step>Count the distinct parameter names.</Workflow.Step>
+  <Workflow.Step>Report any operation whose count exceeds 10.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ### Formatting
 
-- Query parameters **must** be provided in the URI. The query component starts
-  with the first question mark (`?`) character and is terminated by the number
-  sign (`#`) character, or by the end of the URI
-- Query parameters **must** be formatted as key-value pairs and separated with
-  an ampersand (`&`)
+<Guidelines>
 
-Example:
+<Guideline id="IPA-129-must-provide-in-uri" enforcement="advisory">
 
-```http request
-/resource/{id}?name=peter&age=25
-```
+Query parameters **must** be provided in the URI. The query component starts
+with the first question mark (`?`) character and is terminated by the number
+sign (`#`) character, or by the end of the URI.
+
+</Guideline>
+
+<Guideline id="IPA-129-must-format-as-key-value-pairs" given="parameter" enforcement="review" effort="check">
+Query parameters **must** be formatted as key-value pairs and separated with an
+ampersand (`&`).
+
+:::note
 
 See [IETF RFC3986 - 3.4](https://www.ietf.org/rfc/rfc3986.txt).
+
+:::
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+parameters:
+  - name: name
+    in: query
+    schema:
+      type: string
+  - name: age
+    in: query
+    schema:
+      type: integer
+```
+
+<Example.Reason>
+  Each value has its own named key, which serializes to standard `key=value`
+  pairs joined by `&` (`?name=peter&age=25`).
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+parameters:
+  - name: filter
+    in: query
+    schema:
+      type: string
+    description: A semicolon-delimited list such as "name:peter;age:25".
+```
+
+<Example.Reason>
+  Packing several fields into one parameter with a custom delimiter abandons the
+  standard key-value form, so generic tooling cannot parse the individual
+  values.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>Enumerate every parameter where `in: query`.</Workflow.Step>
+  <Workflow.Step>
+    For each, check whether the description or schema relies on a custom
+    delimiter to encode multiple values in a single parameter.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any query parameter that bundles multiple fields instead of using one
+    key-value pair per value.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ### Array Query Parameters
 
 Array query parameters are query parameters that accept a list of values.
 
-- Array query parameters **must** be provided by repeating the key and value of
-  the parameter, for each value in the list
-- API Producers **must** document which query parameters accept array values
-- API Producers **must** document the maximum number of array items using the
-  `maxItems` property
-  - The `maxItems` property **must not** exceed 20
-- Empty arrays **must** be handled gracefully, i.e. not cause an error response
+<Guidelines>
 
-Example:
+<Guideline id="IPA-129-must-repeat-key-for-array-values" given="parameter" enforcement="review" effort="check">
+Array query parameters **must** be provided by repeating the key and value of the
+parameter, for each value in the list.
 
-```http request
-/resource/{id}?name=peter&name=linda&name=sam
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+parameters:
+  - name: name
+    in: query
+    explode: true
+    style: form
+    schema:
+      type: array
+      items:
+        type: string
 ```
+
+<Example.Reason>
+  With `style: form` and `explode: true`, each item repeats the key
+  (`?name=peter&name=linda&name=sam`), which is the standard array
+  serialization.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+parameters:
+  - name: name
+    in: query
+    explode: false
+    style: form
+    schema:
+      type: array
+      items:
+        type: string
+```
+
+<Example.Reason>
+  With `explode: false` the values collapse into one comma-joined key
+  (`?name=peter,linda,sam`) instead of a repeated key per value.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate every parameter where `in: query` whose `schema.type` is `array`.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, check that `style` is `form` and `explode` is `true` (the default
+    for `form`), so each value repeats the key.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any array query parameter whose serialization collapses the values
+    into a single key.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-129-must-document-array-parameters" given="parameter" enforcement="review" effort="check">
+API Producers **must** document which query parameters accept array values.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+parameters:
+  - name: tag
+    in: query
+    description: Filters by one or more tags. Repeat the key for each tag.
+    schema:
+      type: array
+      items:
+        type: string
+```
+
+<Example.Reason>
+  The schema declares `type: array` and the description states that the
+  parameter takes multiple values, so the array nature is explicit.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+parameters:
+  - name: tag
+    in: query
+    description: Filters by tag.
+    schema:
+      type: string
+```
+
+<Example.Reason>
+  The parameter is meant to accept several tags, but it is typed as a single
+  string with no mention of accepting a list, leaving the array behavior
+  undocumented.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>Enumerate every parameter where `in: query`.</Workflow.Step>
+  <Workflow.Step>
+    Identify the parameters intended to accept multiple values, from the
+    description, name, or example.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each such parameter is declared with `schema.type: array`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any parameter that accepts a list of values but is not documented as
+    an array.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-129-must-document-max-items" given="parameter" enforcement="automatable">
+API Producers **must** document the maximum number of array items using the
+`maxItems` property.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+parameters:
+  - name: tag
+    in: query
+    schema:
+      type: array
+      maxItems: 20
+      items:
+        type: string
+```
+
+<Example.Reason>
+  `maxItems` makes the cap on the number of values machine-readable, so
+  validators reject oversized lists without prose.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+parameters:
+  - name: tag
+    in: query
+    schema:
+      type: array
+      items:
+        type: string
+```
+
+<Example.Reason>
+  The array parameter declares no `maxItems`, so there is no documented limit on
+  how many values a caller may send.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-129-must-not-exceed-twenty-max-items" given="parameter" enforcement="automatable">
+The `maxItems` property **must not** exceed 20.
+
+</Guideline>
+
+<Guideline id="IPA-129-must-handle-empty-arrays" given="parameter" enforcement="review" implementation effort="explore">
+Empty arrays **must** be handled gracefully, i.e. not cause an error response.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects:
+    get:
+      operationId: listProjects
+      parameters:
+        - name: tag
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        "200":
+          description: The full, unfiltered list when no tag is supplied.
+```
+
+<Example.Reason>
+  An empty `tag` array is treated as "no filter" and returns a normal `200`, so
+  the caller is not penalized for sending an empty list.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects:
+    get:
+      operationId: listProjects
+      parameters:
+        - name: tag
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        "400":
+          description: Returned when tag is present but empty.
+```
+
+<Example.Reason>
+  An empty array triggers a `400`, so a value that should be a harmless no-op
+  becomes a client error.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the array query parameters on each operation.
+  </Workflow.Step>
+  <Workflow.Step>
+    Inspect the handler source or runtime behavior to determine how an empty
+    array is processed, since the spec alone does not capture it.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm that an empty array yields a successful response rather than a
+    validation error.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any operation that returns an error response when an array query
+    parameter is empty.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ### Filtering & Searching
 
 Query parameters can be used to filter or search responses by specific field
 values.
 
-- Filtering **should** be implemented using query parameters
-  - For example, `/groups?name=project1`
-- Filtering and searching **may** be implemented for
-  - [List Methods](0105.mdx)
-  - [Custom Methods](0109.mdx) used for retrieving data
-- Filtering and searching **must not** be implemented for
-  - [Get Methods](0104.mdx)
-  - [Create Methods](0106.mdx)
-  - [Update Methods](0107.mdx)
-  - [Delete Methods](0108.mdx)
+<Guidelines>
+
+<Guideline id="IPA-129-should-filter-with-query-parameters" given="operation" enforcement="review" effort="reason">
+Filtering **should** be implemented using query parameters, for example
+`/projects?name=project1`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects:
+    get:
+      operationId: listProjects
+      parameters:
+        - name: name
+          in: query
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  The filter is expressed as a query parameter on the collection, keeping the
+  path a plain resource collection.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/by-name/{name}:
+    get:
+      operationId: getProjectByName
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  Encoding the filter as a dedicated path segment invents a new endpoint per
+  filter field, where a single query parameter on the collection would do.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the operations that filter a collection by field value.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, check whether the filter is expressed as a query parameter rather
+    than a dedicated path segment or a custom endpoint.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any filtering behavior implemented through path segments instead of
+    query parameters.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-129-may-filter-list-and-custom-methods" enforcement="advisory">
+Filtering and searching **may** be implemented for:
+
+- [List Methods](0105.mdx)
+- [Custom Methods](0109.mdx) used for retrieving data
+
+</Guideline>
+
+<Guideline id="IPA-129-must-not-filter-single-resource-methods" given="operation" enforcement="review" effort="reason">
+Filtering and searching **must not** be implemented for [Get](0104.mdx),
+[Create](0106.mdx), [Update](0107.mdx), and [Delete](0108.mdx) Methods.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  A Get addresses one resource by its identifier and exposes no filtering or
+  search parameters, which belong on list or retrieval custom methods.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  A Get targets a single resource, so a filtering parameter has nothing to
+  filter and muddies the method's contract.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect the Get, Create, Update, and Delete operations in the spec.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, inspect its `in: query` parameters for any that filter or search
+    results.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any Get, Create, Update, or Delete operation that exposes a filtering
+    or searching query parameter.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ## Further Reading
 
