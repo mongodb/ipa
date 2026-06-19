@@ -10,30 +10,408 @@ that a service can perform on behalf of the consumer.
 
 ## Guidance
 
-- API authors **should** choose from the defined categories in the following
-  order:
-  - Standard methods (on collections and resources)
-  - Custom methods (on collections, resources, or stateless)
-- Standard methods **must not** cause side effects
-  - In such scenarios where a side effect is necessary, a custom method
-    **should** be used
-  - A side effect specifically includes mutating
-    [client-owned fields](0111.mdx#single-owner-fields) of any resource other
-    than the target of the request. The dependent mutation **must** be performed
-    through the dependent resource's own endpoint; if the operation is
-    fundamentally multi-resource by design, it **must** be modeled as a custom
-    method per the rule above.
-  - Side effects limited to read-only or
-    [effective values](0111.mdx#effective-values) of another resource **may**
-    occur in standard methods.
-- Standard methods **must** guarantee
-  [atomicity](https://en.wikipedia.org/wiki/Atomicity_%28database_systems%29)
-  - In cases where atomicity cannot be guaranteed, consider in the following
-    order:
-    - A new sub-resource with the appropriate methods
-    - A [singleton-resource](0113.mdx) for the corresponding section
-    - [Custom methods](0109.mdx), for example, an `Add` or `Remove` operation
-      for repeated fields
+<Guidelines>
+
+<Guideline id="IPA-103-should-prefer-standard-methods" given="operation" enforcement="review" effort="reason">
+
+API authors **should** choose from the defined categories in the following
+order:
+
+- Standard methods (on collections and resources)
+- Custom methods (on collections, resources, or stateless)
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    delete:
+      operationId: deleteOrder
+```
+
+<Example.Reason>
+  Cancelling an order is removal of a resource, so the standard `delete` method
+  covers it. A standard method is the first category that fits, so it is the one
+  used.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:cancel:
+    post:
+      operationId: cancelOrder
+```
+
+<Example.Reason>
+  A custom `:cancel` method is introduced for an operation that a standard
+  `delete` already expresses. The custom method is chosen ahead of the standard
+  one, reversing the intended order.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate every operation under `paths` and pair it with the resource path
+    it acts on.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each operation, determine the action it performs: create, read, list,
+    update, delete, or something else.
+  </Workflow.Step>
+  <Workflow.Step>
+    When the action is a plain create/read/list/update/delete on a collection or
+    resource, confirm it is expressed as the matching standard method rather
+    than a custom method.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any custom method whose behavior a standard method on the same
+    resource would already cover.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-103-must-not-cause-side-effects" given="operation" enforcement="review" implementation effort="explore">
+
+Standard methods **must not** cause side effects.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: updateProject
+      responses:
+        "200":
+          description: The updated project.
+```
+
+<Example.Reason>
+  The `update` method changes only the project named in the path. No other
+  resource is mutated as a consequence, so the standard method stays free of
+  side effects.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: updateProject
+      description: >-
+        Updates the project and also deactivates every team that belongs to it.
+```
+
+<Example.Reason>
+  Updating one project mutates a different set of resources, the teams. A
+  standard method that reaches beyond its target hides the second effect from
+  anyone reading the contract.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    List the standard methods in the spec (create, read, list, update, delete on
+    collections and resources).
+  </Workflow.Step>
+  <Workflow.Step>
+    For each one, identify the target resource named in the path.
+  </Workflow.Step>
+  <Workflow.Step>
+    Inspect the implementation or the documented behavior to find every resource
+    the operation mutates, not only the target.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any standard method that mutates a resource other than its target,
+    since that is a side effect.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-103-should-use-custom-method-for-side-effect" given="operation" enforcement="review" effort="reason" dependsOn={["IPA-103-must-not-cause-side-effects"]}>
+
+In scenarios where a side effect is necessary, a custom method **should** be
+used.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:archive:
+    post:
+      operationId: archiveProject
+      description: >-
+        Archives the project and disables its teams.
+```
+
+<Example.Reason>
+  The operation deliberately touches more than its target, so it is expressed as
+  a custom method. The custom verb signals up front that the call carries an
+  effect a plain update would not.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: updateProject
+      description: >-
+        Updates the project and disables its teams.
+```
+
+<Example.Reason>
+  The same effect is folded into a standard `update`. The required side effect
+  is hidden behind a method that callers expect to be effect-free.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Start from the operations flagged as carrying a necessary side effect by
+    IPA-103-must-not-cause-side-effects.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, check whether it is modeled as a standard method or a custom
+    method.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any that carry a deliberate side effect yet are still expressed as a
+    standard method.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-103-must-mutate-dependent-via-own-endpoint" given="operation" enforcement="review" implementation effort="explore" dependsOn={["IPA-103-must-not-cause-side-effects"]}>
+
+A side effect specifically includes mutating
+[client-owned fields](0111.mdx#single-owner-fields) of any resource other than
+the target of the request. The dependent mutation **must** be performed through
+the dependent resource's own endpoint.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: updateProject
+  /teams/{teamId}:
+    patch:
+      operationId: updateTeam
+```
+
+<Example.Reason>
+  Changing a team's client-owned fields goes through the team's own `update`
+  endpoint. Each resource owns the writes to its own fields.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: updateProject
+      description: >-
+        Also rewrites the name field on each team in the project.
+```
+
+<Example.Reason>
+  The project update writes client-owned fields on teams. Those writes belong to
+  the team endpoint, so routing them through the project endpoint hides the
+  mutation from anyone working with the team resource.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each operation, identify the target resource named in its path.
+  </Workflow.Step>
+  <Workflow.Step>
+    From the implementation or documented behavior, list the client-owned fields
+    the operation writes on any resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any operation that writes client-owned fields on a resource other than
+    its target.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm that an endpoint owned by the dependent resource exists and that the
+    mutation is routed through it instead.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-103-must-model-multi-resource-as-custom" given="operation" enforcement="review" implementation effort="explore" dependsOn={["IPA-103-must-not-cause-side-effects"]}>
+
+If the operation is fundamentally multi-resource by design, it **must** be
+modeled as a custom method.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:transfer:
+    post:
+      operationId: transferProject
+      description: >-
+        Moves the project to another owner and reassigns its teams.
+```
+
+<Example.Reason>
+  The operation touches several resources by design, so it is a custom method.
+  The custom verb makes the multi-resource scope explicit.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    patch:
+      operationId: updateProject
+      description: >-
+        Moves the project to another owner and reassigns its teams.
+```
+
+<Example.Reason>
+  A genuinely multi-resource operation is squeezed into a standard `update`. The
+  standard method advertises a single-resource change while doing much more.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each operation, determine from the implementation or documented behavior
+    how many distinct resources it mutates.
+  </Workflow.Step>
+  <Workflow.Step>
+    Identify operations whose purpose inherently spans more than one resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any such operation that is modeled as a standard method rather than a
+    custom method.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-103-may-have-read-only-side-effects" enforcement="advisory">
+  Side effects limited to read-only or [effective
+  values](0111.mdx#effective-values) of another resource **may** occur in
+  standard methods.
+</Guideline>
+
+<Guideline id="IPA-103-must-guarantee-atomicity" given="operation" enforcement="review" implementation effort="explore">
+
+Standard methods **must** guarantee
+[atomicity](https://en.wikipedia.org/wiki/Atomicity_%28database_systems%29).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    patch:
+      operationId: updateOrder
+      description: >-
+        Applies all field changes together; a failure leaves the order
+        unchanged.
+```
+
+<Example.Reason>
+  The update either lands in full or not at all. A partial result is never
+  observable, which is what atomicity guarantees.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    patch:
+      operationId: updateOrder
+      description: >-
+        Updates each field in turn; a mid-way failure leaves some fields
+        changed.
+```
+
+<Example.Reason>
+  A failure partway through leaves the order in a mixed state. The standard
+  method exposes a half-applied result, which atomicity forbids.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    List the standard methods that mutate state (create, update, delete).
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, inspect the implementation or documented behavior to see whether a
+    partial failure can leave the resource half-changed.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any mutating standard method that can produce an observable partial
+    result. When atomicity cannot be guaranteed, the operation belongs in a
+    sub-resource, a [singleton resource](0113.mdx), or a [custom
+    method](0109.mdx) instead.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 If a standard method is unsuitable, then custom methods offer a lesser, but
 still valuable level of consistency, helping the user reason about the scope of
@@ -47,22 +425,358 @@ Selecting a custom method may be valuable for:
 
 ### Response bodies
 
-- Every endpoint **must** support a versioned JSON content type (e.g.
-  `application/vnd.atlas.YYYY-MM-DD+json`), per [IPA-900](../sdks/0900.mdx).
+<Guidelines>
+
+<Guideline id="IPA-103-must-support-versioned-json" given="operation" enforcement="automatable" effort="check">
+
+Every endpoint **must** support a versioned JSON content type (e.g.
+`application/vnd.atlas.YYYY-MM-DD+json`), per [IPA-900](../sdks/0900.mdx).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      responses:
+        "200":
+          content:
+            application/vnd.example.2023-01-01+json:
+              schema:
+                $ref: "#/components/schemas/Order"
+```
+
+<Example.Reason>
+  The response is offered under a dated, versioned JSON media type, so the
+  payload shape can evolve under a new date without breaking existing callers.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+```
+
+<Example.Reason>
+  The response uses a bare, unversioned JSON media type. There is no version
+  handle, so a later change to the shape cannot be rolled out without breaking
+  callers pinned to the old shape.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each operation under `paths`, collect the media type keys declared under
+    every response's `content`.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each operation, check that at least one media type is a versioned JSON
+    type carrying a version token and ending in `+json`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any operation whose responses offer no versioned JSON media type.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline
+  id="IPA-103-may-offer-additional-content-types"
+  enforcement="advisory"
+>
   Additional content types (e.g. `+csv`) **may** be offered alongside JSON.
-- When a response body is returned as a JSON content type, it **must** be a JSON
-  object with a fixed set of named properties at the root.
-  - Top-level arrays, primitives, or objects with dynamic (unknown) keys at the
-    root are prohibited because they cannot be consistently typed by
-    schema-based clients and tooling.
-  - Collections **must** be wrapped in an envelope object per
-    [IPA-110](0110.mdx) (e.g.
-    `{"results": [...], "links": [...], "totalCount": 42}`).
+</Guideline>
+
+<Guideline id="IPA-103-must-return-json-object-at-root" given="operation" enforcement="automatable" effort="check">
+
+When a response body is returned as a JSON content type, it **must** be a JSON
+object with a fixed set of named properties at the root. Top-level arrays,
+primitives, or objects with dynamic (unknown) keys at the root are prohibited
+because they cannot be consistently typed by schema-based clients and tooling.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    OrderList:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        totalCount:
+          type: integer
+```
+
+<Example.Reason>
+  The root is an object with named, declared properties. A schema-based client
+  can generate one stable type for the response.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    OrderList:
+      type: array
+      items:
+        $ref: "#/components/schemas/Order"
+```
+
+<Example.Reason>
+  The root is a bare array. A top-level array leaves no place to add fields
+  later and cannot be typed as a named object, so it is prohibited at the root.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each operation under `paths`, find the schema of every JSON response
+    body, following any `$ref`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the root schema declares `type: object` with a named `properties`
+    map.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any root schema that is an array, a primitive, or an object that
+    declares only `additionalProperties` with no named properties.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-103-must-wrap-collections-in-envelope" given="operation" enforcement="review" effort="reason" dependsOn={["IPA-103-must-return-json-object-at-root"]}>
+
+Collections **must** be wrapped in an envelope object per [IPA-110](0110.mdx)
+(e.g. `{"results": [...], "links": [...], "totalCount": 42}`).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Order"
+                  totalCount:
+                    type: integer
+```
+
+<Example.Reason>
+  The list response wraps the array in an envelope object that also carries
+  pagination fields. The array sits under a named property, so the envelope can
+  grow without changing the root type.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+```
+
+<Example.Reason>
+  The list response returns the array directly. With no envelope there is
+  nowhere to carry pagination links or a total count, and the root cannot be
+  extended later.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the operations that return a collection — typically `list`
+    operations on a collection path.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, inspect the JSON response schema and confirm the array is held
+    under a named property of a root object rather than returned at the root.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the envelope carries the pagination fields required by IPA-110.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any collection response whose array is returned directly at the root.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ### Naming
 
-- The method name is the
-  [Operation ID](https://swagger.io/docs/specification/v3_0/paths-and-operations/#operationid)
-  (`operationId`) in the OpenAPI Specification
-- Operation IDs **must** be unique
-- Operation IDs **must** be in `camelCase`
+The method name is the
+[Operation ID](https://swagger.io/docs/specification/v3_0/paths-and-operations/#operationid)
+(`operationId`) in the OpenAPI Specification.
+
+<Guidelines>
+
+<Guideline id="IPA-103-must-use-unique-operation-ids" given="operation" enforcement="automatable" effort="reason">
+
+Operation IDs **must** be unique.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+```
+
+<Example.Reason>
+  Each operation carries a distinct `operationId`, so generated SDKs produce one
+  method per operation with no name collisions.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    get:
+      operationId: getOrders
+  /orders/{orderId}:
+    get:
+      operationId: getOrders
+```
+
+<Example.Reason>
+  Two operations share `getOrders`. A duplicate id makes the mapping from
+  operation to generated method ambiguous.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect the `operationId` of every operation under `paths`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare the values and find any that appear more than once.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report each repeated `operationId` along with the operations that share it.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-103-must-use-camelcase-operation-ids" given="operation" enforcement="automatable" effort="check">
+
+Operation IDs **must** be in `camelCase`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+```
+
+<Example.Reason>
+  The `operationId` is camelCase: a lowercase first letter and no separators.
+  SDK generators map it straight to an idiomatic method name.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: Get_Order
+```
+
+<Example.Reason>
+  The `operationId` uses an uppercase first letter and an underscore separator.
+  It is neither camelCase nor a clean basis for a generated method name.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each operation under `paths`, read its `operationId`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check that the value starts with a lowercase letter and contains only
+    letters and digits, with no spaces, underscores, or hyphens.
+  </Workflow.Step>
+  <Workflow.Step>Report any `operationId` that is not camelCase.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>

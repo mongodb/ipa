@@ -6,72 +6,1069 @@ state: adopt
 # IPA-110: Pagination
 
 APIs often need to provide collections of data, most commonly in the List
-standard method. However, collections can often be arbitrarily sized and also
-often grow over time, increasing lookup time as well as the size of the
-responses being sent over the wire. Therefore, collections **must** be
-paginated.
+standard method. Collections can grow arbitrarily — increasing response sizes
+and lookup times — so they **must** be paginated.
 
 ## Guidance
 
-- APIs returning collections of data **must** provide pagination at the outset,
-  as it is a backward-incompatible change to add pagination to an existing
-  method
-  - APIs **should** return collections within an `Paginated` prefixed envelop
-    object
-- The request **should** support an integer `itemsPerPage` query parameter
-  allowing users to specify the maximum number of results to return
-  - `itemsPerPage` **must not** be required
-  - If the user does not specify `itemsPerPage` (or specifies 0)
-    - The API **must not** return an error and chooses an appropriate default
-      (>= 1)
-  - If the user specifies itemsPerPage greater than the maximum permitted by the
-    API
-    - The API **should** coerce down to the maximum permitted page size
-  - The API **may** return fewer results than the number requested (including
-    zero results)
-- The request **should** support an integer `pageNum` query parameter to allow
-  the user to skip results
-  - `pageNum` **must not** be required
-  - If the user does not specify pageNum (or specifies 0)
-    - The API **must not** return an error and chooses an appropriate default of
-      1
-    - The offset (skip) must be calculated as `(pageNum - 1) * itemsPerPage`
-- The request **may** support a boolean `includeCount` query parameter to allow
-  the user to omit the `totalCount` return value
-  - `includeCount` **must not** be required
-  - If the user does not specify `includeCount`
-    - The API **must not** return an error and chooses an appropriate default of
-      `true`
-- The response for collections **must** define an array of `results` containing
-  the paginated resource
-- The response for collections **should** define an array of `links` field,
-  providing the user with links to the next and previous pages
-  - A next page link **must** only be included if there’s a next page available
-    or if the service cannot determine if the end of the collection has been
-    reached
-  - A previous page link **must** be included if there's a previous page
-    available
-- The response for collections **may** provide an integer `totalCount` field,
-  providing the user with the total number of resources available in the backing
-  collection
-  - This total **may** be an estimate, but the API **should** explicitly
-    document that
+### Pagination requirement
 
-Example
+Adding pagination to an existing unpaginated endpoint is a backward-incompatible
+change: clients that expect all results in a single response break. Pagination
+must be designed in from the start.
 
-```http request
-GET /groups/${groupId}/clusters[?pageNum=${pageNum}][&itemsPerPage=${itemsPerPage}][&includeCount=${includeCount}]
-{
-  "links": [...],
-  "results": [...],
-  "totalCount": 0
-}
+<Guidelines>
+
+<Guideline id="IPA-110-must-paginate-collections" given="get-operation" enforcement="review" effort="check">
+
+API producers **must** provide pagination for operations that return
+collections.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+/orders:
+  get:
+    summary: List orders
+    parameters:
+      - name: pageNum
+        in: query
+        schema:
+          type: integer
+      - name: itemsPerPage
+        in: query
+        schema:
+          type: integer
+    responses:
+      "200":
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaginatedOrderList"
 ```
+
+<Example.Reason>
+  Collection endpoint exposes `pageNum` and `itemsPerPage` query parameters and
+  returns a paginated envelope schema.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+/orders:
+  get:
+    summary: List orders
+    responses:
+      "200":
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/Order"
+```
+
+<Example.Reason>
+  Returns an unbounded array with no pagination parameters. Adding pagination
+  later is a breaking change for existing clients.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate all GET operations that return arrays or collections.
+  </Workflow.Step>
+  <Workflow.Step>
+    Verify that each operation exposes at least `pageNum` and `itemsPerPage`
+    query parameters.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the response schema is a `Paginated`-prefixed envelope containing a
+    `results` array rather than a top-level array.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-110-should-use-paginated-envelope" given="get-operation" enforcement="automatable" effort="check">
+
+List operations **should** return results within a `Paginated`-prefixed envelope
+object.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    PaginatedOrderList:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/Link"
+        totalCount:
+          type: integer
+```
+
+<Example.Reason>
+  The `PaginatedOrderList` name signals to consumers that the response is a
+  paginated collection and follows the standard envelope structure.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    OrderList:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+```
+
+<Example.Reason>
+  `OrderList` omits the `Paginated` prefix, making it harder to distinguish
+  paginated collection schemas from other list types at a glance.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Find all GET operations that return collection responses.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each response schema, verify the schema name starts with `Paginated`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any collection response schema that lacks the `Paginated` prefix.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+### Request parameters
+
+#### `itemsPerPage`
+
+The `itemsPerPage` parameter lets callers control the page size. It must remain
+optional so clients that omit it receive a sensible default.
+
+<Guidelines>
+
+<Guideline id="IPA-110-should-support-items-per-page" given="get-operation" enforcement="automatable" effort="check">
+
+List operations **should** support an integer `itemsPerPage` query parameter
+that controls the maximum number of results returned per page.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+parameters:
+  - name: itemsPerPage
+    in: query
+    required: false
+    schema:
+      type: integer
+```
+
+<Example.Reason>
+  `itemsPerPage` is present as an optional integer query parameter.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+/orders:
+  get:
+    summary: List orders
+    parameters: []
+```
+
+<Example.Reason>
+  No `itemsPerPage` parameter is exposed, so callers cannot control page size.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Find all GET operations that return paginated collections.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each operation includes an `itemsPerPage` parameter with `in: query`
+    and `type: integer`.
+  </Workflow.Step>
+  <Workflow.Step>Flag operations that lack `itemsPerPage`.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-110-must-not-require-items-per-page" given="parameter" enforcement="rule" effort="check">
+
+The `itemsPerPage` parameter **must not** be required.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+- name: itemsPerPage
+  in: query
+  required: false
+  schema:
+    type: integer
+```
+
+<Example.Reason>
+  `required: false` makes `itemsPerPage` optional; clients that omit it receive
+  the default page size.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+- name: itemsPerPage
+  in: query
+  required: true
+  schema:
+    type: integer
+```
+
+<Example.Reason>
+  Marking `itemsPerPage` as required forces every caller to specify a page size
+  and breaks clients that don't.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-110-must-default-items-per-page" given="parameter" enforcement="review" effort="check" implementation>
+
+When `itemsPerPage` is absent or `0`, the API **must not** return an error and
+**must** apply a default value of at least `1`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+- name: itemsPerPage
+  in: query
+  required: false
+  schema:
+    type: integer
+    default: 100
+  description: >
+    Maximum number of results per page. Defaults to 100. Omitting this parameter
+    or passing 0 applies the default page size.
+```
+
+<Example.Reason>
+  Documents the default value and that `0` maps to the default, so clients know
+  what to expect when they omit the parameter.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+- name: itemsPerPage
+  in: query
+  required: false
+  schema:
+    type: integer
+    minimum: 1
+  description: >
+    Maximum number of results per page. Must be between 1 and 500.
+```
+
+<Example.Reason>
+  Implying a minimum of `1` with no mention of `0` handling suggests that `0` is
+  invalid and may produce a 400 error.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the `itemsPerPage` parameter definition and read its description and
+    schema constraints.
+  </Workflow.Step>
+  <Workflow.Step>
+    Verify that the description documents a default value and states that
+    omitting the parameter or passing `0` is valid.
+  </Workflow.Step>
+  <Workflow.Step>
+    If the implementation is accessible, send a request without `itemsPerPage`
+    and confirm the response returns results with no error.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-110-should-coerce-items-per-page" given="parameter" enforcement="review" effort="check" implementation>
+
+When `itemsPerPage` exceeds the API's maximum permitted page size, the API
+**should** silently coerce it down to that maximum rather than returning an
+error.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+- name: itemsPerPage
+  in: query
+  required: false
+  schema:
+    type: integer
+    maximum: 500
+  description: >
+    Maximum number of results per page. Values above 500 are clamped to 500.
+```
+
+<Example.Reason>
+  Documenting coercion tells clients they won't get errors for oversized
+  requests — the server handles the limit transparently.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+- name: itemsPerPage
+  in: query
+  required: false
+  schema:
+    type: integer
+    maximum: 500
+  description: >
+    Maximum number of results per page. Values above 500 return a 400 Bad
+    Request.
+```
+
+<Example.Reason>
+  Returning an error for oversized values instead of coercing forces clients to
+  know the exact maximum ahead of time.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Read the `itemsPerPage` parameter description for any documented maximum or
+    coercion behavior.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the description states that values above the maximum are coerced,
+    not rejected with an error.
+  </Workflow.Step>
+  <Workflow.Step>
+    If the implementation is accessible, send a request with `itemsPerPage` set
+    above the documented maximum and verify it returns results rather than an
+    error.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+#### `pageNum`
+
+The `pageNum` parameter lets callers select a specific page of results. The
+offset is calculated as `(pageNum - 1) × itemsPerPage`, so page `1` returns the
+first page.
+
+<Guidelines>
+
+<Guideline id="IPA-110-should-support-page-num" given="get-operation" enforcement="automatable" effort="check">
+
+List operations **should** support an integer `pageNum` query parameter that
+selects the page of results to return.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+parameters:
+  - name: pageNum
+    in: query
+    required: false
+    schema:
+      type: integer
+```
+
+<Example.Reason>
+  `pageNum` is present as an optional integer query parameter.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+/orders:
+  get:
+    summary: List orders
+    parameters:
+      - name: itemsPerPage
+        in: query
+        schema:
+          type: integer
+```
+
+<Example.Reason>
+  `pageNum` is absent, so clients cannot navigate to a specific page beyond the
+  first.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Find all GET operations that return paginated collections.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each operation includes a `pageNum` parameter with `in: query` and
+    `type: integer`.
+  </Workflow.Step>
+  <Workflow.Step>Flag operations that lack `pageNum`.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-110-must-not-require-page-num" given="parameter" enforcement="rule" effort="check">
+
+The `pageNum` parameter **must not** be required.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+- name: pageNum
+  in: query
+  required: false
+  schema:
+    type: integer
+    default: 1
+```
+
+<Example.Reason>
+  `required: false` with a documented default of `1` allows clients to omit the
+  parameter and receive the first page.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+- name: pageNum
+  in: query
+  required: true
+  schema:
+    type: integer
+```
+
+<Example.Reason>
+  Marking `pageNum` required forces clients to always specify a page number and
+  breaks clients that expect first-page defaults.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-110-must-default-page-num" given="parameter" enforcement="review" effort="check" implementation>
+
+When `pageNum` is absent or `0`, the API **must not** return an error and
+**must** default to page `1`. The offset is calculated as
+`(pageNum - 1) × itemsPerPage`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+- name: pageNum
+  in: query
+  required: false
+  schema:
+    type: integer
+    default: 1
+  description: >
+    Page number to return, starting at 1. Defaults to 1. Omitting this parameter
+    or passing 0 returns the first page. Offset is calculated as (pageNum - 1) ×
+    itemsPerPage.
+```
+
+<Example.Reason>
+  Documents that `0` and absent both map to page 1, and explains the offset
+  formula so clients understand the semantics.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+- name: pageNum
+  in: query
+  required: false
+  schema:
+    type: integer
+    minimum: 1
+```
+
+<Example.Reason>
+  A schema minimum of `1` with no description implies `0` is invalid, leaving
+  clients uncertain about default behavior.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the `pageNum` parameter definition and review its description and
+    schema constraints.
+  </Workflow.Step>
+  <Workflow.Step>
+    Verify the description states that absent or `0` values default to page `1`
+    without error.
+  </Workflow.Step>
+  <Workflow.Step>
+    If the implementation is accessible, send a request without `pageNum` and
+    confirm the response returns first-page results.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+#### `includeCount`
+
+The optional `includeCount` parameter lets callers opt out of the `totalCount`
+field when they don't need it. Computing total counts for large collections can
+be expensive, so this parameter must remain optional with a safe default.
+
+<Guidelines>
+
+<Guideline id="IPA-110-must-not-require-include-count" given="parameter" enforcement="rule" effort="check">
+
+The `includeCount` parameter **must not** be required.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+- name: includeCount
+  in: query
+  required: false
+  schema:
+    type: boolean
+    default: true
+```
+
+<Example.Reason>
+  Optional with a `true` default means clients receive `totalCount` unless they
+  explicitly opt out.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+- name: includeCount
+  in: query
+  required: true
+  schema:
+    type: boolean
+```
+
+<Example.Reason>
+  Requiring `includeCount` forces clients to explicitly opt in or out on every
+  request, adding unnecessary friction.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-110-must-default-include-count" given="parameter" enforcement="review" effort="check" implementation>
+
+When `includeCount` is absent, the API **must not** return an error and **must**
+default to `true`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+- name: includeCount
+  in: query
+  required: false
+  schema:
+    type: boolean
+    default: true
+  description: >
+    When true, includes totalCount in the response. Defaults to true. Omitting
+    this parameter is equivalent to passing true.
+```
+
+<Example.Reason>
+  Documents the `true` default explicitly so clients know they receive
+  `totalCount` by default without specifying the parameter.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+- name: includeCount
+  in: query
+  required: false
+  schema:
+    type: boolean
+  description: >
+    When true, includes totalCount in the response.
+```
+
+<Example.Reason>
+  Omits what happens when the parameter is absent, leaving clients uncertain
+  whether omitting it returns a count.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the `includeCount` parameter definition and review its description.
+  </Workflow.Step>
+  <Workflow.Step>
+    Verify the description states that omitting the parameter defaults to
+    `true`.
+  </Workflow.Step>
+  <Workflow.Step>
+    If the implementation is accessible, send a request without `includeCount`
+    and confirm `totalCount` is present in the response.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+### Response structure
+
+Every paginated response must expose a `results` array. A `links` array for
+navigation and a `totalCount` integer are strongly recommended.
+
+<Guidelines>
+
+<Guideline id="IPA-110-must-define-results-array" given="schema" enforcement="automatable" effort="check">
+
+The response schema for a collection operation **must** define a `results`
+property containing an array of the paginated resource.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+PaginatedOrderList:
+  type: object
+  required:
+    - results
+  properties:
+    results:
+      type: array
+      items:
+        $ref: "#/components/schemas/Order"
+    totalCount:
+      type: integer
+```
+
+<Example.Reason>
+  `results` is a required array property in the response schema, following the
+  standard envelope convention.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+PaginatedOrderList:
+  type: object
+  properties:
+    data:
+      type: array
+      items:
+        $ref: "#/components/schemas/Order"
+```
+
+<Example.Reason>
+  Using `data` instead of `results` diverges from the standard envelope, making
+  client code inconsistent across APIs.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Find all response schemas referenced by GET operations that return
+    collections.
+  </Workflow.Step>
+  <Workflow.Step>
+    Verify each schema defines a `results` property typed as an array.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any schema that uses a different property name for the items array.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-110-should-define-links-array" given="schema" enforcement="automatable" effort="check">
+
+The response schema **should** define a `links` property containing an array of
+navigation links to the next and previous pages.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+PaginatedOrderList:
+  type: object
+  properties:
+    results:
+      type: array
+      items:
+        $ref: "#/components/schemas/Order"
+    links:
+      type: array
+      items:
+        $ref: "#/components/schemas/Link"
+```
+
+<Example.Reason>
+  The `links` array follows the standard envelope structure and lets clients
+  navigate pages without constructing URLs manually.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+PaginatedOrderList:
+  type: object
+  properties:
+    results:
+      type: array
+      items:
+        $ref: "#/components/schemas/Order"
+    nextPageUrl:
+      type: string
+    prevPageUrl:
+      type: string
+```
+
+<Example.Reason>
+  Separate `nextPageUrl`/`prevPageUrl` scalar fields diverge from the standard
+  `links` array and require clients to handle a non-standard structure.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Find all paginated response schemas (those with a `results` array).
+  </Workflow.Step>
+  <Workflow.Step>
+    Verify each schema defines a `links` property typed as an array.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any paginated schema that lacks a `links` array.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline
+  id="IPA-110-must-omit-next-link-when-none"
+  given="schema"
+  enforcement="review"
+  effort="check"
+  implementation
+  dependsOn={["IPA-110-should-define-links-array"]}
+>
+
+A next-page link **must** only be included in the `links` array when a next page
+is available or when the service cannot determine whether the end of the
+collection has been reached.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+# Response for the final page of results
+links: []
+```
+
+<Example.Reason>
+  No next-page link is emitted on the last page, so clients know they have
+  reached the end of the collection without making an extra empty request.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+# Response for the final page of results
+links:
+  - href: "/orders?pageNum=6&itemsPerPage=25"
+    rel: next
+```
+
+<Example.Reason>
+  Including a next-page link on the last page causes clients to make a redundant
+  request only to receive an empty `results` array.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Review the API documentation or implementation for how `links` is populated
+    on the last page of a collection.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm that a `next` link is absent when no further pages exist.
+  </Workflow.Step>
+  <Workflow.Step>
+    If the implementation is accessible, request the final page and verify the
+    response contains no `next` link.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline
+  id="IPA-110-must-include-prev-link-when-available"
+  given="schema"
+  enforcement="review"
+  effort="check"
+  implementation
+  dependsOn={["IPA-110-should-define-links-array"]}
+>
+
+A previous-page link **must** be included in the `links` array when a previous
+page exists.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+# Response for pageNum=2
+links:
+  - href: "/orders?pageNum=1&itemsPerPage=25"
+    rel: prev
+  - href: "/orders?pageNum=3&itemsPerPage=25"
+    rel: next
+```
+
+<Example.Reason>
+  Both `prev` and `next` links are present on page 2, giving clients
+  bidirectional navigation without constructing URLs.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+# Response for pageNum=2
+links:
+  - href: "/orders?pageNum=3&itemsPerPage=25"
+    rel: next
+```
+
+<Example.Reason>
+  Omitting the `prev` link on page 2 forces clients to construct the
+  previous-page URL themselves rather than following a standard link.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Review the API documentation for how `links` is populated on non-first
+    pages.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm that a `prev` link is present whenever `pageNum` is greater than
+    `1`.
+  </Workflow.Step>
+  <Workflow.Step>
+    If the implementation is accessible, request page 2 or later and verify the
+    response contains a `prev` link.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-110-may-provide-total-count" enforcement="advisory">
+
+The response **may** include an integer `totalCount` field giving the total
+number of resources in the backing collection.
+
+</Guideline>
+
+<Guideline id="IPA-110-should-document-estimated-total-count" given="schema" enforcement="review" effort="reason">
+
+When `totalCount` may be an estimate, the API **should** explicitly document
+that in the field description.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+totalCount:
+  type: integer
+  description: >
+    Approximate total number of orders. This value may be an estimate for large
+    collections and should not be used for precise pagination boundaries.
+```
+
+<Example.Reason>
+  The description explicitly calls out that the count is approximate, so clients
+  do not treat it as exact when calculating page boundaries.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+totalCount:
+  type: integer
+  description: Total number of orders.
+```
+
+<Example.Reason>
+  No indication that the count may be approximate. Clients that rely on this for
+  pagination math may encounter off-by-one errors or missing results.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate `totalCount` (or equivalently named total-count fields) in all
+    paginated response schemas.
+  </Workflow.Step>
+  <Workflow.Step>
+    Read the field description and check whether it mentions that the value may
+    be an estimate or approximation.
+  </Workflow.Step>
+  <Workflow.Step>
+    If the underlying data store uses approximate counts, flag any description
+    that does not disclose this.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ### Total count considerations
 
-Historically APIs defaulted to `true` on `includeCount` but calculating the
-total count for large collections can be computationally expensive.
+Calculating an exact total count for a large collection can be computationally
+expensive, especially on document databases where count operations must scan the
+full collection.
 
-- API producers **should** exercise caution when introducing support for
-  `includeCount`
+<Guidelines>
+
+<Guideline id="IPA-110-should-exercise-caution-include-count" enforcement="advisory">
+
+API producers **should** exercise caution when introducing support for
+`includeCount`, since computing `totalCount` for large collections can be
+expensive and may affect overall API performance.
+
+</Guideline>
+
+</Guidelines>

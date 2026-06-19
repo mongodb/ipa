@@ -21,34 +21,1076 @@ and consistent with one another.
 
 ## Guidance
 
-- Field names **should** communicate the concept being presented and avoid
-  ambiguous names
-  - Field names **should** avoid including unnecessary words
-- Field names **must** use `camelCase`
-- Fields **must not** contain leading, trailing, or adjacent underscores(\_)
-  - `id` not `_id`
-- Field names **should not** use abbreviations
-  - Unless the abbreviation is well understood, for example, IP, AWS, TCP
-- APIs **should** aim to use the same name for the same concept and different
-  names for different concepts wherever possible
-  - Including across APIs and resources
-  - Names **should** follow/be unified between GUI and API
-- Repeated fields **must** use the proper plural form
-- Field names **must** not be named to reflect an intent or action
-  - Fields **must not** be verbs
-  - `disabled` not `disable`
-- Boolean fields **should** omit the prefix "is"
-  - `disabled` not `isDisabled`
-- Field names of common conventions **must** use the same field name and
-  description as existing fields
-- Field names **must** refer to a singular concept when used across APIs
-- Existing concepts **must** map to a singular field name
-- For enum fields the allowable values **may** differ from values allowed in
-  other instances of the field
-- Field names **must** be consistent in between the request, response body and
-  path parameters
+### Clarity
+
+<Guidelines>
+
+<Guideline id="IPA-112-should-communicate-concept" given="schema" enforcement="review" effort="reason">
+
+Field names **should** communicate the concept being presented and avoid
+ambiguous names.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+        accountStatus:
+          type: string
+```
+
+<Example.Reason>
+  `createdAt` and `accountStatus` clearly describe what the field represents
+  without ambiguity.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        ts:
+          type: string
+          format: date-time
+        status2:
+          type: string
+```
+
+<Example.Reason>
+  `ts` is ambiguous — it could mean timestamp, TypeScript, or something else.
+  `status2` implies a second status field without explaining the concept.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate all field names across the spec's request and response schemas.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each field, determine whether its name clearly describes the concept it
+    holds without requiring additional context.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag fields whose names could be confused with a different concept or that
+    require reading the description to understand their purpose.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-112-should-avoid-unnecessary-words" given="schema" enforcement="review" effort="reason">
+
+Field names **should** avoid including unnecessary words.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        status:
+          type: string
+```
+
+<Example.Reason>
+  `status` is concise. The `Order` schema context already implies it is the
+  order's status.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        orderStatus:
+          type: string
+```
+
+<Example.Reason>
+  `orderStatus` repeats the schema name. The `Order` context makes the `order`
+  prefix redundant.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each field name, check whether any part of the name duplicates the
+    surrounding schema name or other contextual information already implied by
+    the location.
+  </Workflow.Step>
+  <Workflow.Step>
+    Identify words that add no meaning and could be removed without loss of
+    clarity.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag fields where removing a word makes the name equally clear.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-112-should-not-abbreviate" given="schema" enforcement="review" effort="reason">
+
+Field names **should not** use abbreviations unless the abbreviation is
+well-understood by the audience (for example: `ip`, `aws`, `tcp`).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Server:
+      type: object
+      properties:
+        ipAddress:
+          type: string
+        region:
+          type: string
+```
+
+<Example.Reason>
+  `ipAddress` uses the widely understood `ip` abbreviation. `region` is fully
+  spelled out.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Server:
+      type: object
+      properties:
+        srvAddr:
+          type: string
+        rgn:
+          type: string
+```
+
+<Example.Reason>
+  `srvAddr` and `rgn` are non-standard abbreviations that require readers to
+  guess the full meaning.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>List all field names across the spec.</Workflow.Step>
+  <Workflow.Step>
+    Identify names containing abbreviations (short sequences or missing vowels).
+  </Workflow.Step>
+  <Workflow.Step>
+    Determine whether each abbreviation is widely understood in the target
+    audience domain (networking, cloud infrastructure, etc.).
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag abbreviations that are not industry-standard or are ambiguous without
+    additional context.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+### Casing and characters
+
+<Guidelines>
+
+<Guideline id="IPA-112-must-use-camel-case" given="schema" enforcement="automatable" effort="check">
+
+Field names **must** use `camelCase`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastLoginAt:
+          type: string
+          format: date-time
+```
+
+<Example.Reason>
+  `firstName` and `lastLoginAt` start with a lowercase letter and capitalize
+  each subsequent word.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        first_name:
+          type: string
+        LastLoginAt:
+          type: string
+          format: date-time
+```
+
+<Example.Reason>
+  `first_name` uses snake_case and `LastLoginAt` uses PascalCase. Both violate
+  the camelCase requirement.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-112-must-not-use-underscores" given="schema" enforcement="automatable" effort="check">
+
+Fields **must not** contain leading, trailing, or adjacent underscores.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+```
+
+<Example.Reason>
+  `id` contains no underscores. Field names use camelCase rather than
+  underscore-separated words.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Document:
+      type: object
+      properties:
+        _id:
+          type: string
+        __metadata:
+          type: object
+```
+
+<Example.Reason>
+  `_id` has a leading underscore and `__metadata` has double leading
+  underscores. Both are prohibited regardless of the originating storage
+  convention.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+### Semantics
+
+<Guidelines>
+
+<Guideline id="IPA-112-must-not-use-verbs" given="schema" enforcement="review" effort="reason">
+
+Field names **must not** reflect an intent or action — fields **must not** be
+verbs.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        disabled:
+          type: boolean
+```
+
+<Example.Reason>
+  `disabled` is an adjective describing state, not a verb instructing an action.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        disable:
+          type: boolean
+```
+
+<Example.Reason>
+  `disable` is a verb. Field names must represent state or data, not commands or
+  intents.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    List all field names across request and response schemas.
+  </Workflow.Step>
+  <Workflow.Step>
+    Identify names that are base-form verbs (e.g., `disable`, `create`,
+    `update`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Verify that state-representing fields are adjectives (e.g., `disabled`,
+    `created`) rather than verbs.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any field name that functions as a command or imperative verb.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-112-must-use-plural-form" given="schema" enforcement="review" effort="check">
+
+Repeated fields **must** use the proper plural form.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        tags:
+          type: array
+          items:
+            type: string
+```
+
+<Example.Reason>
+  `items` and `tags` are correctly pluralized array fields.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Order:
+      type: object
+      properties:
+        item:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        tag:
+          type: array
+          items:
+            type: string
+```
+
+<Example.Reason>
+  `item` and `tag` are singular but represent collections. Singular names for
+  array fields mislead readers about cardinality.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Find all schema properties typed as `array` across the spec.
+  </Workflow.Step>
+  <Workflow.Step>
+    Verify that each array property name uses the proper plural form.
+  </Workflow.Step>
+  <Workflow.Step>Flag array properties with singular names.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+### Boolean fields
+
+<Guidelines>
+
+<Guideline id="IPA-112-should-omit-is-prefix" given="schema" enforcement="automatable" effort="check">
+
+Boolean fields **should** omit the `is` prefix.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        disabled:
+          type: boolean
+        active:
+          type: boolean
+```
+
+<Example.Reason>
+  `disabled` and `active` are clear boolean adjectives without a redundant `is`
+  prefix.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        isDisabled:
+          type: boolean
+        isActive:
+          type: boolean
+```
+
+<Example.Reason>
+  `isDisabled` and `isActive` carry a redundant `is` prefix. The boolean type
+  already implies a yes/no value.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+### Consistency
+
+<Guidelines>
+
+<Guideline id="IPA-112-should-use-consistent-names" given="spec" enforcement="review" effort="explore">
+
+APIs **should** use the same name for the same concept and different names for
+different concepts, including across APIs and resources.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+    Order:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+```
+
+<Example.Reason>
+  Both `User` and `Order` use `createdAt` for the creation timestamp. Readers
+  immediately recognize the semantics when they encounter it on any resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+    Order:
+      type: object
+      properties:
+        creationDate:
+          type: string
+          format: date-time
+```
+
+<Example.Reason>
+  `createdAt` and `creationDate` represent the same concept but use different
+  names, forcing consumers to learn resource-specific vocabulary.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect all field names across all schemas in the spec.
+  </Workflow.Step>
+  <Workflow.Step>
+    Group fields by their documented description or semantic type (e.g.,
+    creation timestamps, identifiers, status enums).
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag groups where multiple names describe the same concept.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag cases where the same field name appears on different schemas with
+    different documented semantics.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline
+  id="IPA-112-should-unify-gui-api-names"
+  given="spec"
+  enforcement="review"
+  effort="explore"
+  implementation
+>
+
+Names **should** be unified between the GUI and the API wherever possible.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      type: object
+      properties:
+        diskSizeGB:
+          type: number
+          description: >
+            Storage capacity in gigabytes. Displayed as "Disk Size (GB)" in the
+            UI.
+```
+
+<Example.Reason>
+  The field description maps the API field name to the corresponding UI label,
+  making it easy for users who switch between interfaces.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      type: object
+      properties:
+        storageCapacity:
+          type: number
+          description: Storage capacity in gigabytes.
+```
+
+<Example.Reason>
+  If the UI calls the same concept "Disk Size", `storageCapacity` in the API
+  creates a disconnect. Users searching for "disk size" in API docs won't find
+  it.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the UI labels for concepts exposed by the API.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare each API field name against the corresponding UI label for the same
+    concept.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag API field names that diverge from their GUI counterparts without a
+    documented justification.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-112-must-use-standard-field-names" given="schema" enforcement="review" effort="explore">
+
+Field names that represent common conventions **must** use the same name and
+description as established across existing APIs.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Resource:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the resource.
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the resource was created.
+```
+
+<Example.Reason>
+  `id` and `createdAt` match established standard names and descriptions used
+  for identifiers and creation timestamps across APIs.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Resource:
+      type: object
+      properties:
+        resourceId:
+          type: string
+          description: The ID of this resource.
+        dateCreated:
+          type: string
+          format: date-time
+          description: The date the resource was created.
+```
+
+<Example.Reason>
+  `resourceId` and `dateCreated` deviate from the standard names `id` and
+  `createdAt` for well-known conventions, fragmenting the shared vocabulary
+  across APIs.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify fields in the spec that represent common cross-API concepts such as
+    identifiers, timestamps, status, and error codes.
+  </Workflow.Step>
+  <Workflow.Step>
+    Cross-reference these fields against established standard field names and
+    descriptions documented in IPA guidelines or the API style guide.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag fields that use a non-standard name or description for a well-known
+    convention.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-112-must-not-reuse-name-for-different-concepts" given="spec" enforcement="review" effort="explore">
+
+Field names **must** refer to a singular concept when used across APIs.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+          description: Lifecycle state of the user account.
+    Order:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, fulfilled, cancelled]
+          description: Fulfillment state of the order.
+```
+
+<Example.Reason>
+  Both schemas use `status` for a lifecycle/state concept. Enum values differ,
+  but the semantic type is the same across both usages.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Lifecycle state of the user account.
+    ServerResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          description: HTTP status code of the last operation.
+```
+
+<Example.Reason>
+  `status` means "lifecycle state" on `User` but "HTTP status code" on
+  `ServerResponse`. The same name maps to two unrelated concepts.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Find all field names that appear in more than one schema across the spec.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each repeated name, compare the descriptions and types across schemas.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag field names where the same name is used for semantically different
+    concepts.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-112-must-use-one-name-per-concept" given="spec" enforcement="review" effort="explore">
+
+Existing concepts **must** map to a singular field name.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: The group this user belongs to.
+    Project:
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: The group this project belongs to.
+```
+
+<Example.Reason>
+  Both schemas use `groupId` for the organizational grouping concept. Consumers
+  learn the name once and recognize it everywhere.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        groupId:
+          type: string
+          description: The group this user belongs to.
+    Project:
+      type: object
+      properties:
+        teamId:
+          type: string
+          description: The group this project belongs to.
+```
+
+<Example.Reason>
+  `groupId` and `teamId` describe the same organizational grouping but use
+  different names, forcing consumers to learn schema-specific synonyms.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify concepts that appear across multiple schemas (e.g., group
+    membership, ownership, timestamps).
+  </Workflow.Step>
+  <Workflow.Step>
+    List all field names used for each concept across the spec.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag concepts represented by more than one distinct field name.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline
+  id="IPA-112-must-be-consistent-across-request-response"
+  given="operation"
+  enforcement="review"
+  effort="reason"
+>
+
+Field names **must** be consistent between the request body, response body, and
+path parameters for the same concept.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /users/{userId}:
+    get:
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  userId:
+                    type: string
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                userId:
+                  type: string
+```
+
+<Example.Reason>
+  `userId` appears consistently in the path parameter, response body, and
+  request body.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /users/{userId}:
+    get:
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  id:
+                    type: string
+    patch:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                user_id:
+                  type: string
+```
+
+<Example.Reason>
+  The same concept appears as `userId` in the path, `id` in the response, and
+  `user_id` in the request. Consumers must map these manually.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each resource path with path parameters, note the parameter names.
+  </Workflow.Step>
+  <Workflow.Step>
+    Inspect the request and response schemas for the same operation and verify
+    that the same concept uses the same field name in all locations.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any discrepancy where request body, response body, or path parameter
+    names differ for the same concept.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-112-may-vary-enum-values" enforcement="advisory">
+
+For enum fields, the allowable values **may** differ from values allowed in
+other instances of the same field name across APIs or resources.
+
+</Guideline>
+
+</Guidelines>
 
 ## Group vs. Project
 
-- For consistency APIs **must** use "group," "groups," "groupId" over "project,"
-  "projects" or "projectId"
+For historical reasons, some MongoDB APIs used `project` and `projectId` where
+the concept is more accurately described as a group. New APIs must align on the
+`group` terminology.
+
+<Guidelines>
+
+<Guideline id="IPA-112-must-use-group-not-project" given="spec" enforcement="automatable" effort="check">
+
+For consistency, APIs **must** use `group`, `groups`, or `groupId` rather than
+`project`, `projects`, or `projectId`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    get:
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  `groupId` is the canonical name for the organizational grouping concept.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/clusters:
+    get:
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  `projectId` is a legacy term. Using it in new APIs diverges from the
+  established `groupId` convention.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>

@@ -16,10 +16,277 @@ representation-level difference as state drift.
 
 ## Guidance
 
-- Properties whose value is JSON **must** be modeled as a JSON object in
-  requests and responses — never as a string holding the serialized form.
-- When the JSON has a well-defined schema, the API **must** model that schema in
-  the resource definition. Clients, documentation, and tooling benefit from
-  knowing the shape of the content.
-- When the JSON is genuinely dynamic (arbitrary client-provided keys and
-  values), the property **should** be modeled as an object with dynamic keys.
+<Guidelines>
+<Guideline id="IPA-130-must-model-dynamic-json" given="schema" enforcement="review" effort="check">
+
+Properties whose value is JSON **must** be modeled as a JSON object in requests
+and responses — never as a string holding the serialized form.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Webhook:
+      type: object
+      properties:
+        url:
+          type: string
+        filters:
+          type: object
+          additionalProperties: true
+```
+
+<Example.Reason>
+  `filters` is a real JSON object on the wire. A client sets keys and reads them
+  back as fields, and the server can normalize whitespace or key order without
+  changing what the client sees.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Webhook:
+      type: object
+      properties:
+        url:
+          type: string
+        filters:
+          type: string
+```
+
+<Example.Reason>
+  `filters` is a JSON string. The client has to serialize it before sending and
+  parse it after reading. If the server reformats the JSON, the returned string
+  differs byte-for-byte from what was sent, and a declarative client reads that
+  as drift.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every property of a schema, including those nested
+    in objects and in array items.
+  </Workflow.Step>
+  <Workflow.Step>
+    Keep only the properties typed as `string` with no `format`. Set the rest
+    aside.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check the name of each one. Names like `config`, `filters`, `metadata`,
+    `payload`, or `settings` hint that the value is really JSON.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check the description. Wording such as "JSON object", "serialized JSON", or
+    "escaped JSON string" means the value is JSON.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check any example. A value written as a quoted object, like `"{...}"`, means
+    the value is JSON.
+  </Workflow.Step>
+  <Workflow.Step>
+    Before flagging, rule out plain text that merely contains braces: free-form
+    notes, a query string, a code snippet, a regex. These stay as `string`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag each property that holds JSON but is typed as `string`. The fix is to
+    change its `type` to `object`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-130-must-model-well-defined-schema" given="schema" enforcement="review" effort="explore" implementation dependsOn={["IPA-130-must-model-dynamic-json"]}>
+
+When the JSON has a well-defined schema, the API **must** model that schema in
+the resource definition. Clients, documentation, and tooling benefit from
+knowing the shape of the content.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Webhook:
+      type: object
+      properties:
+        url:
+          type: string
+        filters:
+          type: object
+          properties:
+            event:
+              type: string
+              enum: [CREATED, UPDATED, DELETED]
+            minSeverity:
+              type: integer
+          required: [event]
+```
+
+<Example.Reason>
+  The shape of `filters` is known, so it is spelled out: `event` is an enum,
+  `minSeverity` is an integer, and `event` is required. Clients get validation
+  and typed fields, and the generated docs show what a filter looks like.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Webhook:
+      type: object
+      properties:
+        url:
+          type: string
+        filters:
+          type: object
+          additionalProperties: true
+```
+
+<Example.Reason>
+  The filter shape is fixed and known, but the schema models it as a free-form
+  object. Nothing tells a client that `event` exists, which values are valid, or
+  that it is required. The known structure is thrown away and pushed back onto
+  every consumer.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect the properties that hold JSON under `$.components.schemas` (nested
+    objects and array items included): every `object`-typed property, plus any
+    `string`-typed property flagged by `IPA-130-must-model-dynamic-json`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Set aside the ones whose shape is already written out — an `object` with a
+    `properties` list and types. Those already comply.
+  </Workflow.Step>
+  <Workflow.Step>
+    What remains is modeled loosely: a bare `object`, `additionalProperties`
+    only, or a `string`. The real shape is not in the spec for these.
+  </Workflow.Step>
+  <Workflow.Step>
+    Find the real shape outside the spec: read the request handler or validation
+    code, the internal docs, or a few real request and response payloads.
+  </Workflow.Step>
+  <Workflow.Step>
+    Decide whether that shape is fixed. It is fixed (known) when the same keys
+    appear every time and the server validates them. It is dynamic when the keys
+    are arbitrary and client-chosen.
+  </Workflow.Step>
+  <Workflow.Step>
+    If the shape is dynamic, stop — this guideline does not apply (see
+    `IPA-130-should-model-dynamic-schema`).
+  </Workflow.Step>
+  <Workflow.Step>
+    If the shape is known, flag the property. The fix is to spell out its
+    `properties`, give each a `type`, and add `enum`, `format`, or `required`
+    where they apply.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-130-should-model-dynamic-schema" given="schema" enforcement="review" effort="reason" dependsOn={["IPA-130-must-model-dynamic-json"]}>
+
+When the JSON is genuinely dynamic (arbitrary client-provided keys and values),
+the property **should** be modeled as an object with dynamic keys.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Document:
+      type: object
+      properties:
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+```
+
+<Example.Reason>
+  Clients pick the keys, so the schema declares dynamic keys with
+  `additionalProperties` and a typed value. The shape stays JSON and the server
+  has no reason to reserialize it.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Document:
+      type: object
+      properties:
+        metadata:
+          type: object
+          properties:
+            owner:
+              type: string
+            team:
+              type: string
+```
+
+<Example.Reason>
+  `metadata` holds arbitrary client-chosen keys, but the schema pins it to a
+  closed `properties` list. No key outside `owner` and `team` can be declared,
+  so the dynamic map the field is meant to hold can't be expressed.
+  `additionalProperties` is what opens the key set. (A `metadata: string` would
+  also be wrong, but that is `IPA-130-must-model-dynamic-json`'s concern.)
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every `object`-typed property under `$.components.schemas`,
+    including nested objects and array items.
+  </Workflow.Step>
+  <Workflow.Step>
+    Keep the ones whose keys are arbitrary or client-chosen. Judge from the
+    name, description, or examples — labels, metadata, config maps, and tags are
+    typical.
+  </Workflow.Step>
+  <Workflow.Step>
+    If one of these is still typed as `string`, fix that under
+    `IPA-130-must-model-dynamic-json` first; it then arrives here as an
+    `object`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Look at how each one declares its keys. `additionalProperties` (optionally
+    with a typed value) allows open keys; a closed `properties` list does not.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any of these properties that use a closed `properties` list or
+    otherwise lack `additionalProperties`. The fix is to declare the keys with
+    `additionalProperties`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+</Guidelines>

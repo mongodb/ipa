@@ -5,49 +5,181 @@ state: experimental
 
 # IPA-128: Stability Levels
 
-APIs version **must** provide an associated stability level that clearly states
-the maturity, expectations of changes and support policies related to the API.
-The stability level provides consumers with a clear understanding of what to
-expect when integrating or depending on a given API.
+<Guidelines>
+
+<Guideline id="IPA-128-must-declare-stability-level" enforcement="advisory">
+
+Every API version **must** declare an associated stability level that states the
+maturity, expected pace of change, and support policy for the API.
+
+</Guideline>
+
+</Guidelines>
 
 ## Guidance
 
-- API resources **must** clearly indicate on their documentation their stability
-  level.
-- API resources **must** use one of these stability levels: **preview**,
-  **stable**, **deprecated**, and **sunset**.
-- A **preview** API resource undergoes rapid iteration based on users' feedback.
-  - The API resource **may** be available only to a selected groups of users.
-  - The API resource **may** introduce breaking changes without requiring a new
-    version ([IPA-120](0120.mdx)).
-  - API producers **must** establish a feedback mechanism for users to report
-    issues and suggest improvements.
-  - Consumers **must not** have any expectation of stability.
-  - Consumers **should not** use the API in production.
-- A **stable** API resource is a production-ready and fully supported API.
-  - The API resource **must** be available for all users.
-  - The API resource **must not** introduce breaking changes without requiring a
-    new version ([IPA-120](0120.mdx)).
-  - The API resource **must** release backwards compatibility
-    ([IPA-116](0116.mdx)) to ensure ongoing reliability.
-  - The API resource **must** remain supported until all users migrated to
-    alternative versions, or until agreed between API provider and customers.
-- A **deprecated** API resource is still supported but **must** transition to
-  **sunset** in the future.
-  - The API resource **may** no longer receives backwards compatibility changes.
-  - The API resource **must** transition to **sunset** within an established
-    timeframe.
-  - The API resource **must** provide the Deprecation HTTP Response header
-    ([RFC 9745](https://datatracker.ietf.org/doc/rfc9745/)) to signal to
-    consumers that the resource is deprecated.
-  - The API resource **must** provide the Sunset HTTP Response header
-    ([RFC 8594](https://datatracker.ietf.org/doc/html/rfc8594)) to signal to
-    consumers when it will transition to **sunset**.
-  - Consumers **should** migrate to the **stable** version.
-- A **sunset** API resource is no longer supported.
-  - The API resource **must** return
-    [410 GONE](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/410).
-  - Consumers **must** migrate to the **stable** version.
+<Guidelines>
+
+<Guideline id="IPA-128-must-document-stability-level" enforcement="advisory">
+
+API resources **must** indicate their stability level in their documentation.
+
+</Guideline>
+
+<Guideline id="IPA-128-must-use-defined-stability-level" enforcement="advisory">
+
+API resources **must** use one of these stability levels: **preview**,
+**stable**, **deprecated**, and **sunset**.
+
+</Guideline>
+
+</Guidelines>
+
+### Preview
+
+A **preview** API resource undergoes rapid iteration based on user feedback.
+
+<Guidelines>
+
+<Guideline id="IPA-128-may-restrict-preview-audience" enforcement="advisory">
+  A **preview** API resource **may** be available only to a selected group of
+  users.
+</Guideline>
+
+<Guideline
+  id="IPA-128-may-break-preview-without-version"
+  enforcement="advisory"
+>
+  A **preview** API resource **may** introduce breaking changes without
+  requiring a new version ([IPA-120](0120.mdx)).
+</Guideline>
+
+<Guideline id="IPA-128-must-provide-preview-feedback-mechanism" enforcement="advisory">
+
+For a **preview** API resource, a feedback mechanism **must** be established for
+users to report issues and suggest improvements.
+
+</Guideline>
+
+<Guideline
+  id="IPA-128-must-not-expect-preview-stability"
+  enforcement="advisory"
+>
+  Consumers **must not** have any expectation of stability from a **preview**
+  API resource.
+</Guideline>
+
+<Guideline
+  id="IPA-128-should-not-use-preview-in-production"
+  enforcement="advisory"
+>
+  Consumers **should not** use a **preview** API resource in production.
+</Guideline>
+
+</Guidelines>
+
+### Stable
+
+A **stable** API resource is production-ready and fully supported.
+
+<Guidelines>
+
+<Guideline id="IPA-128-must-make-stable-available-to-all" enforcement="advisory">
+
+A **stable** API resource **must** be available to all users.
+
+</Guideline>
+
+<Guideline id="IPA-128-must-not-break-stable-without-version" enforcement="advisory" dependsOn={["IPA-128-must-use-defined-stability-level"]}>
+
+A **stable** API resource **must not** introduce breaking changes without
+requiring a new version ([IPA-120](0120.mdx)).
+
+</Guideline>
+
+<Guideline id="IPA-128-must-keep-stable-backwards-compatible" enforcement="advisory">
+
+A **stable** API resource **must** maintain backwards compatibility
+([IPA-116](0116.mdx)) to ensure ongoing reliability.
+
+</Guideline>
+
+<Guideline
+  id="IPA-128-must-support-stable-until-migration"
+  given="spec"
+  enforcement="advisory"
+>
+  A **stable** API resource **must** remain supported until all users have
+  migrated to an alternative version, or until otherwise agreed between API
+  provider and customers.
+</Guideline>
+
+</Guidelines>
+
+### Deprecated
+
+A **deprecated** API resource is still supported but is on its way to becoming
+**sunset**.
+
+<Guidelines>
+
+<Guideline
+  id="IPA-128-may-stop-deprecated-backwards-compat"
+  enforcement="advisory"
+>
+  A **deprecated** API resource **may** no longer receive backwards
+  compatibility changes.
+</Guideline>
+
+<Guideline id="IPA-128-must-transition-deprecated-to-sunset" enforcement="advisory">
+
+A **deprecated** API resource **must** transition to **sunset** within an
+established timeframe.
+
+</Guideline>
+
+<Guideline id="IPA-128-must-provide-deprecation-header" given="operation" enforcement="automatable">
+
+A **deprecated** API resource **must** provide the Deprecation HTTP response
+header ([RFC 9745](https://datatracker.ietf.org/doc/rfc9745/)) to signal to
+consumers that the resource is deprecated.
+
+</Guideline>
+
+<Guideline id="IPA-128-must-provide-sunset-header" given="operation" enforcement="automatable">
+
+A **deprecated** API resource **must** provide the Sunset HTTP response header
+([RFC 8594](https://datatracker.ietf.org/doc/html/rfc8594)) to signal to
+consumers when it will transition to **sunset**.
+
+</Guideline>
+
+<Guideline id="IPA-128-should-migrate-from-deprecated" enforcement="advisory">
+  Consumers **should** migrate from a **deprecated** API resource to the
+  **stable** version.
+</Guideline>
+
+</Guidelines>
+
+### Sunset
+
+A **sunset** API resource is no longer supported.
+
+<Guidelines>
+
+<Guideline id="IPA-128-must-return-410-for-sunset" given="operation" enforcement="automatable">
+
+A **sunset** API resource **must** return
+[410 GONE](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/410).
+
+</Guideline>
+
+<Guideline id="IPA-128-must-migrate-from-sunset" enforcement="advisory">
+  Consumers **must** migrate from a **sunset** API resource to the **stable**
+  version.
+</Guideline>
+
+</Guidelines>
 
 ## Further Reading
 

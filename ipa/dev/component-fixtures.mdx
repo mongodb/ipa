@@ -11,41 +11,88 @@ description:
 
 # Component fixtures
 
-This page is not shipped — `draft: true` excludes it from production. Each
-component-merge PR adds a section here.
+This page is not shipped — `draft: true` excludes it from production. It opens
+with a full, production-shaped guideline, then isolates each component in its
+own section.
 
-## `<Guidelines>`
+## Full example
 
-`<Guidelines>` is an ordered list wrapper for `<Guideline>` components. It
-provides automatic numbering and separators between adjacent guidelines, while
-each `<Guideline>` resolves its own `state` independently.
-
-### Single child
+A complete guideline as it renders in production: guidance prose with an
+admonition, a correct and an incorrect worked example, and a multi-step
+evaluation workflow. The examples + workflow are wrapped in a
+`<Guideline.Details>` so they collapse into a single **"Details"** accordion
+below the prose, and the `Informational`/`Enforced` tag no longer renders in the
+header — the `informational` field stays in the metadata.
 
 <Guidelines>
-  <Guideline
-    id="IPA-000-must-wrap-guidelines"
-    lintable
-    state="adopt"
-    effort="reason"
-    given="operation"
-  >
-    With a single child, `<Guidelines>` wraps it with automatic numbering
-    without adding separators.
 
-    :::info
-    It can also have annotations.
-    :::
+<Guideline id="IPA-000-must-use-american-english" given="spec" enforcement="rule">
 
-  </Guideline>
+API producers **must** use American English across the API — resource names,
+field names, descriptions, and enum values.
+
+:::note
+
+The MongoDB Style Guide follows Merriam-Webster's Collegiate Dictionary.
+
+:::
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+enum: [CANCELED, COMPLETED]
+```
+
+<Example.Reason>
+  "CANCELED" uses the American English spelling (one "l").
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+enum: [CANCELLED, COMPLETED]
+```
+
+<Example.Reason>
+  "CANCELLED" is British English and inconsistent with other MongoDB APIs.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Scan every user-facing string in the specification (descriptions, summaries,
+    enum values, field names).
+  </Workflow.Step>
+  <Workflow.Step>
+    Check each for British English spellings (e.g. "cancelled", "colour",
+    "authorise").
+  </Workflow.Step>
+  <Workflow.Step>Flag any non-American spelling as a violation.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
 </Guidelines>
 
-### Multiple children (separator styling)
+## `<Guidelines>` and `<Guideline>`
+
+`<Guidelines>` is an ordered-list wrapper that numbers its `<Guideline>`
+children and draws separators between them. A `<Guideline>` resolves its own
+`state` and renders its header, body, and footer.
+
+### Numbered list with separators
 
 <Guidelines>
   <Guideline
     id="IPA-000-must-render-first-guideline"
-    lintable
+    enforcement="rule"
     state="adopt"
     effort="check"
     given="operation"
@@ -54,6 +101,7 @@ each `<Guideline>` resolves its own `state` independently.
   </Guideline>
   <Guideline
     id="IPA-000-should-render-second-guideline"
+    enforcement="automatable"
     implementation
     state="adopt"
     effort="reason"
@@ -63,7 +111,7 @@ each `<Guideline>` resolves its own `state` independently.
   </Guideline>
   <Guideline
     id="IPA-000-may-render-third-guideline"
-    informational
+    enforcement="advisory"
     state="adopt"
     effort="explore"
   >
@@ -72,14 +120,14 @@ each `<Guideline>` resolves its own `state` independently.
   </Guideline>
 </Guidelines>
 
-### Standalone `<Guideline>` (no numbering)
+### Standalone (no numbering)
 
 A `<Guideline>` rendered outside `<Guidelines>` shows no numbering circle and
 renders as a `<div>` rather than an `<li>`.
 
 <Guideline
   id="IPA-000-must-render-standalone"
-  informational
+  enforcement="advisory"
   state="adopt"
   effort="check"
 >
@@ -90,9 +138,9 @@ renders as a `<div>` rather than an `<li>`.
 ## `<Example>`
 
 `<Example.Correct>` and `<Example.Incorrect>` render collapsible code examples
-with a visual correct/incorrect indicator.
+with a correct/incorrect indicator.
 
-### Correct example
+### Correct
 
 <Example.Correct>
 
@@ -102,7 +150,7 @@ name: list-resources
 
 </Example.Correct>
 
-### Incorrect example
+### Incorrect
 
 <Example.Incorrect title="Missing name field">
 
@@ -114,11 +162,9 @@ name: list-resources
 
 ## `<Example.Reason>`
 
-`<Example.Reason>` is the short prose explanation inside `<Example.Correct>` and
-`<Example.Incorrect>` blocks — why the pattern is correct or incorrect, the
-principle rather than a restatement of the guideline. It renders beneath the
-code block under the example's tinted hairline, with an inline "Why:" lead-in in
-the verdict color.
+`<Example.Reason>` is the short prose explanation inside an example — why the
+pattern is correct or incorrect. It renders beneath the code block under the
+example's tinted hairline, with an inline "Why:" lead-in in the verdict color.
 
 ### Inside a correct example
 
@@ -135,7 +181,7 @@ Content-Type: application/merge-patch+json
 
 </Example.Correct>
 
-### Inside an incorrect example, long-form
+### Inside an incorrect example
 
 <Example.Incorrect>
 
@@ -158,45 +204,34 @@ components:
 ## `<Workflow>`
 
 `<Workflow>` renders the manual evaluation steps of a guideline as a numbered
-reading list inside a collapsible accordion. It is intentionally stateless —
-interactivity can be layered on later if reviewers ask for it.
+reading list inside a collapsible accordion.
 
-:::note The site currently sets `showWorkflows: false` in
-`docusaurus.config.ts`, so the fixtures below render nothing. Flip the flag to
-`true` to preview them. :::
+:::note
 
-### Inside a guideline
+The site sets `showWorkflows: true` in `docusaurus.config.ts`. Set it to `false`
+to hide workflows everywhere.
 
-The primary use: a guideline documents the steps a reviewer or agent follows to
-evaluate the rule. The component renders the same regardless of the guideline's
-metadata.
+:::
+
+### Inside a guideline (lone workflow, not wrapped)
+
+A guideline with a workflow but no examples keeps the workflow as its own
+accordion — it is not wrapped in a redundant outer "Details" accordion.
 
 <Guideline
-  id="IPA-000-must-use-american-english"
+  id="IPA-000-should-model-resource-hierarchy"
   state="adopt"
-  effort="check"
-  given="spec"
+  effort="reason"
+  given="operation"
 >
-  API producers must use American English for all user-facing text in the API
-  specification.
 
-  <Workflow>
-    <Workflow.Step>
-      Scan every user-facing string in the specification (descriptions,
-      summaries, enum values, field names).
-    </Workflow.Step>
-    <Workflow.Step>
-      For each string, check for common British English spellings (e.g.,
-      "cancelled", "colour", "authorise", "behaviour", "organisation").
-    </Workflow.Step>
-    <Workflow.Step>
-      Consult Merriam-Webster's dictionary for the preferred American English
-      form.
-    </Workflow.Step>
-    <Workflow.Step>
-      Flag any non-American spelling as a violation.
-    </Workflow.Step>
-  </Workflow>
+A resource-oriented API **should** be modeled as a resource hierarchy.
+
+<Workflow>
+  <Workflow.Step>Identify the nouns the API exposes.</Workflow.Step>
+  <Workflow.Step>Map each to a collection or singleton resource.</Workflow.Step>
+</Workflow>
+
 </Guideline>
 
 ### Standalone with a custom title
@@ -206,3 +241,12 @@ metadata.
   <Workflow.Step>Regenerate the SDK clients.</Workflow.Step>
   <Workflow.Step>Update the changelog entry.</Workflow.Step>
 </Workflow>
+
+## Grouping behavior
+
+To collapse a guideline's supplementary content, wrap it in
+`<Guideline.Details>` (see [Full example](#full-example) above). Whatever you
+put inside — examples, workflow, notes — renders in one collapsed "Details"
+accordion below the prose; pass `title="…"` to relabel it. Leave content outside
+the wrapper to keep it inline (e.g. a lone `<Workflow>` that should render as
+its own accordion).

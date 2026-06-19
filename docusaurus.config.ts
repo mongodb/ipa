@@ -8,9 +8,10 @@ import parseFrontMatter from "./src/plugins/parsePrincipleFrontMatter";
 
 const config: Config = {
   customFields: {
-    // Workflows are primarily agent-executed evaluation steps; hide them
-    // from the rendered site. Flip to true to show them again.
-    showWorkflows: false,
+    // Workflows (agent-executed evaluation steps) are shown in the rendered
+    // site. They're tucked into the guideline's collapsible "Examples &
+    // workflow" accordion, so they add detail without cluttering the page.
+    showWorkflows: true,
   },
 
   title: "IPA - Improvement Proposal for APIs",

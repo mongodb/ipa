@@ -48,13 +48,24 @@ export const guidelineIdSchema = z
 // Effort level
 export const effortSchema = z.enum(["check", "reason", "explore"]);
 
+// Enforcement mode:
+// "rule"        — Spectral rule exists and is active; renders a "Lint rule ↗" link
+// "automatable" — automatable check; either no Spectral rule exists yet, or it is covered by lintable rules referenced via dependsOn
+// "review"      — needs agentic review; no lint link
+// "advisory"    — not enforced; context or guiding principle only
+export const enforcementSchema = z.enum([
+  "rule",
+  "automatable",
+  "review",
+  "advisory",
+]);
+
 // Full Guideline component props schema
 export const guidelinePropsSchema = z
   .object({
     id: guidelineIdSchema,
     given: givenSchema.optional(),
-    lintable: z.boolean().default(false),
-    informational: z.boolean().default(false),
+    enforcement: enforcementSchema.default("review"),
     // Metadata consumed by the extraction pipeline and agent skill router, not rendered in the UI.
     implementation: z.boolean().default(false),
     effort: effortSchema.default("check"),
@@ -69,10 +80,13 @@ export const guidelinePropsSchema = z
       ),
   })
   .check(
-    z.refine((data) => data.informational || data.given !== undefined, {
-      message: "Non-informational guidelines require a 'given' prop",
-      path: ["given"],
-    }),
+    z.refine(
+      (data) => data.enforcement === "advisory" || data.given !== undefined,
+      {
+        message: "Non-advisory guidelines require a 'given' prop",
+        path: ["given"],
+      },
+    ),
   );
 
 export type Guideline = z.infer<typeof guidelinePropsSchema>;

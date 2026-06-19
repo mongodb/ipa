@@ -10,13 +10,220 @@ conservatively reduces the potential of unintended impact.
 
 ## Guidance
 
-- API specs **must not** set
-  [additionalProperties](https://json-schema.org/understanding-json-schema/reference/object#additionalproperties)
-  to `false` to flag to clients that additional fields **may** be added
-- Request parameter data constraints **should** be specific and restrictive to
-  provide freedom for extensions
-- API producers **should** default to multi-cloud support when implementing
-  features
+<Guidelines>
+
+<Guideline id="IPA-118-must-not-set-additional-properties-false" given="schema" enforcement="rule">
+
+API specs **must not** set
+[additionalProperties](https://json-schema.org/understanding-json-schema/reference/object#additionalproperties)
+to `false`, so that additional fields can be added later without breaking
+existing clients.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+```
+
+<Example.Reason>
+  Leaving `additionalProperties` unset (it defaults to `true`) lets a future
+  field appear in responses without invalidating the schema a client already
+  validates against.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+```
+
+<Example.Reason>
+  `additionalProperties: false` rejects any field not listed today, so adding a
+  new field becomes a breaking change for clients that validate responses
+  strictly.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-118-should-restrict-parameter-constraints" given="parameter" enforcement="review" effort="reason">
+
+Request parameter data constraints **should** be specific and restrictive, so
+that the accepted range can be widened later without breaking existing clients.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+parameters:
+  - name: status
+    in: query
+    schema:
+      type: string
+      enum: [ACTIVE, ARCHIVED]
+```
+
+<Example.Reason>
+  A narrow enum can later gain a value without affecting clients that send only
+  the existing ones. Widening an accepted set is backward compatible; narrowing
+  it is not.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+parameters:
+  - name: status
+    in: query
+    schema:
+      type: string
+```
+
+<Example.Reason>
+  An unconstrained string accepts any value from day one, leaving no room to add
+  meaning to new values later and no way to tighten the contract without
+  breaking callers that already send arbitrary input.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate every parameter under `paths.*.*.parameters` and every shared
+    parameter under `components.parameters`.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each parameter, inspect its `schema` for constraints appropriate to the
+    type: `enum` for closed value sets, `minimum`/`maximum` for numbers,
+    `minLength`/`maxLength`/`pattern` for strings, `format` where one applies.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any parameter whose value space is broader than the values it actually
+    accepts — a bare `string` or `integer` with no constraint where the
+    description or behavior implies a bounded set.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report each under-constrained parameter, since a constraint can be relaxed
+    later without breaking clients but cannot be tightened.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-118-should-default-to-multi-cloud" given="operation" enforcement="review" implementation effort="explore">
+
+API producers **should** default to multi-cloud support when implementing
+features.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /deployments:
+    post:
+      operationId: createDeployment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                provider:
+                  type: string
+                  enum: [PROVIDER_A, PROVIDER_B, PROVIDER_C]
+                region:
+                  type: string
+```
+
+<Example.Reason>
+  The request lets the caller pick from every supported provider, so the feature
+  works across providers rather than assuming a single one.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /deployments:
+    post:
+      operationId: createDeployment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                region:
+                  type: string
+```
+
+<Example.Reason>
+  With no provider field, the feature implicitly hard-codes one provider. Adding
+  multi-provider support afterward forces a new field onto an already-shipped
+  contract.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the operations and request/response schemas that introduce the
+    feature under review.
+  </Workflow.Step>
+  <Workflow.Step>
+    Determine whether the feature is cloud-provider dependent by inspecting the
+    schema for provider, region, or location fields and, where the spec is
+    ambiguous, the backing source code or service configuration.
+  </Workflow.Step>
+  <Workflow.Step>
+    For a provider-dependent feature, confirm the contract admits more than one
+    provider — for example a `provider` enum listing each supported provider
+    rather than a single hard-coded value.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any feature whose contract or implementation assumes a single cloud
+    provider where multi-cloud support is feasible.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ## Further reading
 

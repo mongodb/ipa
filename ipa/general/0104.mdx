@@ -6,49 +6,699 @@ state: adopt
 # IPA-104: Get
 
 In REST APIs, it is customary to make a `GET` request to a resource's URI (for
-example, `/groups/{groupId}/clusters/{clusterName}`) to retrieve that resource.
+example, `/projects/{projectId}/tasks/{taskId}`) to retrieve that resource.
 
 ## Guidance
 
-- APIs **must** provide a Get method for resources
-- The purpose of the Get method is to return data from a single resource
-- The HTTP verb **must** be
-  [`GET`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/GET)
-- The method **must not** [cause side effects](0103.mdx)
-- The request **must not** include a body
-- API producers **should** implement as a `Response` suffixed object
-  - A `Response` object **must not** include fields available only on creation
-    or update
-    - In OpenAPI, this means that the `Response` object **must not** include
-      fields with `writeOnly: true`
-- The response status code **must** be
-  [200 OK](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200)
-- The response **may** include a
-  [HATEOAS](https://en.wikipedia.org/wiki/HATEOAS) `links` field
+<Guidelines>
+
+<Guideline id="IPA-104-must-provide-get-method" given="resource" enforcement="rule">
+
+APIs **must** provide a Get method for resources.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  The single-resource path exposes a `GET`, so the resource can be read back.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    put:
+      operationId: updateProject
+    delete:
+      operationId: deleteProject
+```
+
+<Example.Reason>
+  The resource can be updated and deleted but never retrieved, so callers have
+  no way to read its current state.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate every entry under `paths` and group the paths by the resource they
+    address.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each resource that has a single-resource path (a path ending in a
+    resource identifier) or is a singleton, confirm that path defines a `get`
+    operation.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any resource whose single-resource or singleton path has no `get`
+    operation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-104-must-return-single-resource" given="get-operation" enforcement="rule">
+
+A Get method **must** return data from a single resource, not a collection or a
+paginated list.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectResponse"
+```
+
+<Example.Reason>
+  The response is a single object describing one project.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectResponse"
+```
+
+<Example.Reason>
+  An array response describes a collection, which belongs on the List method,
+  not the Get method for one resource.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every `get` operation defined on a single-resource path or a
+    singleton.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each `2xx` response, follow the content schema (resolving any `$ref`)
+    and inspect its `type`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the schema is a single object and not an `array` or a paginated
+    envelope (a wrapper carrying `results`, `totalCount`, or similar list
+    metadata).
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any Get response whose schema is an array or a paginated result.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-104-must-use-get-verb" given="get-operation" enforcement="automatable" effort="check">
+
+The HTTP verb **must** be
+[`GET`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/GET).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+```
+
+<Example.Reason>
+  Retrieving a resource uses the `GET` verb, the safe, read-only HTTP method.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    post:
+      operationId: getOrder
+```
+
+<Example.Reason>
+  `POST` is not safe and not idempotent, so it cannot stand in for a read of a
+  single resource.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each operation whose intent is to retrieve a single resource, read the
+    HTTP method it is defined under in the path item.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the method is `get` and not `post`, `put`, `patch`, or `delete`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any single-resource read modeled under a verb other than `get`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-104-must-not-cause-side-effects" given="get-operation" enforcement="review" implementation effort="explore">
+
+The Get method **must not** [cause side effects](0103.mdx).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      description: Returns the order. Does not modify any stored state.
+```
+
+<Example.Reason>
+  A Get only reads, so repeated calls return the same data and leave server
+  state unchanged.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      description:
+        Returns the order and marks it as viewed, decrementing its TTL.
+```
+
+<Example.Reason>
+  Mutating state on read makes the call unsafe, so caching, retries, and
+  prefetching can silently change data.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every `get` operation on a single resource or singleton.
+  </Workflow.Step>
+  <Workflow.Step>
+    Read the operation description and, where available, the handler source it
+    maps to, since whether a read mutates state cannot be told from the contract
+    alone.
+  </Workflow.Step>
+  <Workflow.Step>
+    Determine whether the operation writes to storage, enqueues work, sends
+    notifications, or otherwise changes observable state.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any Get whose implementation produces a side effect, per
+    [IPA-103](0103.mdx).
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-104-must-not-include-request-body" given="get-operation" enforcement="rule">
+
+The request **must not** include a body.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  The resource is identified entirely by the path, so no request body is
+  defined.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+```
+
+<Example.Reason>
+  A `GET` body is ignored by many clients, proxies, and caches, so any input
+  carried there cannot be relied on.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-104-should-use-response-suffixed-object" given="get-operation" enforcement="rule">
+
+A Get method **should** return a `Response` suffixed object.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponse"
+```
+
+<Example.Reason>
+  The response references a named, reusable `OrderResponse` schema, which keeps
+  output models distinct from input models.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+```
+
+<Example.Reason>
+  An inline, unnamed schema cannot be referenced or named consistently, so the
+  output model is not reusable across operations.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-104-must-not-include-write-only-fields" given="schema" enforcement="rule" dependsOn={["IPA-104-should-use-response-suffixed-object"]}>
+
+A `Response` object **must not** include fields available only on creation or
+update — in OpenAPI, fields marked `writeOnly: true`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    OrderResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        total:
+          type: number
+```
+
+<Example.Reason>
+  Every property is readable, so the response carries only fields a reader can
+  see.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    OrderResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        cardNumber:
+          type: string
+          writeOnly: true
+```
+
+<Example.Reason>
+  A `writeOnly` field is only meaningful on input, so its presence in a response
+  schema advertises a value that is never returned.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-104-must-return-200-ok" given="get-operation" enforcement="rule">
+
+The response status code **must** be
+[200 OK](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  A successful read returns `200 OK`, the standard status for a retrieved
+  resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      responses:
+        "201":
+          description: Created
+```
+
+<Example.Reason>
+  `201 Created` signals that a resource was created, which never happens on a
+  read.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-104-may-include-hateoas-links" enforcement="advisory">
+  The response **may** include a
+  [HATEOAS](https://en.wikipedia.org/wiki/HATEOAS) `links` field.
+</Guideline>
+
+</Guidelines>
 
 Example
 
 ```http request
-GET /groups/${groupId}/clusters/${clusterName}
+GET /projects/${projectId}/tasks/${taskId}
 ```
 
 ### Naming
 
-- Operation ID **must** be unique
-- Operation ID **must** be in `camelCase`
-- Operation ID **must** start with the verb “get”
-- Operation ID **should** be followed by a noun or compound noun
-  - The noun(s) in the Operation ID **should** be the collection identifiers
-    from the resource identifier in singular form
-    - If the resource is a [singleton](0113.mdx), the last noun **may** be the
-      plural form of the collection identifier
+<Guidelines>
+
+<Guideline id="IPA-104-must-use-unique-operation-id" given="operation" enforcement="automatable" effort="reason">
+
+Operation ID **must** be unique.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+```
+
+<Example.Reason>
+  Each operation has a distinct `operationId`, so generated method names do not
+  collide.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: get
+  /orders/{orderId}:
+    get:
+      operationId: get
+```
+
+<Example.Reason>
+  Two operations share the `operationId` `get`, so one overwrites the other in
+  generated clients.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect the `operationId` of every operation across all paths and methods.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare the values and find any `operationId` that appears more than once.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report each duplicated `operationId`, naming the operations that share it.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-104-must-use-camel-case-operation-id" given="get-operation" enforcement="rule">
+
+Operation ID **must** be in `camelCase`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+```
+
+<Example.Reason>
+  `getProject` is `camelCase`, matching the casing every generated client
+  expects.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: get_project
+```
+
+<Example.Reason>
+  `get_project` is snake_case, so generated method names are inconsistent with
+  the rest of the API.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-104-must-start-with-get-verb" given="get-operation" enforcement="rule">
+
+Operation ID **must** start with the verb "get".
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+```
+
+<Example.Reason>
+  The `operationId` begins with `get`, matching the read semantics of the
+  method.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: fetchProject
+```
+
+<Example.Reason>
+  `fetchProject` uses a different verb, so the name no longer signals a Get
+  method consistently across the API.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-104-should-be-followed-by-noun" given="get-operation" enforcement="rule">
+
+Operation ID **should** be followed by a noun or compound noun, and that noun
+**should** be the collection identifiers from the resource identifier in
+singular form.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getProjectTask
+```
+
+<Example.Reason>
+  `ProjectTask` is the collection identifiers `projects` and `tasks` in singular
+  form, so the name mirrors the resource path.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getProjectsTasks
+```
+
+<Example.Reason>
+  The plural collection names do not match the singular-resource read, so the
+  name describes a collection rather than the single task being retrieved.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-104-may-use-plural-for-singleton" enforcement="advisory">
+  If the resource is a [singleton](0113.mdx), the last noun **may** be the
+  plural form of the collection identifier.
+</Guideline>
+
+</Guidelines>
 
 Examples:
 
-| Resource Identifier                          | Operation ID       |
-| -------------------------------------------- | ------------------ |
-| `/groups/${groupId}/clusters/${clusterName}` | `getGroupCluster`  |
-| (Singleton) `/groups/${groupId}/settings`    | `getGroupSettings` |
+| Resource Identifier                           | Operation ID         |
+| --------------------------------------------- | -------------------- |
+| `/projects/${projectId}/tasks/${taskId}`      | `getProjectTask`     |
+| (Singleton) `/projects/${projectId}/settings` | `getProjectSettings` |
 
 ### Error Handling
 
