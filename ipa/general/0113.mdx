@@ -11,15 +11,187 @@ parent.
 
 ## Guidance
 
-- Singleton resources **must not** have a user-provided or system-generated ID
-- Singleton resources **must not** define the [Create](0106.mdx) or
-  [Delete](0108.mdx) standard methods
-  - The singleton is implicitly created or deleted when its parent is created or
-    deleted
-- Singleton resources **must** define the [Get](0104.mdx) method
-- Singleton resources **should** define the [Update](0107.mdx) method, unless
-  the resource is [read-only](0113.mdx#read-only-singleton-resources)
-- Singleton resources **may** define [custom methods](0109.mdx) as appropriate
+<Guidelines>
+
+<Guideline id="IPA-113-must-not-have-id" given="resource" enforcement="automatable" effort="check">
+
+Singleton resources **must not** have a user-provided or system-generated ID
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/settings:
+    get:
+      operationId: getGroupSettings
+```
+
+<Example.Reason>
+  The singleton `settings` is addressed entirely through its parent `groupId`.
+  There is exactly one per group, so no separate identifier is needed or
+  exposed.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/settings/{settingsId}:
+    get:
+      operationId: getGroupSettings
+```
+
+<Example.Reason>
+  A `settingsId` path parameter implies multiple `settings` per group and a way
+  to enumerate them. A singleton has exactly one instance per parent, so an
+  identifier has nothing to distinguish.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-113-must-not-define-create-delete" given="resource" enforcement="automatable" effort="reason">
+
+Singleton resources **must not** define the [Create](0106.mdx) or
+[Delete](0108.mdx) standard methods
+
+- The singleton is implicitly created or deleted when its parent is created or
+  deleted
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/settings:
+    get:
+      operationId: getGroupSettings
+    patch:
+      operationId: updateGroupSettings
+```
+
+<Example.Reason>
+  The singleton exposes only Get and Update. Its lifecycle is tied to the parent
+  `group`: the `settings` come into existence when the group is created and are
+  removed when the group is deleted, so explicit Create and Delete methods would
+  be meaningless.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/settings:
+    post:
+      operationId: createGroupSettings
+    delete:
+      operationId: deleteGroupSettings
+```
+
+<Example.Reason>
+  Create and Delete imply the singleton can be brought into or out of existence
+  independently of its parent. A singleton must always exist by virtue of its
+  parent, so there is no valid state in which it can be created or deleted on
+  its own.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-113-must-define-get" given="resource" enforcement="automatable" effort="check">
+
+Singleton resources **must** define the [Get](0104.mdx) method
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/settings:
+    get:
+      operationId: getGroupSettings
+      responses:
+        "200":
+          description: The group settings.
+```
+
+<Example.Reason>
+  The singleton defines Get, so consumers can always read the current state of
+  the resource that the parent guarantees exists.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-113-should-define-update" given="resource" enforcement="review" effort="reason">
+
+Singleton resources **should** define the [Update](0107.mdx) method, unless the
+resource is [read-only](0113.mdx#read-only-singleton-resources)
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/settings:
+    get:
+      operationId: getGroupSettings
+    patch:
+      operationId: updateGroupSettings
+```
+
+<Example.Reason>
+  The mutable singleton exposes Update alongside Get, so consumers can change
+  the settings without recreating the parent. Read-only singletons are the
+  exception and intentionally omit Update.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Identify each singleton resource: a resource addressed through its parent
+    with no identifier of its own.
+  </Workflow.Step>
+  <Workflow.Step>
+    Determine whether the singleton is intended to be read-only — modifiable
+    only by the server, never by API consumers.
+  </Workflow.Step>
+  <Workflow.Step>
+    For a singleton that is not read-only, confirm it defines an Update method.
+    Flag any mutable singleton that omits Update.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-113-may-define-custom-methods" enforcement="advisory">
+
+Singleton resources **may** define [custom methods](0109.mdx) as appropriate
+
+</Guideline>
+
+</Guidelines>
 
 Example
 
@@ -34,19 +206,294 @@ PATCH /groups/${groupId}/settings
 Read-only singleton resources are [singleton resources](0113.mdx) that cannot be
 modified by API consumers.
 
-- Read-only singleton resources **must** have only the [Get](0104.mdx) method
-- Read-only singleton resources **must not** have [Create](0106.mdx),
-  [Update](0107.mdx), or [Delete](0108.mdx) methods
-- Read-only singleton resources **may** have [custom methods](0109.mdx) as
-  appropriate, provided they do not modify the resource
-- All response schema properties for read-only singleton resources **must** be
-  marked as read-only
-  - In OpenAPI, this means all properties **must** have `readOnly: true`
-  - All fields in read-only singleton resources are server-owned. For guidance
-    on server-owned fields, see [IPA-111](0111.mdx#single-owner-fields)
-- Unsupported operations on read-only singleton resources **should** return
-  `405 Not Allowed`
-- Unsupported operations **must not** be documented
+<Guidelines>
+
+<Guideline id="IPA-113-must-have-only-get-on-read-only" given="resource" enforcement="automatable" effort="reason">
+
+Read-only singleton resources **must** have only the [Get](0104.mdx) method
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/billingStatus:
+    get:
+      operationId: getGroupBillingStatus
+      responses:
+        "200":
+          description: The group billing status.
+```
+
+<Example.Reason>
+  The read-only singleton `billingStatus` exposes only Get. It is computed and
+  owned by the server, so consumers can read it but never mutate it.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-113-must-not-have-mutation-methods-on-read-only" given="resource" enforcement="automatable" effort="check">
+
+Read-only singleton resources **must not** have [Create](0106.mdx),
+[Update](0107.mdx), or [Delete](0108.mdx) methods
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/billingStatus:
+    get:
+      operationId: getGroupBillingStatus
+```
+
+<Example.Reason>
+  Only Get is present. Create and Delete are already disallowed for all
+  singletons, and a read-only singleton additionally omits Update, so no method
+  can mutate it.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/billingStatus:
+    get:
+      operationId: getGroupBillingStatus
+    patch:
+      operationId: updateGroupBillingStatus
+```
+
+<Example.Reason>
+  The `patch` is an Update method on a read-only singleton. By definition a
+  read-only singleton cannot be modified by consumers, so exposing Update
+  contradicts the resource's contract.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-113-may-have-custom-methods-on-read-only" enforcement="advisory">
+
+Read-only singleton resources **may** have [custom methods](0109.mdx) as
+appropriate, provided they do not modify the resource
+
+</Guideline>
+
+<Guideline id="IPA-113-must-mark-all-properties-read-only" given="schema" enforcement="review" effort="reason">
+
+All response schema properties for read-only singleton resources **must** be
+marked as read-only
+
+- In OpenAPI, this means all properties **must** have `readOnly: true`
+- All fields in read-only singleton resources are server-owned. For guidance on
+  server-owned fields, see [IPA-111](0111.mdx#single-owner-fields)
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    GroupBillingStatus:
+      type: object
+      properties:
+        state:
+          type: string
+          readOnly: true
+        lastChargedDate:
+          type: string
+          format: date-time
+          readOnly: true
+```
+
+<Example.Reason>
+  Every property carries `readOnly: true`, signalling that all fields are
+  server-owned and cannot be set by consumers. This matches the read-only
+  contract of the singleton.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    GroupBillingStatus:
+      type: object
+      properties:
+        state:
+          type: string
+          readOnly: true
+        lastChargedDate:
+          type: string
+          format: date-time
+```
+
+<Example.Reason>
+  `lastChargedDate` is missing `readOnly: true`, so generated clients treat it
+  as writable. On a read-only singleton no field is consumer-writable, so
+  leaving any property unmarked misrepresents the contract.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the response schema for each read-only singleton resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    Enumerate every property in that schema, including nested object properties.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any property that does not have `readOnly: true`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-113-should-return-405-for-unsupported-ops" given="operation" enforcement="review" effort="explore" implementation>
+
+Unsupported operations on read-only singleton resources **should** return
+`405 Not Allowed`
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/billingStatus:
+    get:
+      operationId: getGroupBillingStatus
+      responses:
+        "200":
+          description: The group billing status.
+```
+
+<Example.Reason>
+  The read-only singleton documents only `get`. The unsupported `patch` is kept
+  out of the spec, and a `PATCH /groups/{groupId}/billingStatus` call resolves
+  to `405 Not Allowed` at the server — the method is recognized but not
+  permitted, rather than `404` (resource missing) or `403` (forbidden). The
+  behavior lives in the implementation while the contract stays clean.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/billingStatus:
+    get:
+      operationId: getGroupBillingStatus
+    patch:
+      operationId: updateGroupBillingStatus
+      responses:
+        "404":
+          description: Billing status not found.
+```
+
+<Example.Reason>
+  Documenting `patch` and returning `404` muddles two different things: the
+  resource doesn't exist, versus the method isn't allowed. The singleton always
+  exists by virtue of its parent, and the method is recognized but disallowed,
+  so the honest response is `405` — and the method should not be documented at
+  all.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify each read-only singleton resource: only Get is documented, with no
+    Create, Update, or Delete.
+  </Workflow.Step>
+  <Workflow.Step>
+    In the implementation behind that path (routing or controller code), check
+    what an unsupported mutation — `POST`, `PUT`, `PATCH`, or `DELETE` —
+    returns.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any unsupported mutation that resolves to anything other than `405 Not
+    Allowed` (for example `404`, `403`, or a success code).
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-113-must-not-document-unsupported-operations" given="operation" enforcement="automatable" dependsOn={["IPA-113-must-not-have-mutation-methods-on-read-only", "IPA-113-should-return-405-for-unsupported-ops"]}>
+
+Unsupported operations **must not** be documented
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/billingStatus:
+    get:
+      operationId: getGroupBillingStatus
+      responses:
+        "200":
+          description: The group billing status.
+```
+
+<Example.Reason>
+  The read-only singleton lists only the operation it actually serves:
+  `getGroupBillingStatus`. There are no mutation operations in the spec, so doc
+  generators and SDK builders produce only methods the API honors. No generated
+  call targets an endpoint the server will reject.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/billingStatus:
+    get:
+      operationId: getGroupBillingStatus
+    delete:
+      operationId: deleteGroupBillingStatus
+      responses:
+        "405":
+          description: Method not allowed.
+```
+
+<Example.Reason>
+  Even though the `delete` advertises `405`, documenting it surfaces a method
+  the API does not support. Doc generators and SDK builders will emit a
+  `deleteGroupBillingStatus` call that can never succeed.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ### Resetting Singleton Resources
 
@@ -54,15 +501,316 @@ Singleton resources can be restored to their default state without deleting the
 parent resource. For such cases, a `:reset` [custom method](0109.mdx) **must**
 be used.
 
-- The `:reset` custom method name **must** be reserved exclusively for restoring
-  singleton resources to their default state
-- The `:reset` custom method **must** use the `POST` HTTP method
-- The `:reset` custom method **must** be idempotent
-  - Calling reset multiple times **must** produce the same result as calling it
-    once
-- The `:reset` custom method **must** return a
-  [200 OK](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200)
-  response with the reset resource in the response body
-- The `:reset` custom method **must not** have a request body
-- Read-only singleton resources **must not** define a `:reset` custom method
-  - Read-only singleton resources cannot be modified, so reset is not applicable
+<Guidelines>
+
+<Guideline id="IPA-113-must-reserve-reset-method-name" given="operation" enforcement="review" effort="reason">
+
+The `:reset` custom method name **must** be reserved exclusively for restoring
+singleton resources to their default state
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/settings:reset:
+    post:
+      operationId: resetGroupSettings
+      responses:
+        "200":
+          description: The group settings restored to default.
+```
+
+<Example.Reason>
+  The `:reset` method does exactly what its reserved name implies: it restores
+  the singleton `settings` to their default state. The name is not reused for
+  any other behavior.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/settings:reset:
+    post:
+      operationId: resetGroupSettings
+      description: Recalculates derived metrics for the group settings.
+```
+
+<Example.Reason>
+  Here `:reset` is used to recalculate metrics rather than to restore default
+  state. Overloading the reserved name with unrelated behavior makes the
+  method's contract ambiguous across the API.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate every custom method named `:reset` across the spec.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each one restores a singleton resource to its default state, as
+    described in its summary, description, and behavior.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any `:reset` method that performs something other than restoring
+    default state.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-113-must-use-post-for-reset" given="operation" enforcement="automatable" effort="check">
+
+The `:reset` custom method **must** use the `POST` HTTP method
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/settings:reset:
+    post:
+      operationId: resetGroupSettings
+```
+
+<Example.Reason>
+  The `:reset` custom method is defined under `post`, matching the required HTTP
+  method for reset.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/settings:reset:
+    put:
+      operationId: resetGroupSettings
+```
+
+<Example.Reason>
+  The `:reset` method is defined under `put` rather than `post`. Reset custom
+  methods must use `POST`.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-113-must-be-idempotent-reset" given="operation" enforcement="review" effort="explore" implementation>
+
+The `:reset` custom method **must** be idempotent
+
+- Calling reset multiple times **must** produce the same result as calling it
+  once
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/settings:reset:
+    post:
+      operationId: resetGroupSettings
+      responses:
+        "200":
+          description: The group settings restored to their default state.
+```
+
+<Example.Reason>
+  Reset restores the singleton to a fixed default state. Calling it once or many
+  times leaves the resource in the same default state, so the operation is
+  idempotent.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Identify each `:reset` custom method on a singleton resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    In the implementation, confirm that reset sets the resource to a fixed
+    default state rather than applying a relative or incremental change.
+  </Workflow.Step>
+  <Workflow.Step>
+    Verify that invoking reset repeatedly leaves the resource in the same state
+    as a single invocation. Flag any reset whose repeated calls produce
+    differing results.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-113-must-return-200-for-reset" given="operation" enforcement="automatable" effort="check">
+
+The `:reset` custom method **must** return a
+[200 OK](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200) response
+with the reset resource in the response body
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/settings:reset:
+    post:
+      operationId: resetGroupSettings
+      responses:
+        "200":
+          description: The group settings restored to their default state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupSettings"
+```
+
+<Example.Reason>
+  Reset responds with `200 OK` and returns the reset `GroupSettings` in the
+  response body, so consumers immediately see the restored default state.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/settings:reset:
+    post:
+      operationId: resetGroupSettings
+      responses:
+        "204":
+          description: Settings reset.
+```
+
+<Example.Reason>
+  A `204 No Content` returns no body, so consumers cannot see the restored state
+  without a follow-up Get. Reset must return `200 OK` with the reset resource in
+  the body.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-113-must-not-have-request-body-reset" given="operation" enforcement="automatable" effort="check">
+
+The `:reset` custom method **must not** have a request body
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/settings:reset:
+    post:
+      operationId: resetGroupSettings
+      responses:
+        "200":
+          description: The group settings restored to their default state.
+```
+
+<Example.Reason>
+  Reset takes no input — it always restores the same default state — so the
+  operation defines no `requestBody`.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/settings:reset:
+    post:
+      operationId: resetGroupSettings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupSettings"
+      responses:
+        "200":
+          description: The group settings restored to their default state.
+```
+
+<Example.Reason>
+  A `requestBody` implies reset accepts caller-supplied values. Reset restores a
+  fixed default state and must take no input, so it must not define a request
+  body.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-113-must-not-define-reset-on-read-only" given="resource" enforcement="automatable" effort="reason">
+
+Read-only singleton resources **must not** define a `:reset` custom method
+
+- Read-only singleton resources cannot be modified, so reset is not applicable
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/billingStatus:
+    get:
+      operationId: getGroupBillingStatus
+```
+
+<Example.Reason>
+  The read-only singleton exposes only Get and defines no `:reset` method. Since
+  the resource cannot be modified, there is no default state to restore.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/billingStatus:
+    get:
+      operationId: getGroupBillingStatus
+  /groups/{groupId}/billingStatus:reset:
+    post:
+      operationId: resetGroupBillingStatus
+```
+
+<Example.Reason>
+  Defining `:reset` on a read-only singleton contradicts its contract: reset
+  modifies the resource by restoring default state, but a read-only singleton
+  cannot be modified by consumers at all.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
