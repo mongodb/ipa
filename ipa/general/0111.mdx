@@ -585,6 +585,30 @@ components:
 
 </Example.Correct>
 
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    UserUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+          format: password
+          writeOnly: true
+```
+
+<Example.Reason>
+  When updating a user, the client submits the new `password` on
+  [Update](0107.mdx). It is `writeOnly: true`, so the server accepts it but
+  never returns it in any response.
+</Example.Reason>
+
+</Example.Correct>
+
 <Example.Incorrect>
 
 ```yaml
@@ -624,13 +648,13 @@ components:
 
 </Guideline>
 
-<Guideline id="IPA-111-may-use-reveal-once-sensitive" given="schema" enforcement="review" effort="reason">
+<Guideline id="IPA-111-may-use-create-response-only-sensitive" given="schema" enforcement="review" effort="reason">
 
-**Reveal-once.** For values the client cannot retrieve later (e.g.
+**Create-response-only.** For values the client cannot retrieve later (e.g.
 server-generated API keys), the field **may** appear in the [Create](0106.mdx)
 response so the client can capture it, but **must not** appear in subsequent
-[Get](0104.mdx) or [List](0105.mdx) responses. Reveal-once is the sanctioned
-exception to the [schema consistency rule](0101.mdx#resources).
+[Get](0104.mdx) or [List](0105.mdx) responses. Create-response-only is the
+sanctioned exception to the [schema consistency rule](0101.mdx#resources).
 
 <Guideline.Details>
 
@@ -694,7 +718,8 @@ components:
     `writeOnly` to exclude it from Get and List responses.
   </Workflow.Step>
   <Workflow.Step>
-    Flag any reveal-once field that appears in Get or List response schemas.
+    Flag any create-response-only field that appears in Get or List response
+    schemas.
   </Workflow.Step>
 </Workflow>
 
@@ -709,8 +734,8 @@ display value) needs to appear in [Get](0104.mdx) or [List](0105.mdx) responses,
 it **must** be modeled as a separate read-only **redacted sibling** property
 following the [Effective Values](#effective-values) pattern. The raw and
 redacted values **must not** share the same property name. A redacted sibling
-**may** be added to either a write-only or a reveal-once field independently of
-the chosen information-flow pattern.
+**may** be added to either a write-only or a create-response-only field
+independently of the chosen information-flow pattern.
 
 <Guidelines>
 

@@ -680,7 +680,7 @@ itself a secret. Guidelines below govern when to apply it.
 
 <Guidelines>
 
-<Guideline id="IPA-117-must-use-format-password-on-secrets" given="schema" enforcement="automatable" effort="check" dependsOn={["IPA-111"]}>
+<Guideline id="IPA-117-must-use-format-password-on-secrets" given="schema" enforcement="review" effort="check" dependsOn={["IPA-111"]}>
 
 **Must use** `format: password` on any property whose value is itself a secret
 per [IPA-111 — Sensitive Fields](0111.mdx#sensitive-fields).
@@ -744,7 +744,7 @@ components:
 
 </Guideline>
 
-<Guideline id="IPA-117-must-not-format-password-on-redacted" given="schema" enforcement="automatable" effort="check" dependsOn={["IPA-111"]}>
+<Guideline id="IPA-117-must-not-format-password-on-redacted" given="schema" enforcement="review" effort="check" dependsOn={["IPA-111"]}>
 
 **Must not** use `format: password` on a redacted sibling property whose value
 is a masked display (`****`, last-4 digits, etc.). The redacted value is not
