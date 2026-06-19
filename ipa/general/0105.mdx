@@ -6,47 +6,756 @@ state: adopt
 # IPA-105: List
 
 In many APIs, it is customary to make a `GET` request to a collection's URI (for
-example, `/groups/{groupId}/clusters`) to retrieve a list of resources, each of
+example, `/projects/{projectId}/tasks`) to retrieve a list of resources, each of
 which lives within that collection.
 
 ## Guidance
 
-- APIs **must** provide a List method for resources unless the resource is a
-  singleton
-  - The purpose of the List method is to return data from a finite collection
-- The HTTP verb **must** be
-  [`GET`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/GET)
-- The method **must not** [cause side effects](0103.mdx)
-- The request **must not** include a body
-- The response body **should** consist of the same resource object returned by
-  the [Get](0104.mdx) method
-  - The object **may** include any
-    [HATEOAS](https://en.wikipedia.org/wiki/HATEOAS) `links` field from the
-    individual resource
-- The response status code **must** be
-  [200 OK](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200)
+<Guidelines>
+
+<Guideline id="IPA-105-must-provide-list-method" given="resource" enforcement="rule" effort="reason">
+
+APIs **must** provide a List method for resources unless the resource is a
+singleton.
+
+- The purpose of the List method is to return data from a finite collection.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjectTasks
+```
+
+<Example.Reason>
+  The collection of tasks under a project is finite and addressable, so it
+  exposes a List method that returns its members.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getProjectTask
+    # no GET on the collection /projects/{projectId}/tasks
+```
+
+<Example.Reason>
+  Individual tasks can be fetched by id, but there is no way to enumerate the
+  collection. A non-singleton collection without a List method leaves consumers
+  unable to discover which members exist.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate every entry under `paths` and group them by resource collection
+    segment.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each collection path (one that ends in a plural collection segment, not
+    a resource id), determine whether the resource is a singleton.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each non-singleton collection, confirm the collection path defines a
+    `get` operation.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any non-singleton collection whose path has no `get` operation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-must-use-get-verb" given="operation" enforcement="automatable" effort="check">
+
+The HTTP verb **must** be
+[`GET`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/GET).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjectTasks
+```
+
+<Example.Reason>
+  List is a read of a finite collection, so it is exposed under the safe,
+  idempotent `get` verb.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    post:
+      operationId: listProjectTasks
+```
+
+<Example.Reason>
+  A List that reads a collection is modeled under `post`, a verb reserved for
+  creation and other non-idempotent actions. The read no longer maps to the verb
+  its semantics imply.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the operation intended to list a collection, identified by its
+    `list`-prefixed operationId or its collection path.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the operation is defined under the `get` key of the path item, not
+    `post`, `put`, `patch`, or `delete`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any List operation defined under a verb other than `get`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-must-not-cause-side-effects" given="get-operation" enforcement="review" implementation effort="explore">
+
+The method **must not** [cause side effects](0103.mdx).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjectTasks
+      responses:
+        "200":
+          description: The tasks in the project.
+```
+
+<Example.Reason>
+  The List operation only reads and returns the collection. Repeating the call
+  leaves the collection unchanged.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjectTasks
+      description: >-
+        Returns the tasks and marks each returned task as seen.
+```
+
+<Example.Reason>
+  Listing the collection mutates each task as a side effect. A safe read is
+  expected to be repeatable without changing server state, and tooling that
+  prefetches or retries the call would silently alter data.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the List `get` operation and read its description and summary for any
+    mention of writes, status changes, or counters.
+  </Workflow.Step>
+  <Workflow.Step>
+    Inspect the implementation backing the operation (handler source, service
+    code) to confirm it only reads and does not create, update, or delete state.
+  </Workflow.Step>
+  <Workflow.Step>
+    Follow any downstream calls the handler makes to confirm none of them mutate
+    persistent state when the collection is listed.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report the operation if listing the collection changes any server-side
+    state.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-must-not-include-request-body" given="get-operation" enforcement="rule" effort="check">
+
+The request **must not** include a body.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjectTasks
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  Inputs that narrow the listing are carried as query parameters, so the request
+  has no body and stays cacheable and idempotent.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjectTasks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+```
+
+<Example.Reason>
+  The List `get` carries a `requestBody`. A body on a read undermines caching
+  and intermediary handling, since many clients and proxies do not send or
+  forward a body on `GET`.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>Locate the List `get` operation.</Workflow.Step>
+  <Workflow.Step>
+    Check that the operation object has no `requestBody` property.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report the operation if a `requestBody` is present.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-should-return-get-resource-object" given="get-operation" enforcement="rule" effort="reason" dependsOn={["IPA-105-must-provide-list-method"]}>
+
+The response body **should** consist of the same resource object returned by the
+[Get](0104.mdx) method.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+  /projects/{projectId}/tasks:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Task"
+```
+
+<Example.Reason>
+  Each item in the List `results` array references the same `Task` schema the
+  Get method returns, so the resource is modeled once and a consumer reads the
+  same shape from both operations.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+  /projects/{projectId}/tasks:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TaskSummary"
+```
+
+<Example.Reason>
+  List returns `TaskSummary` while Get returns `Task`. The two views of the same
+  resource diverge, so one shape must be mapped onto the other and a field
+  present in Get may be missing from List.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the List `get` operation on the collection and its `200` JSON
+    response schema.
+  </Workflow.Step>
+  <Workflow.Step>
+    If the response is paginated, find the `results` array and take the schema
+    of its items; otherwise take the response schema directly.
+  </Workflow.Step>
+  <Workflow.Step>
+    Locate the Get method on the individual resource path and take the schema
+    referenced by its `200` JSON response.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare the two schemas and confirm the List items reference the same
+    resource object the Get method returns.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report the List operation if its item schema diverges from the Get response
+    schema.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-may-include-links-field" enforcement="advisory">
+  The resource object **may** include any
+  [HATEOAS](https://en.wikipedia.org/wiki/HATEOAS) `links` field from the
+  individual resource.
+</Guideline>
+
+<Guideline id="IPA-105-must-return-200-ok" given="get-operation" enforcement="rule" effort="check">
+
+The response status code **must** be
+[200 OK](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjectTasks
+      responses:
+        "200":
+          description: The tasks in the project.
+```
+
+<Example.Reason>
+  A successful List returns `200 OK`, the status that signals the collection was
+  read and is carried in the response body.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjectTasks
+      responses:
+        "204":
+          description: Success.
+```
+
+<Example.Reason>
+  List declares `204 No Content` as its success status. `204` carries no body,
+  so there is no place for the listed resources to be returned.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the List `get` operation and read its `responses` map.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm a `200` response is defined and is the declared success status.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report the operation if it omits `200` or declares a different `2xx` status
+    as its success response.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Example
 
 ```http request
-GET /groups/${groupId}/clusters
+GET /projects/${projectId}/tasks
 ```
 
 ### Naming
 
-- Operation ID **must** be unique
-- Operation ID **must** be in `camelCase`
-- Operation ID **must** start with the verb “list”
-- Operation ID **should** be followed by a noun or compound noun
-- The noun(s) in the Operation ID **should** be the collection identifiers from
-  the resource identifier in singular form, where the last noun is in plural
-  form
+<Guidelines>
+
+<Guideline id="IPA-105-must-have-unique-operation-id" given="operation" enforcement="automatable" effort="check">
+
+Operation ID **must** be unique.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjectTasks
+  /projects/{projectId}/members:
+    get:
+      operationId: listProjectMembers
+```
+
+<Example.Reason>
+  Each operation carries a distinct operationId, so generated clients expose one
+  method per operation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjects
+  /projects/{projectId}/members:
+    get:
+      operationId: listProjects
+```
+
+<Example.Reason>
+  Two operations share the operationId `listProjects`. A duplicate operationId
+  is invalid OpenAPI and collides when SDK methods are generated from it.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect the `operationId` of every operation across all paths and methods.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare the collected ids and find any value that appears more than once.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report every operation whose operationId is shared with another operation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-must-use-camelcase-operation-id" given="get-operation" enforcement="rule" effort="check">
+
+Operation ID **must** be in `camelCase`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjectTasks
+```
+
+<Example.Reason>
+  `listProjectTasks` is camelCase: a lowercase first word and each later word
+  capitalized, with no separators.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: list_project_tasks
+```
+
+<Example.Reason>
+  `list_project_tasks` uses snake_case. A non-camelCase operationId produces
+  off-convention method names in generated SDKs and breaks naming consistency
+  across the API.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the List `get` operation and read its `operationId`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the id starts with a lowercase letter, contains only letters and
+    digits, and capitalizes each subsequent word with no underscores, hyphens,
+    or spaces.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report the operation if its operationId is not camelCase.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-must-start-operation-id-with-list" given="get-operation" enforcement="rule" effort="check">
+
+Operation ID **must** start with the verb `list`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjectTasks
+```
+
+<Example.Reason>
+  The operationId begins with `list`, naming the method after the standard List
+  verb so its purpose is clear from the name alone.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: getProjectTasks
+```
+
+<Example.Reason>
+  The List operation's id begins with `get`, which names the single-resource Get
+  method. The verb no longer signals that the operation returns a collection.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the List `get` operation on the collection path and read its
+    `operationId`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the first word of the operationId is `list`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report the operation if its operationId starts with any other verb.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-should-follow-verb-with-noun" given="get-operation" enforcement="rule" effort="reason" dependsOn={["IPA-105-must-start-operation-id-with-list"]}>
+
+Operation ID **should** be followed by a noun or compound noun.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjectTasks
+```
+
+<Example.Reason>
+  The verb `list` is followed by the compound noun `ProjectTasks`, naming what
+  the operation returns.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listAll
+```
+
+<Example.Reason>
+  `list` is followed by `All`, a qualifier rather than a noun. The id does not
+  name the resource the operation returns.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the List `get` operation and read its `operationId`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Strip the leading `list` verb and confirm the remainder is a noun or
+    compound noun naming a resource, not a qualifier or adjective.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report the operation if nothing follows the verb or the remainder is not a
+    noun.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-should-use-collection-identifiers" given="get-operation" enforcement="rule" effort="reason" dependsOn={["IPA-105-should-follow-verb-with-noun"]}>
+
+The noun(s) in the Operation ID **should** be the collection identifiers from
+the resource identifier in singular form, where the last noun is in plural form.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjectTasks
+```
+
+<Example.Reason>
+  The resource identifier is `/projects/{projectId}/tasks`. Its collection
+  segments map to `Project` (singular) and `Tasks` (the last noun, plural),
+  producing `listProjectTasks`.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listProjectsTask
+```
+
+<Example.Reason>
+  The leading collection noun is pluralized (`Projects`) and the trailing noun
+  is singular (`Task`), the reverse of the convention. The id no longer reflects
+  that a list of tasks under one project is returned.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the List `get` operation and read its resource identifier (path) and
+    `operationId`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Extract the ordered collection segments from the path, ignoring the `{id}`
+    parameters between them.
+  </Workflow.Step>
+  <Workflow.Step>
+    Build the expected noun sequence: each collection segment in singular form
+    except the last, which stays plural.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare the nouns in the operationId after the `list` verb to the expected
+    sequence.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report the operation if the nouns or their singular/plural forms do not
+    match the collection identifiers.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Examples:
 
-| Resource Identifier           | Operation ID        |
-| ----------------------------- | ------------------- |
-| `/groups/${groupId}/clusters` | `listGroupClusters` |
+| Resource Identifier            | Operation ID       |
+| ------------------------------ | ------------------ |
+| `/projects/${projectId}/tasks` | `listProjectTasks` |
 
 ## Further Reading
 
