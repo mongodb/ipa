@@ -663,7 +663,8 @@ sanctioned exception to the [schema consistency rule](0101.mdx#resources).
 ```yaml
 components:
   schemas:
-    ApiKey:
+    # Create (POST) response: returns the secret once
+    ApiKeyCreateResponse:
       type: object
       properties:
         id:
@@ -673,13 +674,21 @@ components:
         key:
           type: string
           format: password
-          writeOnly: true
+          readOnly: true
+    # Get and List response: omits the secret
+    ApiKey:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
 ```
 
 <Example.Reason>
-  The `key` appears only in the Create response — the client captures it once.
-  The `writeOnly` declaration prevents it from appearing in Get and List
-  responses.
+  The server-generated `key` appears only in the Create response schema, marked
+  `readOnly` since the client never sets it. The Get and List schema omits it
+  entirely, so the secret cannot be retrieved later.
 </Example.Reason>
 
 </Example.Correct>
@@ -689,6 +698,7 @@ components:
 ```yaml
 components:
   schemas:
+    # Single schema reused by Create, Get, and List
     ApiKey:
       type: object
       properties:
@@ -699,11 +709,12 @@ components:
         key:
           type: string
           format: password
+          readOnly: true
 ```
 
 <Example.Reason>
-  The `key` lacks a `writeOnly` declaration, so the schema allows it to leak in
-  every Get and List response.
+  A single response schema carries `key` across Create, Get, and List, so the
+  secret is returned on every read instead of only once on creation.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -714,8 +725,8 @@ components:
     API key secret).
   </Workflow.Step>
   <Workflow.Step>
-    Confirm the field appears only in the Create response schema and is marked
-    `writeOnly` to exclude it from Get and List responses.
+    Confirm the field appears only in the Create response schema and is absent
+    from the Get and List response schemas.
   </Workflow.Step>
   <Workflow.Step>
     Flag any create-response-only field that appears in Get or List response
