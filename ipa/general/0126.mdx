@@ -11,21 +11,467 @@ recognizable to facilitate seamless navigation of API documentation.
 
 ## Guidance
 
-- API names **must** use ‘Title Case’
-- API names **must** be written as nouns
-  - **For example:** 'Alert Configurations' not 'Configure Alerts'
-- API names **should** be precise and self-explanatory to convey the function of
-  the APIs
-- API names **should not** include platform-specific branding or terms
-- APIs for platform services **should not** include the platform name
-  - **For example,** 'Atlas Search' **should** be displayed as 'Search'
-- Discoverability through search **should** be considered to facilitate fast
-  identification
-- API names **should** avoid using acronyms unless widely recognized
+<Guidelines>
+
+<Guideline id="IPA-126-must-use-title-case" given="tag" enforcement="rule">
+
+API names **must** use 'Title Case'.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+tags:
+  - name: Alert Configurations
+  - name: Billing and Invoices
+```
+
+<Example.Reason>
+  Each significant word is capitalized, and the grammatical word "and" stays
+  lowercase, which is the conventional Title Case form.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+tags:
+  - name: alert configurations
+  - name: Billing And Invoices
+```
+
+<Example.Reason>
+  The first tag is all lowercase, and the second capitalizes the grammatical
+  word "And", so neither follows Title Case.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-126-must-be-nouns" given="tag" enforcement="review" effort="reason">
+
+API names **must** be written as nouns. For example, 'Alert Configurations' not
+'Configure Alerts'.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+tags:
+  - name: User Invitations
+  - name: Project Members
+```
+
+<Example.Reason>
+  Each name labels the thing the API manages rather than an action taken on it,
+  so the name reads as a service area.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+tags:
+  - name: Invite Users
+  - name: Manage Project Members
+```
+
+<Example.Reason>
+  Each name leads with a verb, describing an action instead of naming the
+  functional area, which reads as an operation rather than a top-level service.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every entry under `tags` and read each `name`.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each name, identify the leading word and decide whether it is a verb or
+    an action phrase ("Configure", "Manage", "Create", "Invite").
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the name reads as a noun phrase naming a functional area rather than
+    an action.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any tag name that is phrased as a verb or action.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-126-should-be-precise-and-self-explanatory" given="tag" enforcement="review" effort="reason">
+
+API names **should** be precise and self-explanatory to convey the function of
+the APIs.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+tags:
+  - name: Payment Methods
+  - name: Scheduled Reports
+```
+
+<Example.Reason>
+  Each name states the functional area plainly, so a reader knows what the API
+  covers without consulting other documentation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+tags:
+  - name: Misc
+  - name: Core Service
+```
+
+<Example.Reason>
+  "Misc" and "Core Service" are vague and convey nothing about the function the
+  API serves, leaving a reader to guess what the group contains.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every entry under `tags` and read each `name`.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each name, decide whether it names a specific function or is generic
+    filler ("Misc", "Other", "General", "Core").
+  </Workflow.Step>
+  <Workflow.Step>
+    Cross-check the operations grouped under the tag and confirm the name
+    accurately and specifically describes them.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any tag name that is vague or does not describe the operations it
+    groups.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-126-should-not-include-platform-branding" given="tag" enforcement="review" effort="reason">
+
+API names **should not** include platform-specific branding or terms.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+tags:
+  - name: Search
+  - name: Data Federation
+```
+
+<Example.Reason>
+  Each name describes the function alone, so it stays meaningful regardless of
+  the product or surface that hosts the API.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+tags:
+  - name: Acme Search
+  - name: Acme Cloud Data Federation
+```
+
+<Example.Reason>
+  The branded prefix adds no information about the function and ties the name to
+  a product surface, which clutters the documentation index.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every entry under `tags` and read each `name`.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each name, check whether it contains a product, brand, or trademark term
+    rather than a plain functional descriptor.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any tag name carrying branding or platform-specific terminology.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-126-should-not-include-platform-name" given="tag" enforcement="review" effort="reason">
+
+APIs for platform services **should not** include the platform name. For
+example, 'Atlas Search' **should** be displayed as 'Search'.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+tags:
+  - name: Search
+  - name: Backups
+```
+
+<Example.Reason>
+  Within a platform's own API, the platform name is implied, so each function is
+  named on its own.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+tags:
+  - name: Platform Search
+  - name: Platform Backups
+```
+
+<Example.Reason>
+  Repeating the platform name on every tag is redundant inside that platform's
+  API and pads each name without adding meaning.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the platform or service that owns the specification.
+  </Workflow.Step>
+  <Workflow.Step>
+    Collect every entry under `tags` and read each `name`.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each name, check whether it begins with or contains the owning
+    platform's name.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any tag name that prefixes the function with the platform name.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-126-should-consider-search-discoverability" enforcement="advisory">
+
+Discoverability through search **should** be considered to facilitate fast
+identification.
+
+</Guideline>
+
+<Guideline id="IPA-126-should-avoid-acronyms" given="tag" enforcement="review" effort="reason">
+
+API names **should** avoid using acronyms unless widely recognized.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+tags:
+  - name: Access Control
+  - name: API Keys
+```
+
+<Example.Reason>
+  "Access Control" is spelled out, and "API" is a widely recognized acronym, so
+  both names stay clear to a general reader.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+tags:
+  - name: RBAC
+  - name: SLA Templates
+```
+
+<Example.Reason>
+  "RBAC" and "SLA" are domain acronyms that a reader unfamiliar with the area
+  cannot decode, which hurts navigation.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every entry under `tags` and read each `name`.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each name, find any token that is an acronym or initialism.
+  </Workflow.Step>
+  <Workflow.Step>
+    Decide whether the acronym is widely recognized by a general audience or is
+    domain-specific jargon.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any tag name relying on an acronym that is not widely recognized.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ## OpenAPI Consideration
 
-- When defining `tags` in OpenAPI Specification, these naming principles
-  **should** be applied
-- Each tag **should** represent a logical grouping of APIs, aligning with
-  top-level service areas to enhance discoverability and navigation
+<Guidelines>
+
+<Guideline id="IPA-126-should-apply-naming-to-tags" given="tag" enforcement="review" effort="reason">
+
+When defining `tags` in an OpenAPI specification, these naming principles
+**should** be applied.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+tags:
+  - name: Payment Methods
+  - name: Scheduled Reports
+```
+
+<Example.Reason>
+  The tag names are nouns in Title Case that name a function plainly, so the
+  same naming principles that govern API names govern the tags.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+tags:
+  - name: configure payments
+  - name: RBAC
+```
+
+<Example.Reason>
+  One tag is a lowercase verb phrase and the other an obscure acronym, so the
+  tag names ignore the naming principles applied to API names.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every entry under `tags` and read each `name`.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each name, apply the API-name checks: Title Case, noun phrasing, precise
+    wording, no branding, no platform name, no obscure acronyms.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any tag name that violates one of those naming principles.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-126-should-group-tags-by-service-area" given="tag" enforcement="review" effort="reason">
+
+Each tag **should** represent a logical grouping of APIs, aligning with
+top-level service areas to enhance discoverability and navigation.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+tags:
+  - name: Billing
+paths:
+  /invoices:
+    get:
+      tags: [Billing]
+  /payment-methods:
+    get:
+      tags: [Billing]
+```
+
+<Example.Reason>
+  Both operations belong to the same service area and share one tag, so the tag
+  represents a coherent top-level grouping.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+tags:
+  - name: Endpoints
+paths:
+  /invoices:
+    get:
+      tags: [Endpoints]
+  /users:
+    get:
+      tags: [Endpoints]
+```
+
+<Example.Reason>
+  Unrelated operations are lumped under a single catch-all tag, so the grouping
+  reflects no service area and gives a reader no way to navigate.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every entry under `tags` and the set of operations referencing each
+    tag.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each tag, inspect the grouped operations and decide whether they form
+    one coherent service area.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check for catch-all tags that group unrelated operations and for tags that
+    fragment one service area across several names.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any tag that does not align with a single top-level service area.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
