@@ -6,32 +6,581 @@ state: adopt
 # IPA-108: Delete
 
 In REST APIs, it is customary to make a `DELETE` request to a resource's URI
-(for example, `/groups/{groupId}/clusters/{clusterName}`) to delete that
-resource.
+(for example, `/projects/{projectId}/tasks/{taskId}`) to delete that resource.
 
 ## Guidance
 
-- APIs **should** provide a Delete method for resources unless it is not
-  valuable for users to do so
-  - [Read-only resources](0101.mdx#read-only-resources) **must not** have a
-    Delete method
-  - [Singleton resources](0113.mdx) **must not** have a Delete method
-- The HTTP verb **must** be
-  [`DELETE`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/DELETE)
-- The response **should** be empty
-  - Empty response **must** return
-    [204 No Content](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/204)
-    status
-- The request **must not** include a body
-- The Delete method **should** succeed if and only if a resource was present and
-  was successfully deleted
-  - If the resource did not exist, the method **should** respond with a
-    `NOT FOUND` [error](0114.mdx)
+<Guidelines>
+
+<Guideline id="IPA-108-should-provide-delete-method" given="resource" enforcement="review" effort="reason">
+
+APIs **should** provide a Delete method for resources unless it is not valuable
+for users to do so.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+    delete:
+      operationId: deleteTask
+      responses:
+        "204":
+          description: No Content
+```
+
+<Example.Reason>
+  The task resource is mutable and individually addressable, so a Delete method
+  lets a consumer remove a task once it is no longer needed.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+    put:
+      operationId: updateTask
+```
+
+<Example.Reason>
+  The task can be created and updated but never removed, so stale tasks
+  accumulate with no way to delete them. A Delete method is missing without a
+  clear reason.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate every resource that exposes a standard GET on its individual
+    instance path (a path ending in a resource id).
+  </Workflow.Step>
+  <Workflow.Step>
+    For each such resource, check whether the same instance path defines a
+    `delete` operation.
+  </Workflow.Step>
+  <Workflow.Step>
+    For a resource with no `delete`, determine whether removal is meaningful: a
+    mutable, user-owned resource is expected to be deletable; a derived or
+    read-only resource is not.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any mutable, individually addressable resource that omits a Delete
+    method without a documented reason.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-must-not-delete-read-only-resource" given="delete-operation" enforcement="rule">
+
+[Read-only resources](0101.mdx#read-only-resources) **must not** have a Delete
+method.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /reports/{reportId}:
+    get:
+      operationId: getReport
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    readOnly: true
+                  generatedAt:
+                    type: string
+                    readOnly: true
+```
+
+<Example.Reason>
+  Every property of the report is `readOnly`, so the resource is read-only and
+  defines no Delete method. The resource is system-generated and cannot be
+  removed through the API.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /reports/{reportId}:
+    get:
+      operationId: getReport
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    readOnly: true
+                  generatedAt:
+                    type: string
+                    readOnly: true
+    delete:
+      operationId: deleteReport
+```
+
+<Example.Reason>
+  The report's GET response is entirely `readOnly`, marking it a read-only
+  resource, yet a Delete method is defined. A read-only resource has no mutable
+  state for a caller to remove.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-must-not-delete-singleton-resource" given="delete-operation" enforcement="rule">
+
+[Singleton resources](0113.mdx) **must not** have a Delete method.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/settings:
+    get:
+      operationId: getProjectSettings
+    patch:
+      operationId: updateProjectSettings
+```
+
+<Example.Reason>
+  The settings resource is a singleton that always exists for its parent
+  project, so it exposes only read and update, never Delete. The singleton
+  cannot be removed independently of its parent.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/settings:
+    get:
+      operationId: getProjectSettings
+    delete:
+      operationId: deleteProjectSettings
+```
+
+<Example.Reason>
+  The settings resource is a singleton tied to its parent project, but a Delete
+  method is defined. Deleting a singleton would leave the parent in a state the
+  API has no way to represent.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-must-use-delete-verb" given="delete-operation" enforcement="automatable" effort="check">
+
+The HTTP verb **must** be
+[`DELETE`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/DELETE).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteTask
+```
+
+<Example.Reason>
+  Removing the task uses the HTTP `DELETE` verb, which carries the standard
+  delete semantics consumers and tooling expect.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    post:
+      operationId: deleteTask
+```
+
+<Example.Reason>
+  The operation removes the task but is exposed under `post`. The HTTP method no
+  longer signals a deletion, so caches, clients, and proxies cannot treat it as
+  one.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Enumerate every operation whose intent is to remove a resource (its
+    `operationId` begins with `delete`, or its description states the resource
+    is removed).
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, read the HTTP method key under the path item that holds the
+    operation.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the method key is `delete` and not `post`, `put`, or any other verb.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any delete-intent operation that is mounted under a verb other than
+    `delete`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-should-return-empty-response" given="delete-operation" enforcement="rule">
+
+The response **should** be empty.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteTask
+      responses:
+        "204":
+          description: No Content
+```
+
+<Example.Reason>
+  The 204 response declares no body, so the Delete method returns nothing. The
+  resource is gone, and there is no representation left to send back.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteTask
+      responses:
+        "204":
+          description: No Content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+```
+
+<Example.Reason>
+  The Delete response carries a schema for the deleted resource. Returning the
+  representation of a resource that no longer exists is misleading and gives a
+  caller nothing to act on.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-must-return-204-for-empty-response" given="delete-operation" enforcement="rule">
+
+An empty response **must** return
+[204 No Content](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/204)
+status.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteTask
+      responses:
+        "204":
+          description: No Content
+```
+
+<Example.Reason>
+  The Delete method declares a 204 No Content response and no other 2xx code.
+  The status itself communicates success with no body.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteTask
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  The Delete method signals success with 200 instead of 204. A 200 implies a
+  body to read, which contradicts an empty Delete response.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-must-not-include-request-body" given="delete-operation" enforcement="rule">
+
+The request **must not** include a body.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteTask
+      responses:
+        "204":
+          description: No Content
+```
+
+<Example.Reason>
+  The target resource is identified entirely by the path, so the Delete
+  operation declares no `requestBody`. Nothing about the deletion needs to be
+  sent in a payload.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteTask
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+```
+
+<Example.Reason>
+  The Delete operation defines a `requestBody`. DELETE bodies have no defined
+  semantics in HTTP, and intermediaries may drop them, so the resource to remove
+  must be addressed through the path alone.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-should-delete-only-existing-resource" given="delete-operation" enforcement="review" implementation effort="explore">
+
+The Delete method **should** succeed if and only if a resource was present and
+was successfully deleted.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteTask
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+```
+
+<Example.Reason>
+  A successful 204 is returned only when the task existed and was removed; a
+  missing task yields 404. Success and the actual change of state stay aligned.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteTask
+      responses:
+        "204":
+          description: No Content
+```
+
+<Example.Reason>
+  The operation returns 204 whether or not the task existed, so a caller cannot
+  tell a real deletion from a no-op. Success no longer means a resource was
+  present and removed.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the Delete operation and the implementation or handler that backs it
+    (the contract alone does not reveal the runtime behavior).
+  </Workflow.Step>
+  <Workflow.Step>
+    Trace the path where the addressed resource exists: confirm it performs the
+    deletion and returns a success status only after the resource is actually
+    removed.
+  </Workflow.Step>
+  <Workflow.Step>
+    Trace the path where the addressed resource does not exist: confirm it does
+    not report success and instead surfaces a not-found error.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any handler that returns success for a resource that was absent, or
+    that reports failure after a resource was in fact removed.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-should-return-not-found-when-absent" given="delete-operation" enforcement="review" implementation effort="explore" dependsOn={["IPA-108"]}>
+
+If the resource did not exist, the method **should** respond with a `NOT FOUND`
+[error](0114.mdx).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteTask
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+```
+
+<Example.Reason>
+  Deleting a task that is absent returns a 404 with a structured error, so a
+  caller can distinguish a missing resource from a successful removal.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteTask
+      responses:
+        "204":
+          description: No Content
+        "500":
+          description: Internal Server Error
+```
+
+<Example.Reason>
+  Deleting a missing task surfaces a 500 rather than a 404. A genuine error is
+  reported for an expected, well-defined condition, which a caller cannot handle
+  cleanly.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the Delete operation and the handler that backs it, since the
+    not-found behavior is a runtime decision rather than a contract detail.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the operation declares a 404 response that references the standard
+    error schema described in IPA-114.
+  </Workflow.Step>
+  <Workflow.Step>
+    Trace the handler path taken when the addressed resource is absent and
+    confirm it returns the 404 not-found error rather than a success status or a
+    generic 5xx.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any Delete method that omits the 404 response or that maps the
+    missing-resource case to a different status.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Example
 
 ```http request
-DELETE /groups/${groupId}/clusters/${clusterName}
+DELETE /projects/{projectId}/tasks/{taskId}
 ```
 
 ### Cascading Delete
@@ -41,13 +590,90 @@ as all applicable child resources. However, since deletion is usually permanent,
 it is also important that users not do so accidentally, as reconstructing
 wiped-out child resources may be quite challenging.
 
+<Guidelines>
+
+<Guideline id="IPA-108-should-offer-cascading-parameter" given="delete-operation" enforcement="automatable" effort="check">
+
 If an API allows deletion of a resource that may have child resources, the API
 **should** provide a `cascading=true` query parameter.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    delete:
+      operationId: deleteProject
+      parameters:
+        - name: cascading
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "204":
+          description: No Content
+```
+
+<Example.Reason>
+  A project owns child tasks, so its Delete method exposes a `cascading` query
+  parameter. Removing the project together with its children becomes an
+  explicit, opt-in choice rather than a silent side effect.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    delete:
+      operationId: deleteProject
+      responses:
+        "204":
+          description: No Content
+```
+
+<Example.Reason>
+  The project has child tasks, yet its Delete method offers no `cascading`
+  parameter. Either child resources are wiped out with no explicit consent, or
+  the deletion fails with no documented way to remove the children.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify resources that own child resources by finding instance paths that
+    are a prefix of a nested collection path (a `delete` exists at the parent
+    instance path and a child collection hangs below it).
+  </Workflow.Step>
+  <Workflow.Step>
+    For each such parent with a Delete method, inspect the operation's
+    `parameters` for a query parameter named `cascading`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the parameter is `in: query` and typed as a boolean.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any parent resource whose Delete method lacks a `cascading` query
+    parameter.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Example
 
 ```http request
-DELETE /groups/{groupId}/clusters/{clusterName}?cascading=true
+DELETE /projects/{projectId}?cascading=true
 ```
 
 ### Error Handling
@@ -57,15 +683,246 @@ documentation.
 
 ### Naming
 
-- Operation ID **must** be unique
-- Operation ID **must** be in `camelCase`
-- Operation ID **must** start with the verb “delete”
-- Operation ID **should** be followed by a noun or compound noun
-- The noun(s) in the Operation ID **should** be the collection identifiers from
-  the resource identifier in singular form
+<Guidelines>
+
+<Guideline id="IPA-108-must-have-unique-operation-id" given="delete-operation" enforcement="automatable" effort="reason">
+
+Operation ID **must** be unique.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteProjectTask
+  /teams/{teamId}/members/{memberId}:
+    delete:
+      operationId: deleteTeamMember
+```
+
+<Example.Reason>
+  Each Delete operation carries a distinct `operationId`, so generated clients
+  produce one uniquely named method per operation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteItem
+  /teams/{teamId}/members/{memberId}:
+    delete:
+      operationId: deleteItem
+```
+
+<Example.Reason>
+  Two operations share the `operationId` `deleteItem`. A duplicate id collides
+  in generated SDKs and makes a single operation impossible to reference
+  unambiguously.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect the `operationId` of every operation across all paths and methods,
+    not just Delete operations.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare the values and group any that are identical.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report every `operationId` that appears on more than one operation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-must-use-camel-case-operation-id" given="delete-operation" enforcement="rule">
+
+Operation ID **must** be in `camelCase`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteProjectTask
+```
+
+<Example.Reason>
+  The `operationId` is camelCase, matching the form generated SDKs expect for a
+  method name.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: delete_project_task
+```
+
+<Example.Reason>
+  The `operationId` uses snake_case. A non-camelCase id produces awkward,
+  inconsistent method names across generated clients.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-must-start-operation-id-with-delete" given="delete-operation" enforcement="rule">
+
+Operation ID **must** start with the verb "delete".
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteProjectTask
+```
+
+<Example.Reason>
+  The `operationId` begins with `delete`, so the generated method name announces
+  that it removes a resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: removeProjectTask
+```
+
+<Example.Reason>
+  The operation deletes a resource but its id starts with `remove`. The verb no
+  longer matches the standard delete naming, so the method reads inconsistently
+  against every other delete in the API.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-should-follow-delete-with-noun" given="delete-operation" enforcement="rule">
+
+Operation ID **should** be followed by a noun or compound noun.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteProjectTask
+```
+
+<Example.Reason>
+  The verb `delete` is followed by the noun phrase `ProjectTask`, so the method
+  name says exactly what is being removed.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: delete
+```
+
+<Example.Reason>
+  The id is the bare verb with no noun. The method name does not say what kind
+  of resource the operation removes.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-should-use-singular-collection-nouns" given="delete-operation" enforcement="rule">
+
+The noun(s) in the Operation ID **should** be the collection identifiers from
+the resource identifier in singular form.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteProjectTask
+```
+
+<Example.Reason>
+  The path collections `projects` and `tasks` become the singular nouns
+  `Project` and `Task`, so the method name tracks the resource hierarchy in the
+  path.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    delete:
+      operationId: deleteProjectsTasks
+```
+
+<Example.Reason>
+  The nouns are left plural and do not match the singular resource being
+  addressed. The method name reads as acting on whole collections rather than
+  the single task identified by the path.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Examples:
 
-| Resource Identifier                          | Operation ID         |
-| -------------------------------------------- | -------------------- |
-| `/groups/${groupId}/clusters/${clusterName}` | `deleteGroupCluster` |
+| Resource Identifier                    | Operation ID        |
+| -------------------------------------- | ------------------- |
+| `/projects/{projectId}/tasks/{taskId}` | `deleteProjectTask` |
