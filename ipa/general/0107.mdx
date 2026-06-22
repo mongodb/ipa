@@ -197,13 +197,13 @@ components:
 
 </Guideline>
 
-<Guideline id="IPA-107-should-return-resource-in-response-body" given="update-operation" enforcement="review" effort="reason">
+<Guideline id="IPA-107-must-return-resource-in-response-body" given="update-operation" enforcement="review" effort="reason">
 
-The response body **should** be the same resource returned by the
+The response body **must** be the same resource returned by the
 [Get method](0104.mdx)
 
-- The Update method **should** return the complete resource to avoid
-  complexities for clients
+- The Update method **must** return the complete resource to avoid complexities
+  for clients
 
 <Guideline.Details>
 
@@ -231,6 +231,30 @@ paths:
 </Example.Reason>
 
 </Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    patch:
+      operationId: updateGroupCluster
+      responses:
+        "200":
+          description: The updated cluster.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClusterUpdateResult"
+```
+
+<Example.Reason>
+  The Update response returns `ClusterUpdateResult`, a partial projection rather
+  than the full `Cluster` returned by Get. The client cannot observe the
+  resource's complete updated state and must issue a follow-up Get to reconcile.
+</Example.Reason>
+
+</Example.Incorrect>
 
 <Workflow>
   <Workflow.Step>

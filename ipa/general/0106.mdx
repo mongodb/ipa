@@ -143,10 +143,10 @@ components:
 
 </Guideline>
 
-<Guideline id="IPA-106-should-return-get-resource" given="create-operation" enforcement="review" effort="reason">
+<Guideline id="IPA-106-must-return-get-resource" given="create-operation" enforcement="review" effort="reason">
 
-The response body **should** be the same resource returned by the
-[Get](0104.mdx) method
+The response body **must** be the same resource returned by the [Get](0104.mdx)
+method
 
 <Guideline.Details>
 
@@ -181,6 +181,38 @@ paths:
 
 </Example.Correct>
 
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    post:
+      operationId: createGroupCluster
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClusterCreateResult"
+  /groups/{groupId}/clusters/{clusterId}:
+    get:
+      operationId: getGroupCluster
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cluster"
+```
+
+<Example.Reason>
+  Create returns `ClusterCreateResult` while Get returns `Cluster`. The client
+  cannot rely on the create response to reflect the resource it will later read,
+  so it must issue a follow-up Get to learn the resource's true shape.
+</Example.Reason>
+
+</Example.Incorrect>
+
 <Workflow>
   <Workflow.Step>
     For the create operation, find the response body schema for `201`.
@@ -189,8 +221,8 @@ paths:
     Find the response body schema for the resource's [Get](0104.mdx) method.
   </Workflow.Step>
   <Workflow.Step>
-    Flag any case where the two schemas differ; the create response should
-    return the same resource as Get.
+    Flag any case where the two schemas differ; the create response must return
+    the same resource as Get.
   </Workflow.Step>
 </Workflow>
 

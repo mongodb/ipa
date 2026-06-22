@@ -292,6 +292,207 @@ components:
 
 </Guideline>
 
+<Guideline id="IPA-101-must-round-trip-request-fields" given="resource" enforcement="review" effort="reason" dependsOn={["IPA-101-must-use-consistent-resource-schema", "IPA-111"]}>
+
+Every field accepted in a request body **must** also appear in the response body
+for the same resource
+
+Omitting request fields from responses breaks declarative clients and forces
+manual reconciliation in downstream tooling.
+
+- The only exceptions are [sensitive fields](0111.mdx#sensitive-fields), which
+  may be omitted from every response (write-only) or may appear only in the
+  [Create](0106.mdx) response (create-response-only).
+- For the per-method expression of this rule, see [Create](0106.mdx) and
+  [Update](0107.mdx).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+        timezone:
+          type: string
+```
+
+<Example.Reason>
+  `name` and `timezone` are accepted on create and returned on read, so a
+  declarative client can confirm the values it submitted and reconcile state
+  without a separate source of truth.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+components:
+  schemas:
+    UserCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        timezone:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+```
+
+<Example.Reason>
+  `timezone` is accepted on create but never appears in any response, and it is
+  not a sensitive field. The client cannot read back the value it set, so a
+  declarative tool sees permanent drift it can never reconcile.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect the fields accepted across the resource's request bodies (Create and
+    Update).
+  </Workflow.Step>
+  <Workflow.Step>
+    For each field, confirm it appears in the resource's [Get](0104.mdx)
+    response schema.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any request field absent from the response, unless it is a [sensitive
+    field](0111.mdx#sensitive-fields) marked write-only or create-response-only.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-101-must-not-silently-remove-client-resources" given="resource" enforcement="review" implementation effort="explore">
+
+Resources declared by clients **must not** be silently removed by the server as
+a result of time-based expiry, inactivity, or other server-side lifecycle events
+
+- If such a lifecycle transition is part of the resource's domain model, it
+  **must** be represented as a terminal status on the resource (e.g. `EXPIRED`,
+  `REVOKED`, `REJECTED`).
+- The resource **must** remain readable through the [Get](0104.mdx) and
+  [List](0105.mdx) methods until the client explicitly deletes it.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    AccessGrant:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - EXPIRED
+            - REVOKED
+```
+
+<Example.Reason>
+  When a grant lapses, the server moves `status` to `EXPIRED` and keeps the
+  resource readable. The client observes the transition through Get and List and
+  deletes the resource on its own terms.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    AccessGrant:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum:
+            - ACTIVE
+```
+
+<Example.Reason>
+  The model has no terminal status, so an expired grant can only be represented
+  by removal. The resource disappears from Get and List without a client delete,
+  and declarative clients see unexplained drift.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify resources with server-side lifecycle transitions such as expiry,
+    inactivity, or automatic cleanup.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each transition is modeled as a terminal status value rather than
+    removal of the resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the resource stays readable through Get and List until the client
+    deletes it, and flag any resource the server removes on its own.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
 <Guideline id="IPA-101-should-not-mirror-database-schema" given="schema" enforcement="review" implementation effort="explore">
 
 An API **should not** be expected to reflect the database schema behind it. An
