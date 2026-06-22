@@ -328,6 +328,168 @@ For resources where all fields are server-owned, see
 
 :::
 
+### Optional Fields with Server Defaults
+
+Assigning a server-side default in place of a client-omitted value during
+resource creation is an anti-pattern: it creates hybrid ownership where the
+field is client-owned but the server effectively chooses a value. State-driven
+clients and downstream tooling then cannot tell whether a returned value was
+client-set or server-filled, and they report drift on every reconciliation.
+
+<Guidelines>
+
+<Guideline id="IPA-111-must-return-client-provided-optional-value" given="schema" enforcement="review" effort="explore" implementation>
+
+Optional request fields **must** be returned by the server with the same value
+(or absence of value) the client provided
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Backup:
+      type: object
+      properties:
+        retentionDays:
+          type: integer
+          description:
+            Optional. Returned exactly as provided; absent when not set.
+```
+
+<Example.Reason>
+  When the client omits `retentionDays`, the server leaves it absent rather than
+  filling in a default, so a read reflects exactly what the client set and no
+  drift appears.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Backup:
+      type: object
+      properties:
+        retentionDays:
+          type: integer
+          description: Optional. Defaults to 30 when omitted by the client.
+```
+
+<Example.Reason>
+  The client omits `retentionDays`, but the server returns `30`. The field is
+  client-owned, yet the response carries a server-chosen value, so a declarative
+  client sees a difference it never set and reconciles against it indefinitely.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify optional request fields that are client-owned per [Single Owner
+    Fields](#single-owner-fields).
+  </Workflow.Step>
+  <Workflow.Step>
+    Create a resource omitting each such field, then read it back.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the field is returned as the client left it — absent when omitted —
+    rather than populated with a server-chosen default.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any optional client-owned field the server fills with a default on
+    the response.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-111-must-annotate-legacy-server-default" given="schema" enforcement="review" effort="reason" dependsOn={["IPA-131-must-register-tooling-extensions", "IPA-111-must-return-client-provided-optional-value"]}>
+
+Legacy fields that cannot be remediated away from the
+optional-plus-server-default pattern **must** be annotated per
+[IPA-131](0131.mdx) so declarative tooling can reconcile the hybrid ownership
+
+- New APIs **must not** rely on this escape hatch; it exists only for legacy
+  fields that cannot change.
+- Optional boolean fields are exempt and **must not** be annotated — they are
+  governed by [Boolean Values](#boolean-values).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Backup:
+      type: object
+      properties:
+        retentionDays:
+          type: integer
+          x-xgen-server-computed-when-client-omitted: true
+          description: Legacy. Server assigns a value when the client omits it.
+```
+
+<Example.Reason>
+  The legacy field keeps its server-default behavior but declares
+  `x-xgen-server-computed-when-client-omitted`, so tooling knows the returned
+  value may be server-filled and does not treat it as client drift.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Backup:
+      type: object
+      properties:
+        retentionDays:
+          type: integer
+          description: Legacy. Server assigns a value when the client omits it.
+```
+
+<Example.Reason>
+  The field retains the optional-plus-server-default behavior but carries no
+  annotation, so declarative tooling sees the server-assigned value as
+  client-owned and reports spurious drift.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify optional client-owned fields for which the server still assigns a
+    value when the client omits one.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each such field that cannot be remediated declares
+    `x-xgen-server-computed-when-client-omitted: true`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm no boolean field carries the annotation.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any unannotated legacy field exhibiting the pattern, and any new
+    (non-legacy) field relying on it.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
 ### Effective Values
 
 There are instances where a service will allocate, generate, or calculate a
@@ -829,12 +991,15 @@ components:
 
 <Guidelines>
 
-<Guideline id="IPA-111-should-default-boolean-false" given="schema" enforcement="review" effort="check">
+<Guideline id="IPA-111-must-default-optional-boolean-false" given="schema" enforcement="review" effort="check">
 
-Booleans **should** default to `false`
+Optional boolean fields **must** default to `false`
 
 - Many serialization systems won’t distinguish `false` values from unset values
   which introduces complications when a boolean defaults to `true`
+- This avoids a tri-state (true / false / unset) that is hard for both producers
+  and consumers to reason about, so optional booleans **must not** carry the
+  [server-default annotation](0131.mdx) used for other optional fields
 
 <Guideline.Details>
 

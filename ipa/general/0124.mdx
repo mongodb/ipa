@@ -209,9 +209,9 @@ components:
 
 </Guideline>
 
-<Guideline id="IPA-124-should-respect-client-owned-fields" given="schema" enforcement="review" implementation effort="explore">
+<Guideline id="IPA-124-must-respect-client-owned-fields" given="schema" enforcement="review" implementation effort="explore">
 
-[Client-owned](0111.mdx#single-owner-fields) repeated fields **should** be
+[Client-owned](0111.mdx#single-owner-fields) repeated fields **must** be
 respected by the server.
 
 <Guideline.Details>
@@ -284,10 +284,11 @@ components:
 
 </Guideline>
 
-<Guideline id="IPA-124-should-not-alter-client-list-undocumented" given="schema" enforcement="review" implementation effort="explore" dependsOn={["IPA-124-should-respect-client-owned-fields"]}>
+<Guideline id="IPA-124-must-not-alter-client-list-unless-set" given="schema" enforcement="review" implementation effort="explore" dependsOn={["IPA-124-must-respect-client-owned-fields"]}>
 
-The server **should not** modify the order of elements or remove duplicates,
-without explicit documentation that the server will do so.
+The server **must not** modify the order of elements or remove duplicates,
+unless the field is explicitly declared as a set (see
+[List vs Set](#list-vs-set) below).
 
 <Guideline.Details>
 
@@ -299,18 +300,17 @@ components:
     Project:
       type: object
       properties:
-        labels:
+        roles:
           type: array
+          x-xgen-array-semantic: set
           items:
             type: string
-          description:
-            The server normalizes this list, sorting and de-duplicating it.
 ```
 
 <Example.Reason>
-  The server does reorder and de-duplicate the list, and the schema documents
-  that behavior, so the difference between write and read is expected rather
-  than surprising.
+  The field is declared a set with `x-xgen-array-semantic`, so reordering and
+  de-duplication are part of its contract. A consumer knows order is not
+  significant and treats equality without regard to it.
 </Example.Reason>
 
 </Example.Correct>
@@ -323,17 +323,17 @@ components:
     Project:
       type: object
       properties:
-        labels:
+        roles:
           type: array
           items:
             type: string
-          description: A list of labels.
+          description: A list of roles.
 ```
 
 <Example.Reason>
-  The server reorders and de-duplicates the list at runtime, but the schema says
-  nothing about it, so the transformation is undocumented and a consumer cannot
-  anticipate the changed value.
+  Absent `x-xgen-array-semantic: set`, the array is a list, so the server must
+  preserve order and duplicates. If it reorders or de-duplicates the value at
+  runtime, a declarative client sees drift it cannot anticipate.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -348,12 +348,253 @@ components:
     reordering or removed duplicates.
   </Workflow.Step>
   <Workflow.Step>
-    When the list is transformed, check whether the field description states
-    that the server reorders elements or removes duplicates.
+    When the list is transformed, confirm the field declares
+    `x-xgen-array-semantic: set`.
   </Workflow.Step>
   <Workflow.Step>
-    Report any repeated field the server reorders or de-duplicates without
-    documenting that behavior.
+    Report any repeated field the server reorders or de-duplicates that is not
+    declared as a set.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+### List vs Set
+
+Arrays fall into two kinds, and the distinction governs whether order and
+duplicates are part of the resource state. Classifying each array — and
+declaring sets explicitly — lets clients and downstream tooling reason correctly
+about order and equality.
+
+<Guidelines>
+
+<Guideline id="IPA-124-must-declare-set-semantics" given="schema" enforcement="review" effort="reason" dependsOn={["IPA-131-must-register-tooling-extensions"]}>
+
+Every array property **must** be classified as either a list or a set. Set-like
+arrays **must** be declared with the `x-xgen-array-semantic` extension (see
+[IPA-131](0131.mdx)); when the extension is absent, the array is treated as a
+list.
+
+- **List** — order is meaningful and elements may repeat. This is the default
+  when the semantic is not declared.
+- **Set** — order is not meaningful and elements are unique.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        environments:
+          type: array
+          items:
+            type: string
+        roles:
+          type: array
+          x-xgen-array-semantic: set
+          items:
+            type: string
+```
+
+<Example.Reason>
+  `environments` is left as a list because order matters, while `roles` declares
+  `x-xgen-array-semantic: set` because it is an unordered, duplicate-free
+  collection. Each array's intent is explicit.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        roles:
+          type: array
+          items:
+            type: string
+          description: An unordered, duplicate-free set of roles.
+```
+
+<Example.Reason>
+  The description says the field is an unordered set, but it carries no
+  `x-xgen-array-semantic: set` declaration, so tooling treats it as a list and
+  expects order and duplicates to be preserved.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each array property, determine whether element order is part of the
+    resource state.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm arrays whose order is not meaningful declare `x-xgen-array-semantic:
+    set`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any array described as unordered or duplicate-free that omits the set
+    declaration.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-124-must-return-deterministic-list-order" given="schema" enforcement="review" implementation effort="explore" dependsOn={["IPA-124-must-declare-set-semantics"]}>
+
+For all lists, the server **must** return elements in a deterministic, stable
+order across repeated GET responses for the same resource state
+
+- For [client-owned](0111.mdx#single-owner-fields) lists, the order must be the
+  one the client provided, per the client-owned fields rule above.
+- Unstable ordering causes false drift in declarative clients.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            type: string
+          description:
+            Server-owned list. Returned in a stable order across reads.
+```
+
+<Example.Reason>
+  Repeated reads of the same resource state return `members` in the same order,
+  so a declarative client never sees the list change without an actual change to
+  the resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            type: string
+          description: Server-owned list. Returned in arbitrary order per read.
+```
+
+<Example.Reason>
+  The server returns `members` in a different order on each read of an unchanged
+  resource, so a declarative client repeatedly detects and tries to reconcile
+  drift that does not exist.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each list field, read the same unchanged resource multiple times.
+  </Workflow.Step>
+  <Workflow.Step>Compare element order across the responses.</Workflow.Step>
+  <Workflow.Step>
+    Report any list whose order varies across reads of the same resource state.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-124-must-not-return-duplicate-set-elements" given="schema" enforcement="review" implementation effort="explore" dependsOn={["IPA-124-must-declare-set-semantics"]}>
+
+For arrays declared as sets, the server **must not** return duplicate elements
+
+- The server **may** return elements in any order; the order in a response is
+  not part of the resource state.
+- Clients **must** treat equality without regard to order.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        roles:
+          type: array
+          x-xgen-array-semantic: set
+          items:
+            type: string
+          description:
+            Set. Returned without duplicates; order is not significant.
+```
+
+<Example.Reason>
+  The set is returned with unique elements, and consumers compare two responses
+  by membership rather than position, so a reordered response is not treated as
+  a change.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        roles:
+          type: array
+          x-xgen-array-semantic: set
+          items:
+            type: string
+          description: Set that may contain repeated elements.
+```
+
+<Example.Reason>
+  The field is declared a set but the server returns duplicate elements, so its
+  contents contradict the set contract and consumers cannot rely on membership
+  semantics.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each field declared `x-xgen-array-semantic: set`, read the resource and
+    inspect the returned array.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the array contains no duplicate elements.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any set field whose response includes duplicates.
   </Workflow.Step>
 </Workflow>
 
