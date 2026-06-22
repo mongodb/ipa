@@ -12,78 +12,1112 @@ resource.
 
 ## Guidance
 
-- The full resource identifier is a URI without transport protocols (schemeless)
-  - Fully qualified paths
-- All resource identifiers defined by an API **must** be unique
-  - Resource names are formatted according to the
-    [URI path schema](https://datatracker.ietf.org/doc/html/rfc3986#appendix-A)
-- Resource identifiers **must** use the slash (/) character to separate
-  individual segments of the resource identifier
-  - Double slashes (//) **must not** be used
-- Resource identifier components **should** alternate between:
-  - Collection identifiers (example: groups, clusters, orgs, users)
-    - Collection identifiers **must** be in `camelCase`
-    - Collection identifiers **must** begin with a lowercase letter and contain
-      only ASCII letters and numbers (`/[a-z][a-zA-Z0-9]*/`).
-    - Collection identifiers **must** be plural
-      - In situations where there is no plural word ("info"), or where the
-        singular and plural terms are the same ("moose"), the non-pluralized
-        (singular) form is correct.
-  - Resource IDs (example: `groupId`, `clusterName`, `orgId`)
-    - Resource IDs **should** be server-generated unique identifiers rather than
-      human-readable, client-provided identifiers
-      - Server-generated unique identifiers (e.g., UUIDs, auto-generated IDs)
-        are immutable and globally unique
-      - Human-readable identifiers (e.g., names, types) may change over time or
-        have uniqueness constraints that are difficult to maintain
-      - In some cases, API producers might decide to use a human-readable
-        identifier (e.g., `clusterName`), however using a system-generated
-        unique identifier is recommended for long-term stability and flexibility
-    - Resource IDs **should** follow the format `<resourceName>Id`
-      - Where `<resourceName>` is the singular form of the collection identifier
-      - Example: for collection `groups`, the resource ID should be `groupId`
-    - Resource IDs **must** be in `camelCase`
-    - The resource ID used in the resource identifier (as the URI path
-      parameter) **must** match the field name used in the resource
-      representation
-      - This ensures consistency between the resource identifier and the
-        resource representation
-      - Example: if the resource identifier uses `groupId`, the resource itself
-        **must** have a field named `groupId`
-- Resource identifiers **should not** use abbreviations
-  - Unless the abbreviation is well understood, for example, IP, AWS, TCP
-- Resource identifier **must not** include file extensions such as `.gz`,`.csv`,
-  `.json`
-  - The file extension **must** be only included as
-    [media type](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/MIME_types)
-    in the
-    [Accept Header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Accept).
-  - Examples:
-    - `Accept: application/zip`
-    - `Accept: application/json`
-    - `Accept: application/xml`
-    - `Accept: application/gzip`
+The full resource identifier is a schemeless URI: a fully qualified path with no
+transport protocol. The guidelines below cover how those identifiers are
+structured, named, and related to one another.
 
-Example
+<Guidelines>
 
-- Group identifier `/groups/{groupId}`
-- Cluster identifier `/groups/{groupId}/clusters/{clusterName}`
-- User collection identifier `/orgs/{orgId}/users`
+<Guideline id="IPA-102-must-be-unique" given="paths" enforcement="review" effort="reason">
+
+All resource identifiers defined by an API **must** be unique, with resource
+names formatted according to the URI path schema.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /users/{userId}:
+    get:
+      operationId: getUser
+  /users/{userId}/tasks/{taskId}:
+    get:
+      operationId: getUserTask
+```
+
+<Example.Reason>
+  Each path resolves to one resource. `/users/{userId}` addresses a single user,
+  and the nested task path addresses a single task under that user. No two paths
+  point at the same thing.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /users/{userId}:
+    get:
+      operationId: getUser
+  /users/{id}:
+    delete:
+      operationId: deleteUser
+```
+
+<Example.Reason>
+  Both paths address the same resource, a user keyed by its id, but the
+  parameter name differs. That is one identifier written two ways. Collapse them
+  into a single path with one parameter name.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    List every key under `$.paths`. Normalize each one by replacing path
+    parameters with a placeholder. For example, treat `/users/{userId}` and
+    `/users/{id}` both as `/users/{}`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare the normalized forms. If two distinct path keys normalize to the
+    same string, they address the same resource and violate uniqueness. Flag
+    them.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check that each path follows the URI path schema: segments separated by
+    single slashes, no scheme or host, no query string baked into the path. A
+    path that embeds a query or a protocol is not a valid resource identifier.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-102-must-use-slash-separators" given="paths" enforcement="review" effort="check">
+
+Resource identifiers **must** use the slash (/) character to separate individual
+segments of the resource identifier.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /teams/{teamId}/members:
+    get:
+      operationId: listTeamMembers
+  /teams/{teamId}/members/{memberId}:
+    get:
+      operationId: getTeamMember
+```
+
+<Example.Reason>
+  Every boundary uses a single slash, so the hierarchy is obvious: a `members`
+  collection nested under a specific team.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /teams/{teamId}//members/{memberId}:
+    get:
+      operationId: getTeamMember
+```
+
+<Example.Reason>
+  The double slash between `{teamId}` and `members` leaves an empty segment.
+  That empty segment means nothing, and it breaks path matching in routers and
+  generated clients.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>List every path key under `$.paths`.</Workflow.Step>
+  <Workflow.Step>
+    For each key, check that a single `/` separates each pair of segments.
+  </Workflow.Step>
+  <Workflow.Step>
+    Reject any key that contains `//`. A double slash leaves an empty segment.
+  </Workflow.Step>
+  <Workflow.Step>
+    Reject any key where two segment names run together with no slash between
+    them.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-102-must-not-use-double-slashes" given="paths" enforcement="rule" dependsOn={["IPA-102-must-use-slash-separators"]}>
+
+Double slashes (//) **must not** be used to separate segments of a resource
+identifier.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+```
+
+<Example.Reason>
+  Exactly one slash sits between each segment, so there are no empty segments.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}//tasks/{taskId}:
+    get:
+      operationId: getTask
+```
+
+<Example.Reason>
+  The `//` between `{projectId}` and `tasks` leaves an empty segment. Use a
+  single slash.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-102-should-alternate-collection-and-id" given="paths" enforcement="rule">
+
+Resource identifier components **should** alternate between collection
+identifiers and resource IDs.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+```
+
+<Example.Reason>
+  Segments alternate collection then ID at every level: `projects` then `
+  {projectId}`, then `tasks` then `{taskId}`. Each ID follows the collection it
+  belongs to.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/{taskId}:
+    get:
+      operationId: getTask
+```
+
+<Example.Reason>
+  Two IDs sit back to back with no collection between them. `{taskId}` has no
+  preceding collection segment, so the set it draws from is unclear.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-102-must-collection-identifier-camelcase" given="paths" enforcement="rule">
+
+Collection identifiers **must** be in `camelCase`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /users/{userId}:
+    get:
+      operationId: getUser
+  /users/{userId}/projectMembers:
+    get:
+      operationId: listProjectMembers
+```
+
+<Example.Reason>
+  Both `users` and `projectMembers` start lowercase and contain only letters, so
+  they match the `camelCase` pattern.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /Users/{userId}:
+    get:
+      operationId: getUser
+  /Users/{userId}/project_members:
+    get:
+      operationId: listProjectMembers
+```
+
+<Example.Reason>
+  `Users` starts with an uppercase letter and `project_members` contains an
+  underscore. Neither is `camelCase`.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-102-must-collection-identifier-pattern" given="paths" enforcement="rule">
+
+Collection identifiers **must** begin with a lowercase letter and contain only
+ASCII letters and numbers (`/[a-z][a-zA-Z0-9]*/`).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /users/{userId}/apiKeys:
+    get:
+      operationId: listUserApiKeys
+```
+
+<Example.Reason>
+  Both `users` and `apiKeys` start lowercase and use only ASCII letters and
+  digits. `apiKeys` is `camelCase`, which the pattern allows.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /Users/{userId}/api_keys:
+    get:
+      operationId: listUserApiKeys
+```
+
+<Example.Reason>
+  `Users` starts with an uppercase letter and `api_keys` has an underscore.
+  Neither matches `/[a-z][a-zA-Z0-9]*/`.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-102-must-collection-identifier-plural" given="paths" enforcement="review" effort="reason">
+
+Collection identifiers **must** be plural, except where there is no plural form
+or the singular and plural terms are the same, in which case the singular form
+is correct.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /users/{userId}:
+    get:
+      operationId: getUser
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listTasks
+```
+
+<Example.Reason>
+  `users`, `projects`, and `tasks` are all plural. Each segment names a
+  collection of resources, so the plural form is correct.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /user/{userId}:
+    get:
+      operationId: getUser
+  /project/{projectId}/task:
+    get:
+      operationId: listTasks
+```
+
+<Example.Reason>
+  `user`, `project`, and `task` are singular. A collection holds many resources,
+  so each segment should be plural: `users`, `projects`, `tasks`.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /info:
+    get:
+      operationId: getInfo
+```
+
+<Example.Reason>
+  `info` has no separate plural form, so the singular is correct. This is the
+  documented exception, not a violation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    List the path segments under `$.paths` for each path. Skip segments wrapped
+    in braces, like `{userId}`, since those are resource IDs, not collection
+    identifiers.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each remaining segment, decide whether it names a collection of
+    resources. Those are the segments to check for plurality.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check that each collection identifier is plural. If it is singular, flag it
+    and suggest the plural form.
+  </Workflow.Step>
+  <Workflow.Step>
+    Before flagging, confirm the noun actually has a distinct plural. If the
+    word has no plural form, or its singular and plural are identical, the
+    singular is correct and you should not flag it.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-102-should-use-server-generated-ids" given="paths" enforcement="review" effort="reason">
+
+Resource IDs **should** be server-generated unique identifiers rather than
+human-readable, client-provided identifiers, for long-term stability and
+flexibility.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /users/{userId}:
+    get:
+      operationId: getUser
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+```
+
+<Example.Reason>
+  `userId` is a server-generated UUID. It is immutable and unique, so the
+  resource URL stays stable for the life of the user even if their email or
+  display name changes.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /users/{email}:
+    get:
+      operationId: getUserByEmail
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+            example: jordan@example.com
+```
+
+<Example.Reason>
+  `email` is client-provided and mutable. When a user changes their address, the
+  resource URL changes with it, and every existing reference breaks.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each path in `$.paths`, find the last path parameter. That is the one
+    that names the individual resource, for example `{userId}` in `/users/
+    {userId}`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Inspect that parameter's schema. Flag it when the value is a human-readable
+    or client-supplied attribute such as an email, display name, title, or slug
+    rather than an opaque server-generated identifier.
+  </Workflow.Step>
+  <Workflow.Step>
+    For any flagged parameter, check whether the value is documented as
+    immutable and uniquely constrained. If it can change after creation, the
+    resource URL is unstable and the choice does not meet the recommendation.
+  </Workflow.Step>
+  <Workflow.Step>
+    A deliberate, documented human-readable identifier that is immutable and
+    unique is an acceptable exception to this `should`. An undocumented or
+    mutable one is not.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-102-should-follow-resource-name-id-format" given="paths" enforcement="review" effort="reason">
+
+Resource IDs **should** follow the format `<resourceName>Id`, where
+`<resourceName>` is the singular form of the collection identifier.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+```
+
+<Example.Reason>
+  Each parameter is the singular collection name plus `Id`. `projects` becomes
+  `projectId`, `tasks` becomes `taskId`.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{id}:
+    get:
+      operationId: getProject
+  /projects/{projectId}/tasks/{task}:
+    get:
+      operationId: getTask
+```
+
+<Example.Reason>
+  `{id}` drops the resource name, so the parameter no longer says what it
+  identifies. `{task}` leaves off the `Id` suffix. Both should read `projectId`
+  and `taskId`.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Walk each key under `$.paths` and find the path templates: the segments
+    wrapped in braces, like `{taskId}`.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each path parameter, read the collection identifier that precedes it,
+    the segment just before the templated one.
+  </Workflow.Step>
+  <Workflow.Step>
+    Make that collection identifier singular and add `Id`. `tasks` should give
+    `taskId`. When a collection has no distinct plural ("info"), use the
+    singular as-is plus `Id`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any parameter that drops the resource name (`{id}`), leaves off the
+    `Id` suffix (`{task}`), or uses a name unrelated to its parent collection.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-102-must-resource-id-camelcase" given="parameter" enforcement="rule">
+
+Resource IDs **must** be in `camelCase`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  `projectId` and `taskId` both open with a lowercase letter and hold only
+  letters. Valid `camelCase` resource IDs.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{project_id}/tasks/{TaskID}:
+    get:
+      operationId: getTask
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: TaskID
+          in: path
+          required: true
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  `project_id` is `snake_case` and `TaskID` is `PascalCase`. A resource ID has
+  to be `camelCase`, so neither one passes.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-102-must-id-match-representation-field" given={["paths", "schema"]} enforcement="review" effort="reason">
+
+The resource ID used in the resource identifier (as the URI path parameter)
+**must** match the field name used in the resource representation.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        projectId:
+          type: string
+        name:
+          type: string
+```
+
+<Example.Reason>
+  The path parameter `projectId` and the representation field `projectId` share
+  one name and one casing, so the identifier reads the same wherever it appears.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+```
+
+<Example.Reason>
+  The path uses `projectId`, but the body exposes the same identifier as `id`.
+  The two names disagree, so a consumer cannot rely on one key for the
+  resource's ID.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>For each path in `$.paths`, list the path parameters (the `{...}` segments) that identify the resource the path addresses.</Workflow.Step>
+  <Workflow.Step>Find the schema for that resource. It is usually the response body schema of the `GET` on the item path. Resolve any `$ref`.</Workflow.Step>
+  <Workflow.Step>Confirm the resolved schema declares a property whose name matches the path parameter exactly, casing included.</Workflow.Step>
+  <Workflow.Step>Flag any case where the representation names the identifier differently (for example path `{projectId}` but field `id`) or omits it entirely.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-102-should-not-use-abbreviations" given="paths" enforcement="review" effort="reason">
+
+Resource identifiers **should not** use abbreviations, unless the abbreviation
+is well understood (for example, IP, AWS, TCP).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /organizations/{organizationId}/configurations:
+    get:
+      operationId: listConfigurations
+```
+
+<Example.Reason>
+  Full words leave no room for doubt. Nobody has to wonder what `organizations`
+  refers to.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orgs/{orgId}/cfgs:
+    get:
+      operationId: listCfgs
+```
+
+<Example.Reason>
+  `orgs` and `cfgs` are invented shorthands, not abbreviations anyone already
+  knows. The reader has to expand them in their head.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /servers/{serverId}/ipRanges:
+    get:
+      operationId: listIpRanges
+```
+
+<Example.Reason>
+  Everyone knows what `ip` means, so the short form beats
+  `internetProtocolRanges` for clarity.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>List every path key under `$.paths` and split each one into segments on the slash.</Workflow.Step>
+  <Workflow.Step>Within each path, separate the collection identifiers from the path parameters (the `{...}` parts). Check both.</Workflow.Step>
+  <Workflow.Step>For each word in a segment, decide whether it is a full word or a shortened form. Shortened forms include dropped vowels (`cfg`), truncations (`org`, `addr`), and clipped plurals.</Workflow.Step>
+  <Workflow.Step>For each shortened form, ask whether a typical API consumer already knows it (for example `IP`, `AWS`, `TCP`, `ID`, `URL`, `API`). If yes, it passes.</Workflow.Step>
+  <Workflow.Step>Flag any shortened form that does not pass and recommend the spelled-out word.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-102-must-not-include-file-extensions" given="paths" enforcement="review" effort="check">
+
+Resource identifiers **must not** include file extensions such as `.gz`, `.csv`,
+or `.json`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /reports/{reportId}:
+    get:
+      operationId: getReport
+      parameters:
+        - name: Accept
+          in: header
+          schema:
+            type: string
+            example: application/json
+```
+
+<Example.Reason>
+  The path identifies the report. The caller asks for a representation through
+  the `Accept` header, so one identifier returns JSON, CSV, or gzip without
+  change.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /reports/{reportId}.csv:
+    get:
+      operationId: getReportCsv
+  /reports/{reportId}.json:
+    get:
+      operationId: getReportJson
+```
+
+<Example.Reason>
+  The `.csv` and `.json` extensions bake the serialization format into the
+  identifier. Now one resource has two identifiers, and every new format wants
+  another path.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>Collect every path key under `$.paths`.</Workflow.Step>
+  <Workflow.Step>
+    Split each path on `/` and check every segment, including the ones that end
+    in a path parameter like `{reportId}`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any segment whose literal text ends in a dot followed by a format token
+    such as `.json`, `.csv`, `.xml`, `.gz`, or `.zip`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the suffix is a content format and not a legitimate part of an
+    identifier. If it names a serialization, report it and tell the producer to
+    express the format through the `Accept` header media type instead.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-102-must-use-media-type-in-accept-header" enforcement="advisory">
+
+When a representation format is needed, the file extension **must** be included
+only as a media type in the Accept header (for example,
+`Accept: application/json`, `Accept: application/gzip`), never in the resource
+identifier.
+
+</Guideline>
+
+</Guidelines>
 
 ### Nested Collections
+
+When a resource identifier nests one collection under another, the hierarchy
+itself carries meaning that API producers need to account for.
+
+:::note
+
+Relationships between resources expressed as nested collections or hierarchical
+relationships have certain implications that API producers need to consider.
+
+:::
+
+<Guidelines>
+
+<Guideline id="IPA-102-may-omit-parent-prefix" given="paths" enforcement="review" effort="reason">
 
 If a resource identifier contains multiple levels of a hierarchy and a parent
 collection's name is used as a prefix for the child resource's name, the child
 collection's name **may** omit the prefix.
 
-:::note
+<Guideline.Details>
 
-Relationships between resources expressed as nested collections or hierarchical
-relationships have certain implications that API producers need to consider
+<Example.Correct>
 
-:::
+```yaml
+paths:
+  /projects/{projectId}/members:
+    get:
+      operationId: listProjectMembers
+  /projects/{projectId}/members/{memberId}:
+    get:
+      operationId: getProjectMember
+```
 
-- Nested collections imply a cascade effect
-- Deleting a parent **must** delete associated children
-- Access to the parent **may** imply access to children
-- Children **must not** belong to multiple parents
+<Example.Reason>
+  The path already says these members live under a project, so the child
+  collection is just `members`. A prefix would only repeat what the path already
+  tells you.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/projectMembers:
+    get:
+      operationId: listProjectMembers
+  /projects/{projectId}/projectMembers/{memberId}:
+    get:
+      operationId: getProjectMember
+```
+
+<Example.Reason>
+  `projectMembers` repeats the parent `projects` that already sits right in
+  front of it in the path. The `project` prefix is noise.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    In `$.paths`, find paths with multiple collection segments, where a child
+    collection nests under a parent collection (for example `/parents/
+    {parentId}/children`).
+  </Workflow.Step>
+  <Workflow.Step>
+    For each child collection segment, check whether its name starts with the
+    singular or plural form of the parent collection that comes right before it
+    in the path (for example `projectMembers` under `projects`).
+  </Workflow.Step>
+  <Workflow.Step>
+    When the child name carries that parent prefix, treat it as a candidate for
+    the allowance. The prefix may be dropped so the segment becomes just the
+    child noun (`members`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Before you recommend the change, confirm the un-prefixed name stays clear in
+    context. This rule is permissive, so don't flag a kept prefix as a
+    violation. Call out redundant prefixes only as a chance to simplify.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-102-must-cascade-delete-children" given="delete-operation" enforcement="review" implementation effort="explore">
+
+Deleting a parent resource **must** delete its associated child resources
+(nested collections imply a cascade effect).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    delete:
+      operationId: deleteProject
+      description: >
+        Deletes the project and all tasks nested under it.
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Project and its tasks were deleted.
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+```
+
+<Example.Reason>
+  `tasks` is nested under `projects`. Deleting a project removes the tasks under
+  it, and the delete operation says so. Nothing is left pointing at a project
+  that no longer exists.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    delete:
+      operationId: deleteProject
+      description: >
+        Deletes the project. Tasks under the project are kept and must be
+        deleted separately.
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Project deleted.
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+```
+
+<Example.Reason>
+  The tasks sit under the project, so deleting the project has to delete them.
+  This delete keeps them around instead, which leaves tasks referencing a
+  project that is gone. The hierarchy promised a cascade; this breaks it.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>Scan `$.paths` for nested collections: a path segment of the form `/{parentId}/<childCollection>` where the child sits under a parent resource path.</Workflow.Step>
+  <Workflow.Step>For each parent resource path with children nested under it, check whether `$.paths` defines a `delete` operation on the parent (for example `delete` on `/projects/{projectId}`).</Workflow.Step>
+  <Workflow.Step>Read that delete operation's `description` and its response descriptions. Confirm they state the cascade: deleting the parent removes the nested children.</Workflow.Step>
+  <Workflow.Step>Flag the operation when the docs say children are kept, say they must be deleted separately, or stay silent about what happens to nested resources.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-102-may-imply-access-to-children" enforcement="advisory" implementation>
+
+Access to a parent resource **may** imply access to its child resources.
+
+</Guideline>
+
+<Guideline id="IPA-102-must-not-belong-to-multiple-parents" given="paths" enforcement="review" effort="reason">
+
+A child resource **must not** belong to multiple parents.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+  /teams/{teamId}:
+    get:
+      operationId: getTeam
+```
+
+<Example.Reason>
+  A task belongs to one project. The team that works on the project refers to
+  tasks by ID instead of owning them under a second nested path.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getTaskByProject
+  /teams/{teamId}/tasks/{taskId}:
+    get:
+      operationId: getTaskByTeam
+```
+
+<Example.Reason>
+  Now the same task is reachable under a project parent and a team parent. Two
+  parents leave ownership, access, and cascade-delete behavior ambiguous.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    List the nested collection paths in `$.paths`. For each one, note the child
+    collection identifier (the last collection segment) and its parent
+    collection segment.
+  </Workflow.Step>
+  <Workflow.Step>
+    Group the paths by child collection identifier. Flag any child collection
+    that shows up under more than one distinct parent collection.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each flagged child, confirm it's the same resource type, not a
+    coincidental name reuse. Compare the resource schemas and the ID path
+    parameters.
+  </Workflow.Step>
+  <Workflow.Step>
+    When the same child resource is reachable under two parents, it violates the
+    rule. Recommend one owning parent, and reference the child from the other
+    place by ID.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>

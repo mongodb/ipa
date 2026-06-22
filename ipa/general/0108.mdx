@@ -11,25 +11,245 @@ resource.
 
 ## Guidance
 
-- APIs **should** provide a Delete method for resources unless it is not
-  valuable for users to do so
-  - [Read-only resources](0101.mdx#read-only-resources) **must not** have a
-    Delete method
-  - [Singleton resources](0113.mdx) **must not** have a Delete method
-- The HTTP verb **must** be
-  [`DELETE`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/DELETE)
-- The response **should** be empty
-  - Empty response **must** return
-    [204 No Content](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/204)
-    status
-- The request **must not** include a body
-- The Delete method **must** succeed if and only if a resource was present and
-  was successfully deleted.
-  - If the resource did not exist, the method **must** respond with a
-    `404 Not Found` error per [IPA-114](0114.mdx#not-found).
-- The Delete method **must not** return a successful response while any internal
-  state of the resource — settings, policies, configurations, or any other state
-  without an independent endpoint — remains.
+<Guidelines>
+
+<Guideline id="IPA-108-should-provide-delete-method" given="resource" enforcement="review" effort="reason">
+
+APIs **should** provide a Delete method for resources unless it is not valuable
+for users to do so
+
+- [Read-only resources](0101.mdx#read-only-resources) **must not** have a Delete
+  method
+- [Singleton resources](0113.mdx) **must not** have a Delete method
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    delete:
+      operationId: deleteGroupCluster
+      responses:
+        "204":
+          description: The cluster was deleted.
+```
+
+<Example.Reason>
+  The `clusters` resource lets users remove a cluster, so it exposes a Delete
+  method via `DELETE` on the resource URI.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    For each resource in the spec, determine whether users need to delete
+    instances of it.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the resource is neither read-only nor a singleton — both **must
+    not** have a Delete method.
+  </Workflow.Step>
+  <Workflow.Step>
+    If deleting a resource is valuable for users, confirm the resource exposes a
+    `DELETE` method. Flag resources that omit it without a clear reason.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-must-use-delete" given="delete-operation" enforcement="automatable">
+
+The HTTP verb **must** be
+[`DELETE`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/DELETE)
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    delete:
+      operationId: deleteGroupCluster
+      responses:
+        "204":
+          description: The cluster was deleted.
+```
+
+<Example.Reason>
+  The delete operation uses `DELETE` on the resource URI, the HTTP verb defined
+  for removing a resource.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-should-return-empty-response" given="delete-operation" enforcement="review" effort="check">
+
+The response **should** be empty
+
+- Empty response **must** return
+  [204 No Content](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/204)
+  status
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    delete:
+      operationId: deleteGroupCluster
+      responses:
+        "204":
+          description: The cluster was deleted.
+```
+
+<Example.Reason>
+  The delete operation returns an empty body with a `204 No Content` status,
+  signaling success without returning a representation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    For the delete operation, inspect the success response.
+  </Workflow.Step>
+  <Workflow.Step>Confirm the response has no body.</Workflow.Step>
+  <Workflow.Step>
+    Confirm an empty response uses the `204 No Content` status code. Flag delete
+    operations that return a body or a different success status.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-must-not-include-request-body" given="delete-operation" enforcement="automatable">
+
+The request **must not** include a body
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    delete:
+      operationId: deleteGroupCluster
+      parameters:
+        - name: clusterName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: The cluster was deleted.
+```
+
+<Example.Reason>
+  The delete operation identifies the resource entirely through the path and
+  defines no `requestBody`.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-must-succeed-if-resource-present" given="delete-operation" enforcement="review" effort="explore" implementation>
+
+The Delete method **must** succeed if and only if a resource was present and was
+successfully deleted
+
+- If the resource did not exist, the method **must** respond with a
+  `404 Not Found` [error](0114.mdx#not-found)
+- The Delete method **must not** return a successful response while any of the
+  resource's internal state remains — settings, policies, or configurations the
+  client can only manage through the resource itself
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    delete:
+      operationId: deleteGroupCluster
+      responses:
+        "204":
+          description: The cluster and all of its internal state were deleted.
+        "404":
+          description: No cluster with that name exists.
+```
+
+<Example.Reason>
+  The delete operation succeeds with `204` only when the cluster existed and was
+  fully removed, internal state included, and returns a `404 Not Found` error
+  when the resource was not present.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    delete:
+      operationId: deleteGroupCluster
+      responses:
+        "204":
+          description: The cluster was deleted; its backup policy is retained.
+```
+
+<Example.Reason>
+  The delete reports success while the cluster's backup policy — internal state
+  the client can only manage through the cluster itself — survives. The resource
+  is not fully gone, so a client cannot treat the `204` as a clean teardown. The
+  operation also omits `404 Not Found` for the absent-resource case.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Delete a resource that exists and confirm the method succeeds.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm no internal state of the resource — settings, policies, or
+    configurations the client can only manage through the resource itself —
+    survives the delete.
+  </Workflow.Step>
+  <Workflow.Step>
+    Issue the same delete against a resource that does not exist.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the second call responds with a `404 Not Found` error rather than
+    reporting success.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Example
 
@@ -44,8 +264,60 @@ as all applicable child resources. However, since deletion is usually permanent,
 it is also important that users not do so accidentally, as reconstructing
 wiped-out child resources may be quite challenging.
 
+<Guidelines>
+
+<Guideline id="IPA-108-should-provide-cascading-parameter" given="delete-operation" enforcement="review" effort="reason">
+
 If an API allows deletion of a resource that may have child resources, the API
 **should** provide a `cascading=true` query parameter.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    delete:
+      operationId: deleteGroupCluster
+      parameters:
+        - name: cascading
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "204":
+          description: The cluster and its child resources were deleted.
+```
+
+<Example.Reason>
+  The cluster may have child resources, so the delete operation exposes a
+  `cascading` query parameter that lets users explicitly opt in to deleting
+  them.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    For each delete operation, determine whether the resource may have child
+    resources.
+  </Workflow.Step>
+  <Workflow.Step>
+    If it can, confirm the operation exposes a `cascading` query parameter.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag delete operations on resources with children that omit the `cascading`
+    parameter, forcing destructive deletes without an explicit opt-in.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Example
 
@@ -60,12 +332,141 @@ documentation.
 
 ### Naming
 
-- Operation ID **must** be unique
-- Operation ID **must** be in `camelCase`
-- Operation ID **must** start with the verb “delete”
-- Operation ID **should** be followed by a noun or compound noun
-- The noun(s) in the Operation ID **should** be the collection identifiers from
-  the resource identifier in singular form
+<Guidelines>
+
+<Guideline id="IPA-108-must-unique-operation-id" given="delete-operation" enforcement="automatable">
+
+Operation ID **must** be unique
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    delete:
+      operationId: deleteGroupCluster
+```
+
+<Example.Reason>
+  `deleteGroupCluster` is not reused by any other operation, so each operation
+  in the spec has a distinct identifier.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-must-camel-case-operation-id" given="delete-operation" enforcement="automatable">
+
+Operation ID **must** be in `camelCase`
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    delete:
+      operationId: deleteGroupCluster
+```
+
+<Example.Reason>
+  `deleteGroupCluster` is `camelCase`: lowercase first word, each subsequent
+  word capitalized, no separators.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-must-start-with-delete" given="delete-operation" enforcement="automatable">
+
+Operation ID **must** start with the verb "delete"
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    delete:
+      operationId: deleteGroupCluster
+```
+
+<Example.Reason>
+  The operation ID begins with the verb `delete`, identifying it as a delete
+  method.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-should-follow-with-noun" given="delete-operation" enforcement="review" effort="reason">
+
+Operation ID **should** be followed by a noun or compound noun
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    delete:
+      operationId: deleteGroupCluster
+```
+
+<Example.Reason>
+  The verb `delete` is followed by the compound noun `GroupCluster`, naming the
+  resource being deleted.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-108-should-use-singular-collection-identifiers" given="delete-operation" enforcement="review" effort="reason">
+
+The noun(s) in the Operation ID **should** be the collection identifiers from
+the resource identifier in singular form
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    delete:
+      operationId: deleteGroupCluster
+```
+
+<Example.Reason>
+  The resource identifier `/groups/${groupId}/clusters/${clusterName}` has
+  collection identifiers `groups` and `clusters`; the operation ID uses their
+  singular forms, `Group` and `Cluster`.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Examples:
 

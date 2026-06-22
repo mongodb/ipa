@@ -11,8 +11,7 @@ vi.mock("@docusaurus/plugin-content-docs/client", () => ({
 
 const minimalGuideline = {
   id: "IPA-001-must-test-a",
-  informational: true,
-  lintable: false,
+  enforcement: "advisory",
   implementation: false,
   effort: "check",
 } satisfies GuidelineData;

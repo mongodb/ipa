@@ -10,7 +10,7 @@ high-level design principles:
 
 - The fundamental building blocks of an API are
   [individually named resources](0102.mdx) (nouns) and the relationships and
-  hierarchy that exist between them
+  hierarchy that exist between those resources
 - A small number of [standard methods](0103.mdx) (verbs) provide the semantics
   for most common operations
   - [Custom methods](0109.mdx) are available in situations where the standard
@@ -30,38 +30,586 @@ When designing an API, consider the following (roughly in logical order):
 
 ### Resources
 
-- A resource-oriented API **should** generally be modeled as a resource
-  hierarchy
-  - Each node is either a simple resource or a collection of resources
-  - A collection contains resources of the same type
-  - A resource usually has fields
-- Resources **may** have any number of sub-resources
-- The schema for a resource **must** be the same across all methods related to
-  the resource
-- The schema consistency rule implies that every field accepted in a request
-  body **must** also be present in the response body for the same resource.
-  Omitting request fields from responses breaks declarative clients and forces
-  manual reconciliation in downstream tooling.
-  - The only exceptions are [sensitive fields](0111.mdx#sensitive-fields), which
-    may be omitted entirely (write-only) or may appear only in the Create
-    response (reveal-once).
-  - For the per-method expression of this rule, see [Create](0106.mdx) and
-    [Update](0107.mdx).
-- Resources declared by clients **must not** be silently removed by the server
-  as a result of time-based expiry, inactivity, or other server-side lifecycle
-  events. If such a lifecycle transition is part of the resource's domain model,
-  it **must** be represented as a terminal status on the resource (e.g.
-  `EXPIRED`, `REVOKED`, `REJECTED`), and the resource **must** remain readable
-  through the Get and List methods until the client explicitly deletes it.
+<Guidelines>
 
-:::warning[Important]
+<Guideline id="IPA-101-should-model-as-resource-hierarchy" given="paths" enforcement="review" effort="reason">
 
-API producers **should not** expect that their API will be reflective of their
-database schema. Having an API that is identical to the underlying database
-schema is an antipattern, as it tightly couples the surface to the underlying
-system
+A resource-oriented API **should** generally be modeled as a resource hierarchy
 
-:::
+- Each node is either a simple resource or a collection of resources
+- A collection contains resources of the same type
+- A resource usually has fields
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listTasks
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+  /projects/{projectId}/tasks/{taskId}/comments:
+    get:
+      operationId: listComments
+```
+
+<Example.Reason>
+  The paths nest the way the data actually nests. A `tasks` collection holds
+  individual tasks, and each task owns its own `comments`. Because the ownership
+  is right there in the URL, the hierarchy can be walked from a parent to its
+  children without external documentation of how things connect.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /fetchTaskDetails:
+    get:
+      operationId: fetchTaskDetails
+  /doCommentLookup:
+    get:
+      operationId: doCommentLookup
+```
+
+<Example.Reason>
+  These are flat RPC calls. Every path is a verb, not a noun, so nothing
+  indicates what resources exist or how those resources relate. The path from a
+  task to its comments can't be followed, because the structure describes
+  actions instead of the things acted on.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orgs/{orgId}/billing/invoices:
+    get:
+      operationId: listInvoices
+  /orgs/{orgId}/billing/invoices/{invoiceId}:
+    get:
+      operationId: getInvoice
+  /orgs/{orgId}/billing/payments:
+    get:
+      operationId: listPayments
+```
+
+<Example.Reason>
+
+`billing` is not a resource — it has no identifier, no Get, and no List of its
+own. It is a static label dropped into the middle of the path to group related
+sub-paths by category.
+
+- The segments no longer alternate between collection nouns and resource IDs, so
+  the hierarchy breaks: `orgs/{orgId}` looks like a resource, then `billing`
+  looks like a collection, but there is no `billing/{billingId}` to follow.
+- Making it a real collection (e.g.
+  `/orgs/{orgId}/billingAccounts/{billingAccountId}/invoices`) or removing it
+  entirely (e.g. `/orgs/{orgId}/invoices`) fixes the hierarchy; a bare category
+  word should not stand in for a resource.
+
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    List all entries under `paths` and build a segment tree: split each path on
+    `/` and nest the segments as nodes. For example, `/projects/{projectId}/tasks/{taskId}`
+    becomes `projects` → `{projectId}` → `tasks` → `{taskId}`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Walk each node in the tree and check the alternating pattern.
+
+    - If the segment is a path parameter (`{id}`-style), its parent must be a plain collection
+    noun.
+    - If it is a plain word, it must either have a path-parameter child
+    somewhere beneath it in the tree, or have operations of its own.
+
+    A plain segment with neither — like `billing` in `/orgs/{orgId}/billing/invoices` —
+    is a bare grouping label with no identity as a resource. Flag it.
+
+  </Workflow.Step>
+  <Workflow.Step>
+    For each collection/resource pair in the tree, verify the relationship
+    reflects real ownership or containment: a `task` belongs to a `project`, a
+    `comment` belongs to a `task`. If the nesting is arbitrary or purely
+    organisational, flag it.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each collection node, confirm all its resource children are of the same
+    type. A collection should be homogeneous — mixing resource types under one
+    collection segment is a violation.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any path that is flat, verb-shaped, contains a bare grouping segment,
+    or where the nesting does not reflect a real containment relationship.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-101-may-have-sub-resources" enforcement="advisory">
+
+Resources **may** have any number of sub-resources.
+
+</Guideline>
+
+{/* TODO: Depends on IPA-105, IPA-106 - to be documented when those IPAs are enhanced */}
+
+<Guideline id="IPA-101-must-use-consistent-resource-schema" given="resource" enforcement="automatable" dependsOn={["IPA-101-must-support-get", "IPA-101-must-support-list"]}>
+
+The schema for a resource **must** be the same across all methods related to the
+resource
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /users/{userId}:
+    get:
+      operationId: getUser
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+```
+
+<Example.Reason>
+  Every method points at the same `#/components/schemas/User`. A field means the
+  same thing, has the same type, and keeps the same name no matter which
+  operation returns it or accepts it. One `User` model serves Get, List, and
+  Create.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserListItem"
+  /users/{userId}:
+    get:
+      operationId: getUser
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserDetail"
+components:
+  schemas:
+    UserListItem:
+      type: object
+      properties:
+        userId:
+          type: string
+        fullName:
+          type: string
+    UserDetail:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+```
+
+<Example.Reason>
+  List and Get return two different schemas for one resource, even renaming the
+  shared fields: `userId`/`fullName` here, `id`/`name` there. One shape must
+  then be mapped onto the other. A resource should be one type, not two.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-101-must-round-trip-request-fields" given="resource" enforcement="review" effort="reason" dependsOn={["IPA-101-must-use-consistent-resource-schema", "IPA-111"]}>
+
+Every field accepted in a request body **must** also appear in the response body
+for the same resource
+
+Omitting request fields from responses breaks declarative clients and forces
+manual reconciliation in downstream tooling.
+
+- The only exceptions are [sensitive fields](0111.mdx#sensitive-fields), which
+  may be omitted from every response (write-only) or may appear only in the
+  [Create](0106.mdx) response (create-response-only).
+- For the per-method expression of this rule, see [Create](0106.mdx) and
+  [Update](0107.mdx).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+        timezone:
+          type: string
+```
+
+<Example.Reason>
+  `name` and `timezone` are accepted on create and returned on read, so a
+  declarative client can confirm the values it submitted and reconcile state
+  without a separate source of truth.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /users:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+components:
+  schemas:
+    UserCreate:
+      type: object
+      properties:
+        name:
+          type: string
+        timezone:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+```
+
+<Example.Reason>
+  `timezone` is accepted on create but never appears in any response, and it is
+  not a sensitive field. The client cannot read back the value it set, so a
+  declarative tool sees permanent drift it can never reconcile.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect the fields accepted across the resource's request bodies (Create and
+    Update).
+  </Workflow.Step>
+  <Workflow.Step>
+    For each field, confirm it appears in the resource's [Get](0104.mdx)
+    response schema.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any request field absent from the response, unless it is a [sensitive
+    field](0111.mdx#sensitive-fields) marked write-only or create-response-only.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-101-must-not-silently-remove-client-resources" given="resource" enforcement="review" implementation effort="explore">
+
+Resources declared by clients **must not** be silently removed by the server as
+a result of time-based expiry, inactivity, or other server-side lifecycle events
+
+- If such a lifecycle transition is part of the resource's domain model, it
+  **must** be represented as a terminal status on the resource (e.g. `EXPIRED`,
+  `REVOKED`, `REJECTED`).
+- The resource **must** remain readable through the [Get](0104.mdx) and
+  [List](0105.mdx) methods until the client explicitly deletes it.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    AccessGrant:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - EXPIRED
+            - REVOKED
+```
+
+<Example.Reason>
+  When a grant lapses, the server moves `status` to `EXPIRED` and keeps the
+  resource readable. The client observes the transition through Get and List and
+  deletes the resource on its own terms.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    AccessGrant:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum:
+            - ACTIVE
+```
+
+<Example.Reason>
+  The model has no terminal status, so an expired grant can only be represented
+  by removal. The resource disappears from Get and List without a client delete,
+  and declarative clients see unexplained drift.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify resources with server-side lifecycle transitions such as expiry,
+    inactivity, or automatic cleanup.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each transition is modeled as a terminal status value rather than
+    removal of the resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the resource stays readable through Get and List until the client
+    deletes it, and flag any resource the server removes on its own.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-101-should-not-mirror-database-schema" given="schema" enforcement="review" implementation effort="explore">
+
+An API **should not** be expected to reflect the database schema behind it. An
+API that is identical to the underlying database schema is an antipattern, as it
+tightly couples the surface to the underlying system
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - SUSPENDED
+        createdAt:
+          type: string
+          format: date-time
+```
+
+<Example.Reason>
+  This schema exposes only what a consumer needs: API-level field names and a
+  `status` enum that means something in the domain. Storage details like join
+  tables, surrogate keys, soft-delete flags, and version counters stay hidden.
+  That lets the persistence layer be reworked without breaking any clients.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: MongoDB ObjectId
+        full_name:
+          type: string
+        email_addr:
+          type: string
+        deletedAt:
+          type: string
+          format: date-time
+          description:
+            Soft-delete timestamp; null if the document has not been deleted
+        tenantId:
+          type: string
+          description: ObjectId reference to the owning tenant document
+        createdAt:
+          type: integer
+          description: Unix epoch milliseconds
+```
+
+<Example.Reason>
+
+This is a MongoDB document copied straight onto the wire.
+
+- `_id` is the internal ObjectId the database assigns;
+- `tenantId` is a raw ObjectId reference to another collection.
+
+None of these are domain concepts — these are storage mechanics. Exposing these
+fields makes the collection layout the API contract, so a schema migration
+breaks any downstream tooling or clients.
+
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each resource schema under `components.schemas`, list its property names
+    and types.
+  </Workflow.Step>
+  <Workflow.Step>
+    Check the field names. API conventions look like `camelCase` domain names
+    (`createdAt`). Storage-coupled naming looks like `_id`, `__v`, `deletedAt`
+    used as a soft-delete sentinel, or raw ObjectId references (`tenantId` typed
+    as a string with no domain meaning).
+  </Workflow.Step>
+  <Workflow.Step>
+    Look for fields that only exist to serve persistence: MongoDB internal
+    identifiers (`_id`), ORM version keys (`__v`), soft-delete timestamps
+    (`deletedAt` used as a null/non-null flag), and raw cross-collection
+    ObjectId references. The presence of such fields marks the schema as a
+    document projection, not a domain contract.
+  </Workflow.Step>
+  <Workflow.Step>
+    Decide whether the exposed fields were chosen for the consumer, or whether
+    every field of a collection document was dumped verbatim.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any resource whose schema mirrors a database table. Cite the
+    storage-coupled fields and the naming as evidence.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ### Methods
 
@@ -87,32 +635,750 @@ standard methods:
 | Delete          | None                                           | None                    |
 | List            | None                                           | Are the resources       |
 
-- A resource **must** support at minimum [Get](0104.mdx)
-  - Clients **must** be able to validate the state of resources after performing
-    a mutation such as [Create](0106.mdx), [Update](0107.mdx), or
-    [Delete](0108.mdx)
-- A resource **must** also support [List](0105.mdx) except for
-  [singleton resources](0113.mdx) where more than one resource is not possible
-- APIs **should** prefer standard methods over custom methods
-  - [Custom methods](0109.mdx) help define functionality that does not cleanly
-    map to any of the standard methods
+<Guidelines>
+
+{/* TODO: Depends on IPA-104, IPA-105, IPA-106, IPA-107, IPA-108 - to be documented when those IPAs are enhanced */}
+
+<Guideline id="IPA-101-must-support-get" given="resource" enforcement="automatable">
+
+A resource **must** support at minimum [Get](0104.mdx)
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /users/{userId}:
+    get:
+      operationId: getUser
+      responses:
+        "200":
+          description: The requested user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+      responses:
+        "200":
+          description: The requested task.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+```
+
+<Example.Reason>
+  Both resources, `user` and `task`, have an identifier and a Get that returns
+  the resource itself. Get is the cheapest call available for reading a single
+  resource's current state.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      responses:
+        "201":
+          description: The created order.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /orders/{orderId}:
+    delete:
+      operationId: deleteOrder
+      responses:
+        "204":
+          description: The order was deleted.
+```
+
+<Example.Reason>
+  An `order` can be created and deleted, but never read back. There is no GET on
+  `/orders/{orderId}`. So an order's identifier still can't be used to see its
+  current state, inspect the resource, or confirm that a mutation worked. A
+  resource that can't be read is write-only, and that defeats the read-oriented
+  model.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-101-must-allow-state-validation-after-mutation" enforcement="advisory" dependsOn={["IPA-101-must-support-get"]}>
+
+Clients **must** be able to validate the state of resources after performing a
+mutation such as [Create](0106.mdx), [Update](0107.mdx), or [Delete](0108.mdx).
+
+</Guideline>
+
+{/* TODO: Depends on IPA-105, IPA-113 - to be documented when those IPAs are enhanced */}
+
+<Guideline id="IPA-101-must-support-list" given="resource" enforcement="automatable">
+
+A resource **must** support [List](0105.mdx) except for
+[singleton resources](0113.mdx) where more than one resource is not possible
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listTasks
+      summary: List the tasks in a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A page of tasks.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Task"
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A single task.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+```
+
+<Example.Reason>
+  The collection path `/projects/{projectId}/tasks` has a `GET` that lists the
+  tasks in the project. A project can have many tasks, and the `taskId` values
+  usually aren't known up front. List is what surfaces which tasks exist in the
+  first place.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}/tasks/{taskId}:
+    get:
+      operationId: getTask
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A single task.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+    delete:
+      operationId: deleteTask
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Task deleted.
+```
+
+<Example.Reason>
+  A project holds many tasks, but the spec only defines item-level operations on
+  `/projects/{projectId}/tasks/{taskId}`. There's no `GET` on the collection
+  path `/projects/{projectId}/tasks`. So without an already-known `taskId`,
+  there is no way to find out which tasks exist, and the IDs have to be tracked
+  somewhere outside the API.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+{/* TODO: Depends on IPA-109 - to be documented when that IPA is enhanced */}
+
+<Guideline id="IPA-101-should-prefer-standard-methods" given="operation" enforcement="review" effort="reason">
+
+APIs **should** prefer standard methods over custom methods -
+[Custom methods](0109.mdx) help define functionality that does not cleanly map
+to any of the standard methods
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /articles/{articleId}:
+    patch:
+      operationId: updateArticle
+      summary: Update an article
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/merge-patch+json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                status: { type: string }
+      responses:
+        "200":
+          description: The updated article.
+```
+
+<Example.Reason>
+  Editing an article's fields is a partial update of an existing resource, and
+  that is exactly what the standard Update method covers. Written as `PATCH
+  /articles/{articleId}`, it carries the idempotency and response behavior
+  clients already expect, plus SDKs and declarative clients recognize it as the
+  resource's Update. A custom verb provides none of that.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /articles/{articleId}:
+    patch:
+      operationId: updateArticle
+      summary: Update an article
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/merge-patch+json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                status: { type: string }
+      responses:
+        "200":
+          description: The updated article.
+  /articles/{articleId}:publish:
+    post:
+      operationId: publishArticle
+      summary: Publish an article
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The published article.
+```
+
+<Example.Reason>
+  Publishing is a state transition, not a field edit: it validates the draft,
+  stamps a publish time, and makes the article live. No standard method captures
+  that, so a custom `:publish` is justified. The key is that it sits *alongside*
+  the standard `PATCH` Update, not in place of it — ordinary field edits still
+  go through Update, and the custom method covers only the behavior Update can't
+  express. The escape hatch is used without weakening the standard surface.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /articles/{articleId}:setTitle:
+    post:
+      operationId: setArticleTitle
+      summary: Set the title of an article
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+      responses:
+        "200":
+          description: The updated article.
+```
+
+<Example.Reason>
+  Setting one field is still a partial update, so the standard Update method
+  handles it. A custom `:setTitle` verb leads to one custom method per field,
+  and tooling that knows the standard methods can't see what the call does. The
+  custom-method escape hatch should be reserved for behavior that has no
+  standard equivalent.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Look at the operation and pin down its shape: the HTTP verb, and whether the
+    path ends in a resource identifier, a collection, or a custom `:verb`
+    suffix.
+  </Workflow.Step>
+  <Workflow.Step>
+    If the path uses a `:verb` suffix (e.g. `/articles/{articleId}:publish`),
+    it's a custom method. Otherwise it already has a standard method shape and
+    complies.
+  </Workflow.Step>
+  <Workflow.Step>
+    For a custom method, read its summary, request body, and response to work
+    out what it does: what state it reads or changes, and on which resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    Ask whether that intent maps onto a standard method: retrieving one resource
+    (Get), retrieving a collection (List), creating a resource (Create),
+    modifying an existing resource's fields (Update), or removing a resource
+    (Delete).
+  </Workflow.Step>
+  <Workflow.Step>
+    If the intent fits a standard method, flag it. The standard method should be
+    used instead of the custom one.
+  </Workflow.Step>
+  <Workflow.Step>
+    The custom method is fine only when no standard method captures the behavior
+    — say, a stateful transition or action that isn't just reading, creating,
+    replacing, patching, or deleting the resource.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ### Read-Only Resources
 
 Read-only resources are resources that cannot be modified by API consumers.
 
-- Read-only resources **must** have [Get](0104.mdx) and [List](0105.mdx) methods
-- Read-only resources **must not** have [Create](0106.mdx), [Update](0107.mdx),
-  or [Delete](0108.mdx) methods
-- Read-only resources **may** have [custom methods](0109.mdx) as appropriate
-- All response schema properties for read-only resources **must** be marked as
-  read-only
-  - In OpenAPI, this means all properties **must** have `readOnly: true`
-  - All fields in read-only resources are server-owned. For guidance on
-    server-owned fields, see [IPA-111](0111.mdx#single-owner-fields)
-- Unsupported operations on read-only resources **should** return
-  `405 Not Allowed`
-- Unsupported operations **must not** be documented
-  - Some declarative-friendly clients require all standard methods to be
-    implemented, but we consider documented unsupported methods to be in
-    detriment of generated documentation and code
+<Guidelines>
+
+{/* TODO: Depends on IPA-104 and IPA-105 */}
+
+<Guideline id="IPA-101-must-have-get-and-list-on-read-only" given="resource" enforcement="automatable">
+
+Read-only resources **must** have [Get](0104.mdx) and [List](0105.mdx) methods
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /regions:
+    get:
+      operationId: listRegions
+      summary: List regions
+      responses:
+        "200":
+          description: A page of regions.
+  /regions/{regionId}:
+    get:
+      operationId: getRegion
+      summary: Get a region
+      parameters:
+        - name: regionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The requested region.
+```
+
+<Example.Reason>
+  Consumers can't create or change regions, but still need to find out which
+  ones exist (List) and look one up by id (Get). Without both, the resource is
+  there but not really usable.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /regions:
+    get:
+      operationId: listRegions
+      summary: List regions
+      responses:
+        "200":
+          description: A page of regions.
+```
+
+<Example.Reason>
+  The collection can be listed, but there's no Get on `/regions/{regionId}`. So
+  a known region id has no way to fetch just that one region. List alone isn't
+  enough; a read-only resource needs Get too.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+{/* TODO: Depends on IPA-106, IPA-107, and IPA-108 */}
+
+<Guideline id="IPA-101-must-not-have-mutation-methods-on-read-only" given="resource" enforcement="automatable" effort="reason">
+
+Read-only resources **must not** have [Create](0106.mdx), [Update](0107.mdx), or
+[Delete](0108.mdx) methods
+
+</Guideline>
+
+<Guideline id="IPA-101-may-have-custom-methods-on-read-only" enforcement="advisory">
+
+Read-only resources **may** have [custom methods](0109.mdx) as appropriate
+
+</Guideline>
+
+<Guideline id="IPA-101-must-mark-all-properties-read-only" given="schema" enforcement="review" effort="reason">
+
+All response schema properties for read-only resources **must** be marked as
+read-only
+
+- In OpenAPI, this means all properties **must** have `readOnly:   true`
+- All fields in read-only resources are server-owned. For guidance on
+  server-owned fields, see [IPA-111](0111.mdx#single-owner-fields)
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    AuditEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        action:
+          type: string
+          readOnly: true
+        actorId:
+          type: string
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+```
+
+<Example.Reason>
+  `AuditEvent` is read-only, so the server owns every field. With `readOnly:
+  true` on each one, generated clients leave every field out of request
+  payloads. Nothing here is writable, and the schema says so.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    AuditEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        action:
+          type: string
+        actorId:
+          type: string
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+```
+
+<Example.Reason>
+  `action` and `createdAt` are missing `readOnly: true`, so the schema reads as
+  if those fields are writable. Neither is — the server owns every field on a
+  read-only resource. A missing marker on any field produces fake writable
+  fields in the generated clients and docs.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Establish that the resource is genuinely read-only by intent: the server
+    produces and owns all of the resource's state, and consumers supply none of
+    it.
+
+    - The structural tell is a resource with Get (and List) but no Create,
+    Update, or Delete.
+    - If any field is consumer-supplied, the resource is
+    writable — this guideline doesn't apply, and per-field ownership is governed
+    by [IPA-111](0111.mdx#single-owner-fields) instead.
+
+  </Workflow.Step>
+  <Workflow.Step>
+    Find the Get (and List item) response schema under `components.schemas` and
+    follow any `$ref`, `allOf`, or composition through to the full property list.
+  </Workflow.Step>
+  <Workflow.Step>
+    Walk every property, including the ones inside nested objects and array
+    items.
+  </Workflow.Step>
+  <Workflow.Step>
+    Each property must declare `readOnly: true` — on a read-only resource every
+    field is server-owned, so none can be writable.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any property on a read-only resource that's missing `readOnly: true`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-101-should-return-405-for-unsupported-ops" given="operation" enforcement="review" effort="explore" implementation>
+
+Unsupported operations on read-only resources **should** return
+`405 Not Allowed`
+
+- Some declarative-friendly clients require all standard methods to be
+  implemented, but documented unsupported methods are a detriment to generated
+  documentation and code
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /articles/{articleId}:
+    parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getArticle
+      responses:
+        "200":
+          description: The requested article.
+```
+
+<Example.Reason>
+  The read-only `article` documents only `get` — the unsupported `delete` is
+  kept out of the spec entirely, as the rule against documenting unsupported
+  operations requires. The `405` is a runtime concern, not a documented one: a
+  `DELETE /articles/{articleId}` call still resolves to `405 Not Allowed` at the
+  server, marking the method as recognized but not permitted rather than `404`
+  (resource missing) or `403` (forbidden). The behavior lives in the
+  implementation while the contract stays clean.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /articles/{articleId}:
+    parameters:
+      - name: articleId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getArticle
+      responses:
+        "200":
+          description: The requested article.
+    delete:
+      operationId: deleteArticle
+      responses:
+        "404":
+          description: Article not found.
+```
+
+<Example.Reason>
+  A `404` here muddles two different things: the resource doesn't exist, versus
+  the method isn't allowed on it. A `404` reads as a missing record, prompting a
+  retry with another id. The method is recognized but disallowed, so the honest
+  code is `405`.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify each read-only resource: only Get (and List) are documented, with
+    no Create, Update, or Delete.
+  </Workflow.Step>
+  <Workflow.Step>
+    In the implementation behind that path (routing or controller code), check
+    what an unsupported mutation — `POST`, `PUT`, `PATCH`, or `DELETE` —
+    returns.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any unsupported mutation that resolves to anything other than `405 Not
+    Allowed` (for example `404`, `403`, or a success code).
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+{/* TODO: Add dependency to lintable rules for checking unsupported operations for DELETE, PATCH and POST */}
+
+<Guideline id="IPA-101-must-not-document-unsupported-operations" given="operation" enforcement="automatable" dependsOn={[
+    "IPA-101-must-not-have-mutation-methods-on-read-only",
+    "IPA-101-should-return-405-for-unsupported-ops",
+  ]}>
+
+Unsupported operations on read-only resources **must not** be documented, so
+that generated documentation and client code do not surface methods the API does
+not actually support.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /articles/{articleId}:
+    get:
+      operationId: getArticle
+      responses:
+        "200":
+          description: The requested article.
+  /articles:
+    get:
+      operationId: listArticles
+      responses:
+        "200":
+          description: A page of articles.
+```
+
+<Example.Reason>
+  This read-only `article` resource lists only what it actually serves:
+  `getArticle` and `listArticles`. There are no mutation operations in the spec,
+  so doc generators and SDK builders produce only the methods the API honors. No
+  generated call targets an endpoint the server will reject.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /articles/{articleId}:
+    get:
+      operationId: getArticle
+      responses:
+        "200":
+          description: The requested article.
+    delete:
+      operationId: deleteArticle
+      responses:
+        "405":
+          description: Articles are read-only and cannot be deleted.
+  /articles:
+    get:
+      operationId: listArticles
+      responses:
+        "200":
+          description: A page of articles.
+```
+
+<Example.Reason>
+  Here `delete` exists only to return `405 Not Allowed`. That advertises a
+  capability the server doesn't have. Generated docs and SDKs will still expose
+  a `deleteArticle` method, and clients will write code against an operation
+  that always fails.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>

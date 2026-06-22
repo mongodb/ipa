@@ -1,18 +1,19 @@
 import { type ReactNode, type ReactElement } from "react";
 import clsx from "clsx";
-import type { Guideline } from "../../../types/guideline";
+import type { Guideline as GuidelineData } from "../../../types/guideline";
 import { GuidelineContext } from "../../../hooks/useGuideline";
 import { useIsInsideGuidelines } from "../Guidelines/GuidelinesContext";
 import { NumberCircle } from "../shared/NumberCircle";
 import { GuidelineHeader } from "./GuidelineHeader";
 import { GuidelineFooter } from "./GuidelineFooter";
+import { Details } from "./GuidelineDetails";
 import styles from "./Guideline.module.css";
 
-interface GuidelineProps extends Guideline {
+interface GuidelineProps extends GuidelineData {
   children: ReactNode;
 }
 
-export function Guideline({
+function GuidelineBase({
   children,
   ...guideline
 }: GuidelineProps): ReactElement {
@@ -39,3 +40,5 @@ export function Guideline({
     </GuidelineContext.Provider>
   );
 }
+
+export const Guideline = Object.assign(GuidelineBase, { Details });
