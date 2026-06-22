@@ -468,6 +468,363 @@ the server may scale it up or down based on load.
 }
 ```
 
+### Sensitive Fields
+
+Some resource fields carry secrets — passwords, API keys, private credentials.
+The API design **must** prevent accidental exposure of these values in
+responses.
+
+<Guidelines>
+
+<Guideline id="IPA-111-must-mark-sensitive-fields" given="schema" enforcement="review" effort="reason" dependsOn={["IPA-117"]}>
+
+Sensitive fields **must** be marked in OpenAPI so that consumers and tooling can
+identify them (see [IPA-117](0117.mdx#sensitive-field-markings) for the required
+annotations).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    ApiKey:
+      type: object
+      properties:
+        displayName:
+          type: string
+        key:
+          type: string
+          format: password
+          writeOnly: true
+```
+
+<Example.Reason>
+  The `key` property carries `format: password` and `writeOnly: true`, so
+  tooling and reviewers know the field contains a secret and must not appear in
+  responses.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    ApiKey:
+      type: object
+      properties:
+        displayName:
+          type: string
+        key:
+          type: string
+```
+
+<Example.Reason>
+  The `key` property lacks any annotation — no `format: password`, no
+  `writeOnly` — so neither consumers nor tooling can tell that the field carries
+  a secret.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify fields that carry secrets — passwords, API keys, credentials, or
+    other sensitive material.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each sensitive field, confirm it carries an OpenAPI annotation (e.g.
+    `format: password`, `writeOnly: true`) that marks it as sensitive.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report sensitive fields that have no marking or rely only on naming
+    conventions.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+Sensitive fields **must** follow one of the following information-flow patterns:
+
+<Guidelines>
+
+<Guideline id="IPA-111-must-use-write-only-sensitive" given="schema" enforcement="review" effort="reason">
+
+**Write-only.** The client submits the value on [Create](0106.mdx) or
+[Update](0107.mdx) and the server **must not** return it in any response.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    ApiKeyCreate:
+      type: object
+      properties:
+        displayName:
+          type: string
+        key:
+          type: string
+          format: password
+          writeOnly: true
+```
+
+<Example.Reason>
+  The `key` is write-only — the client sends it on create, and the server never
+  returns it in subsequent Get or List responses.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    UserUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+          format: password
+          writeOnly: true
+```
+
+<Example.Reason>
+  When updating a user, the client submits the new `password` on
+  [Update](0107.mdx). It is `writeOnly: true`, so the server accepts it but
+  never returns it in any response.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    ApiKey:
+      type: object
+      properties:
+        displayName:
+          type: string
+        key:
+          type: string
+```
+
+<Example.Reason>
+  The `key` is not marked write-only, so the client expects it to appear in
+  responses — leaking the secret.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify fields whose value is submitted by the client and must not be
+    returned.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each such field is marked `writeOnly: true` and does not appear in
+    response schemas.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any write-only field that appears in a response schema.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-111-may-use-create-response-only-sensitive" given="schema" enforcement="review" effort="reason">
+
+**Create-response-only.** For values the client cannot retrieve later (e.g.
+server-generated API keys), the field **may** appear in the [Create](0106.mdx)
+response so the client can capture it, but **must not** appear in subsequent
+[Get](0104.mdx) or [List](0105.mdx) responses. Create-response-only is the
+sanctioned exception to the [schema consistency rule](0101.mdx#resources).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    # Create (POST) response: returns the secret once
+    ApiKeyCreateResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        key:
+          type: string
+          format: password
+          readOnly: true
+    # Get and List response: omits the secret
+    ApiKey:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+```
+
+<Example.Reason>
+  The server-generated `key` appears only in the Create response schema, marked
+  `readOnly` since the client never sets it. The Get and List schema omits it
+  entirely, so the secret cannot be retrieved later.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    # Single schema reused by Create, Get, and List
+    ApiKey:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        key:
+          type: string
+          format: password
+          readOnly: true
+```
+
+<Example.Reason>
+  A single response schema carries `key` across Create, Get, and List, so the
+  secret is returned on every read instead of only once on creation.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify fields that are server-generated and shown only once (e.g., initial
+    API key secret).
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the field appears only in the Create response schema and is absent
+    from the Get and List response schemas.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any create-response-only field that appears in Get or List response
+    schemas.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+When a masked representation of a sensitive field (e.g. `****` or a last-4
+display value) needs to appear in [Get](0104.mdx) or [List](0105.mdx) responses,
+it **must** be modeled as a separate read-only **redacted sibling** property
+following the [Effective Values](#effective-values) pattern. The raw and
+redacted values **must not** share the same property name. A redacted sibling
+**may** be added to either a write-only or a create-response-only field
+independently of the chosen information-flow pattern.
+
+<Guidelines>
+
+<Guideline id="IPA-111-must-model-redacted-as-separate-property" given="schema" enforcement="review" effort="reason">
+
+A masked display of a sensitive field (e.g. `****` or a last-4 display value)
+**must** be modeled as a separate read-only **redacted sibling** property, not
+reusing the raw field's name.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    ApiKey:
+      type: object
+      properties:
+        key:
+          type: string
+          format: password
+          writeOnly: true
+        keyRedacted:
+          type: string
+          description: Last four characters of the API key.
+          readOnly: true
+```
+
+<Example.Reason>
+  The raw value is `key` (write-only); the masked display is `keyRedacted`
+  (read-only, last-4 display). They are distinct properties with different
+  names, so no ambiguity exists about which carries the secret.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    ApiKey:
+      type: object
+      properties:
+        key:
+          type: string
+```
+
+<Example.Reason>
+  A single property named `key` cannot simultaneously be write-only and carry a
+  masked display. Consumers cannot tell whether the value is the raw secret or a
+  redacted version.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Find fields whose response value is a masked or truncated display of a
+    secret (e.g. `****`, last-4).
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the masked value lives on a separate property with a distinct name
+    (e.g. `keyRedacted`) rather than replacing the raw field.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any field that mixes a raw secret and a masked display under the same
+    property name.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
 ### Boolean Values
 
 <Guidelines>

@@ -673,6 +673,157 @@ properties:
 
 </Guidelines>
 
+### Sensitive Field Markings
+
+The OpenAPI `format: password` keyword identifies properties whose value is
+itself a secret. Guidelines below govern when to apply it.
+
+<Guidelines>
+
+<Guideline id="IPA-117-must-use-format-password-on-secrets" given="schema" enforcement="review" effort="check" dependsOn={["IPA-111"]}>
+
+**Must use** `format: password` on any property whose value is itself a secret
+per [IPA-111 — Sensitive Fields](0111.mdx#sensitive-fields).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    ApiKey:
+      type: object
+      properties:
+        key:
+          type: string
+          format: password
+          writeOnly: true
+```
+
+<Example.Reason>
+  The `key` property carries a secret value (an API key), so `format: password`
+  marks it as a secret for tooling and consumers.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    ApiKey:
+      type: object
+      properties:
+        key:
+          type: string
+          writeOnly: true
+```
+
+<Example.Reason>
+  The `key` is write-only but lacks `format: password`, so tooling cannot
+  distinguish it from any other write-only string field.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify all properties that carry a secret value per IPA-111.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each such property sets `format: password` in its schema.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report secret-carrying properties that omit `format: password`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-117-must-not-format-password-on-redacted" given="schema" enforcement="review" effort="check" dependsOn={["IPA-111"]}>
+
+**Must not** use `format: password` on a redacted sibling property whose value
+is a masked display (`****`, last-4 digits, etc.). The redacted value is not
+itself a secret; marking it as such misleads consumers and tooling.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    ApiKey:
+      type: object
+      properties:
+        key:
+          type: string
+          format: password
+          writeOnly: true
+        keyRedacted:
+          type: string
+          description: Last four characters of the API key.
+          readOnly: true
+```
+
+<Example.Reason>
+  Only the raw `key` carries `format: password`. The redacted sibling
+  `keyRedacted` carries a masked display, not a secret, so it omits the format.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    ApiKey:
+      type: object
+      properties:
+        key:
+          type: string
+          format: password
+          writeOnly: true
+        keyRedacted:
+          type: string
+          format: password
+          description: Last four characters of the API key.
+          readOnly: true
+```
+
+<Example.Reason>
+  `keyRedacted` is a masked display whose value is not a secret — it repeats a
+  few characters the consumer already provided. Marking it with `format:
+  password` misleads tooling into treating the redacted value as a secret.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify redacted sibling properties — read-only fields that show a masked
+    or truncated display of a sensitive field.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm none of these sibling properties carries `format: password`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report redacted siblings that are incorrectly marked with `format:
+    password`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
 ### Examples
 
 <Guidelines>
