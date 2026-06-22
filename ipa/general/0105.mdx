@@ -11,20 +11,246 @@ which lives within that collection.
 
 ## Guidance
 
-- APIs **must** provide a List method for resources unless the resource is a
-  singleton
-  - The purpose of the List method is to return data from a finite collection
-- The HTTP verb **must** be
-  [`GET`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/GET)
-- The method **must not** [cause side effects](0103.mdx)
-- The request **must not** include a body
-- The response body **should** consist of the same resource object returned by
-  the [Get](0104.mdx) method
-  - The object **may** include any
-    [HATEOAS](https://en.wikipedia.org/wiki/HATEOAS) `links` field from the
-    individual resource
-- The response status code **must** be
-  [200 OK](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200)
+<Guidelines>
+
+<Guideline id="IPA-105-must-provide-list-method" given="paths" enforcement="review" effort="reason">
+
+APIs **must** provide a List method for resources unless the resource is a
+singleton.
+
+- The purpose of the List method is to return data from a finite collection
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    get:
+      operationId: listGroupClusters
+```
+
+<Example.Reason>
+  The collection `/groups/{groupId}/clusters` exposes a `GET` List method, so
+  callers can retrieve the finite set of clusters within the group.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    For each collection URI in `paths` (a path ending in a collection noun with
+    no trailing resource identifier), check whether the resource is a
+    [singleton](0113.mdx). Singletons are exempt.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the collection URI defines a `get` operation.
+  </Workflow.Step>
+  <Workflow.Step>
+    If a non-singleton collection has no `get` operation, flag the missing List
+    method.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-must-use-get-verb" given="paths" enforcement="automatable" effort="check">
+
+The HTTP verb **must** be
+[`GET`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/GET).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    get:
+      operationId: listGroupClusters
+```
+
+<Example.Reason>
+  The List method is defined under the `get` verb on the collection URI.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-must-not-cause-side-effects" given="get-operation" enforcement="review" effort="reason">
+
+The method **must not** [cause side effects](0103.mdx).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    get:
+      operationId: listGroupClusters
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  The List operation only reads and returns the collection; it does not create,
+  modify, or delete any resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Inspect the `get` operation on the collection URI and review its description
+    and behavior.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the operation only reads data and does not mutate server state.
+  </Workflow.Step>
+  <Workflow.Step>
+    If the operation creates, updates, or deletes resources, flag it as causing
+    side effects.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-must-not-include-request-body" given="get-operation" enforcement="automatable" effort="check">
+
+The request **must not** include a body.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    get:
+      operationId: listGroupClusters
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+```
+
+<Example.Reason>
+  The List operation defines no `requestBody`; all input is supplied through
+  path and query parameters.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-should-return-same-resource-object" given="get-operation" enforcement="review" effort="reason">
+
+The response body **should** consist of the same resource object returned by the
+[Get](0104.mdx) method.
+
+- The object **may** include any
+  [HATEOAS](https://en.wikipedia.org/wiki/HATEOAS) `links` field from the
+  individual resource
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    get:
+      operationId: listGroupClusters
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ClusterResponse"
+  /groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getGroupCluster
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClusterResponse"
+```
+
+<Example.Reason>
+  The List response reuses the same `ClusterResponse` object returned by the Get
+  method, so a single resource has one consistent shape across both methods.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the resource schema returned by the Get method for the same resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare it to the object type returned in the List method's response array.
+  </Workflow.Step>
+  <Workflow.Step>
+    If the List method returns a different object shape, flag the divergence.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-must-return-200-status" given="get-operation" enforcement="automatable" effort="check">
+
+The response status code **must** be
+[200 OK](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    get:
+      operationId: listGroupClusters
+      responses:
+        "200":
+          description: OK
+```
+
+<Example.Reason>
+  The successful List response is declared with the `200` status code.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Example
 
@@ -34,13 +260,158 @@ GET /groups/${groupId}/clusters
 
 ### Naming
 
-- Operation ID **must** be unique
-- Operation ID **must** be in `camelCase`
-- Operation ID **must** start with the verb “list”
-- Operation ID **should** be followed by a noun or compound noun
-- The noun(s) in the Operation ID **should** be the collection identifiers from
-  the resource identifier in singular form, where the last noun is in plural
-  form
+<Guidelines>
+
+<Guideline id="IPA-105-must-operation-id-unique" given="get-operation" enforcement="rule" effort="check">
+
+Operation ID **must** be unique.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    get:
+      operationId: listGroupClusters
+  /groups/{groupId}/users:
+    get:
+      operationId: listGroupUsers
+```
+
+<Example.Reason>
+  Each operation has a distinct `operationId`, so no two operations collide.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-must-operation-id-camel-case" given="get-operation" enforcement="rule" effort="check">
+
+Operation ID **must** be in `camelCase`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    get:
+      operationId: listGroupClusters
+```
+
+<Example.Reason>
+  `listGroupClusters` starts with a lowercase letter and capitalizes each
+  subsequent word, following `camelCase`.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-must-operation-id-start-with-list" given="get-operation" enforcement="rule" effort="check">
+
+Operation ID **must** start with the verb "list".
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    get:
+      operationId: listGroupClusters
+```
+
+<Example.Reason>
+  The `operationId` begins with the verb `list`, identifying the operation as a
+  List method.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-should-operation-id-followed-by-noun" given="get-operation" enforcement="review" effort="check">
+
+Operation ID **should** be followed by a noun or compound noun.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    get:
+      operationId: listGroupClusters
+```
+
+<Example.Reason>
+  The verb `list` is followed by the compound noun `GroupClusters`, naming what
+  is listed.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-105-should-noun-from-collection-identifiers" given="get-operation" enforcement="review" effort="reason">
+
+The noun(s) in the Operation ID **should** be the collection identifiers from
+the resource identifier in singular form, where the last noun is in plural form.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    get:
+      operationId: listGroupClusters
+```
+
+<Example.Reason>
+  For `/groups/{groupId}/clusters`, the collection identifiers are `groups` and
+  `clusters`; the leading noun is singularized to `Group` and the final noun
+  stays plural as `Clusters`, giving `listGroupClusters`.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Extract the collection identifiers from the resource URI in order, ignoring
+    path parameters.
+  </Workflow.Step>
+  <Workflow.Step>
+    Singularize each collection identifier except the last, which stays plural,
+    and concatenate them in `camelCase` after the `list` verb.
+  </Workflow.Step>
+  <Workflow.Step>
+    Compare the result to the actual `operationId`; if they differ, flag the
+    naming mismatch.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Examples:
 

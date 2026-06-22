@@ -14,24 +14,311 @@ may modify and return values are complex, not public, and not repeatable.
 
 ### Single Owner Fields
 
+<Guidelines>
+
+<Guideline id="IPA-111-must-have-single-owner" given="schema" enforcement="review" effort="reason">
+
 Fields **must** have a single owner, whether that is the client or the server.
 
 - **Server-owned fields** are fields that are controlled and modified by the
   service
-  - Server-owned fields **must** be documented as read-only
-  - In OpenAPI, server-owned fields **must** have `readOnly: true`
-  - Server-owned fields **must not** be accepted in request bodies for
-    [Create](0106.mdx) or [Update](0107.mdx) operations
-  - Server-owned fields **may** be omitted if appropriate to the API
-    - API Producers **should** document whether the server-owned field is
-      guaranteed, or if it can be omitted in the response
 - **Client-owned fields** are fields that are controlled by the client
-  - All fields that are not explicitly documented as server-owned **must** be
-    considered client-owned
-  - The server **must** respect the value (or lack thereof) of all client-owned
-    fields and not modify them
-  - The server **must** always return the same value the client sent (or absence
-    of value) for client-owned fields
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      type: object
+      properties:
+        clusterName:
+          type: string
+        stateName:
+          type: string
+          readOnly: true
+```
+
+<Example.Reason>
+  `clusterName` is client-owned and mutable, while `stateName` is server-owned
+  and marked `readOnly: true`. Each field has a single, unambiguous owner.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    For each field in the schema, determine whether the client or the server
+    controls its value.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm fields are not jointly controlled — a field modified by both the
+    client and the server has no single owner.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag fields whose ownership is ambiguous or undocumented.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-111-must-document-server-owned-read-only" given="schema" enforcement="review" effort="reason">
+
+Server-owned fields **must** be documented as read-only
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      type: object
+      properties:
+        stateName:
+          type: string
+          description: Current state of the cluster, set by the service.
+          readOnly: true
+```
+
+<Example.Reason>
+  `stateName` is controlled by the service and is documented as read-only,
+  signaling to clients that they cannot set it.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>Identify the server-owned fields in the schema.</Workflow.Step>
+  <Workflow.Step>Confirm each is documented as read-only.</Workflow.Step>
+  <Workflow.Step>
+    Flag any server-owned field not documented as read-only.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-111-must-server-owned-read-only-true" given="schema" enforcement="automatable" effort="check">
+
+In OpenAPI, server-owned fields **must** have `readOnly: true`
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      type: object
+      properties:
+        stateName:
+          type: string
+          readOnly: true
+```
+
+<Example.Reason>
+  The server-owned `stateName` field sets `readOnly: true`, the OpenAPI
+  mechanism for marking a field as not settable by the client.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-111-must-not-accept-server-owned-in-request" given="schema" enforcement="review" effort="reason">
+
+Server-owned fields **must not** be accepted in request bodies for
+[Create](0106.mdx) or [Update](0107.mdx) operations
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      type: object
+      properties:
+        clusterName:
+          type: string
+        stateName:
+          type: string
+          readOnly: true
+```
+
+<Example.Reason>
+  `stateName` is marked `readOnly: true`, so it is excluded from Create and
+  Update request bodies and the service ignores any client-supplied value.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    For each Create or Update operation, inspect the request body schema.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm no server-owned (read-only) field is accepted in the request body.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag operations that accept a server-owned field in their request body.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-111-may-omit-server-owned" enforcement="advisory">
+
+Server-owned fields **may** be omitted if appropriate to the API
+
+- API Producers **should** document whether the server-owned field is
+  guaranteed, or if it can be omitted in the response
+
+</Guideline>
+
+<Guideline id="IPA-111-must-consider-undocumented-client-owned" given="schema" enforcement="review" effort="reason">
+
+All fields that are not explicitly documented as server-owned **must** be
+considered client-owned
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      type: object
+      properties:
+        clusterName:
+          type: string
+        stateName:
+          type: string
+          readOnly: true
+```
+
+<Example.Reason>
+  `stateName` is explicitly documented as server-owned via `readOnly: true`;
+  `clusterName` carries no such marking and is therefore client-owned.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    For each field, check whether it is explicitly documented as server-owned.
+  </Workflow.Step>
+  <Workflow.Step>
+    Treat every field without that documentation as client-owned.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag fields whose intended client ownership conflicts with how the service
+    actually treats them.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-111-must-respect-client-owned-values" given="schema" enforcement="review" effort="explore" implementation>
+
+The server **must** respect the value (or lack thereof) of all client-owned
+fields and not modify them
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      type: object
+      properties:
+        clusterName:
+          type: string
+```
+
+<Example.Reason>
+  `clusterName` is client-owned, so the service stores and returns whatever the
+  client provides without modifying it.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Set a client-owned field to a known value via a Create or Update operation.
+  </Workflow.Step>
+  <Workflow.Step>Retrieve the resource and inspect the field.</Workflow.Step>
+  <Workflow.Step>
+    Confirm the service did not modify the value the client sent. Flag any
+    client-owned field the server alters.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-111-must-return-same-client-owned-value" given="schema" enforcement="review" effort="explore" implementation>
+
+The server **must** always return the same value the client sent (or absence of
+value) for client-owned fields
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      type: object
+      properties:
+        clusterName:
+          type: string
+```
+
+<Example.Reason>
+  For the client-owned `clusterName`, the service echoes back exactly the value
+  the client sent, or omits it if the client sent no value.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Send a client-owned field with a specific value, and separately send a
+    request omitting it.
+  </Workflow.Step>
+  <Workflow.Step>Retrieve the resource after each request.</Workflow.Step>
+  <Workflow.Step>
+    Confirm the response returns the same value the client sent, and the same
+    absence when no value was sent. Flag discrepancies.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 :::note
 
@@ -44,25 +331,173 @@ For resources where all fields are server-owned, see
 ### Optional Fields with Server Defaults
 
 Assigning a server-side default in place of a client-omitted value during
-resource creation is an anti-pattern because it creates hybrid ownership — the
-field is client-owned but the server is effectively choosing a value. This makes
-it harder for state-driven clients and downstream tooling to tell whether a
-returned value was client-set or server-filled.
+resource creation is an anti-pattern: it creates hybrid ownership where the
+field is client-owned but the server effectively chooses a value. State-driven
+clients and downstream tooling then cannot tell whether a returned value was
+client-set or server-filled, and they report drift on every reconciliation.
 
-- Optional request fields **must** be returned by the server with the same value
-  (or absence of value) the client provided.
-- Legacy fields that retain this anti-pattern **must** be annotated per
-  [IPA-131](0131.mdx) so declarative tooling can handle the hybrid ownership.
-- Booleans are exempt: optional booleans **must** default to `false` per
-  [Boolean Values](#boolean-values), avoiding a tri-state (true / false / unset)
-  that is hard for both API producers and consumers to reason about.
-- Booleans **must not** be annotated with the extension described in
-  [IPA-131](0131.mdx).
+<Guidelines>
+
+<Guideline id="IPA-111-must-return-client-provided-optional-value" given="schema" enforcement="review" effort="explore" implementation>
+
+Optional request fields **must** be returned by the server with the same value
+(or absence of value) the client provided
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Backup:
+      type: object
+      properties:
+        retentionDays:
+          type: integer
+          description:
+            Optional. Returned exactly as provided; absent when not set.
+```
+
+<Example.Reason>
+  When the client omits `retentionDays`, the server leaves it absent rather than
+  filling in a default, so a read reflects exactly what the client set and no
+  drift appears.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Backup:
+      type: object
+      properties:
+        retentionDays:
+          type: integer
+          description: Optional. Defaults to 30 when omitted by the client.
+```
+
+<Example.Reason>
+  The client omits `retentionDays`, but the server returns `30`. The field is
+  client-owned, yet the response carries a server-chosen value, so a declarative
+  client sees a difference it never set and reconciles against it indefinitely.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify optional request fields that are client-owned per [Single Owner
+    Fields](#single-owner-fields).
+  </Workflow.Step>
+  <Workflow.Step>
+    Create a resource omitting each such field, then read it back.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the field is returned as the client left it — absent when omitted —
+    rather than populated with a server-chosen default.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any optional client-owned field the server fills with a default on
+    the response.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-111-must-annotate-legacy-server-default" given="schema" enforcement="review" effort="reason" dependsOn={["IPA-131-must-use-x-xgen-prefix", "IPA-111-must-return-client-provided-optional-value"]}>
+
+Legacy fields that cannot be remediated away from the
+optional-plus-server-default pattern **must** be annotated per
+[IPA-131](0131.mdx) so declarative tooling can reconcile the hybrid ownership
+
+- New APIs **must not** rely on this escape hatch; it exists only for legacy
+  fields that cannot change.
+- Optional boolean fields are exempt and **must not** be annotated — they are
+  governed by [Boolean Values](#boolean-values).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Backup:
+      type: object
+      properties:
+        retentionDays:
+          type: integer
+          x-xgen-server-computed-when-client-omitted: true
+          description: Legacy. Server assigns a value when the client omits it.
+```
+
+<Example.Reason>
+  The legacy field keeps its server-default behavior but declares
+  `x-xgen-server-computed-when-client-omitted`, so tooling knows the returned
+  value may be server-filled and does not treat it as client drift.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Backup:
+      type: object
+      properties:
+        retentionDays:
+          type: integer
+          description: Legacy. Server assigns a value when the client omits it.
+```
+
+<Example.Reason>
+  The field retains the optional-plus-server-default behavior but carries no
+  annotation, so declarative tooling sees the server-assigned value as
+  client-owned and reports spurious drift.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify optional client-owned fields for which the server still assigns a
+    value when the client omits one.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each such field that cannot be remediated declares
+    `x-xgen-server-computed-when-client-omitted: true`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm no boolean field carries the annotation.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any unannotated legacy field exhibiting the pattern, and any new
+    (non-legacy) field relying on it.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ### Effective Values
 
 There are instances where a service will allocate, generate, or calculate a
 value that may differ from what the client specified.
+
+<Guidelines>
+
+<Guideline id="IPA-111-must-express-effective-value-as-two-fields" given="schema" enforcement="review" effort="reason">
 
 An attribute with an effective value **must** be expressed as two fields in the
 API:
@@ -71,9 +506,115 @@ API:
   and **must not** be modified by the service
 - A **server-owned** read-only field that records the effective value decided on
   by the service
-  - Effective values **must** be named by prefixing `effective` to the mutable
-    field's name
-  - In OpenAPI, the effective value field **must** have `readOnly: true`
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      type: object
+      properties:
+        instanceSize:
+          type: string
+        effectiveInstanceSize:
+          type: string
+          readOnly: true
+```
+
+<Example.Reason>
+  The desired `instanceSize` is a client-owned mutable field, while
+  `effectiveInstanceSize` is a server-owned read-only field recording the value
+  the service decided on.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Identify attributes whose effective value may differ from what the client
+    specified.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each is expressed as two fields: a client-owned mutable field and a
+    server-owned read-only field.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag attributes that collapse the desired and effective values into a single
+    field.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-111-must-prefix-effective" given="schema" enforcement="automatable" effort="check">
+
+Effective values **must** be named by prefixing `effective` to the mutable
+field's name
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      type: object
+      properties:
+        instanceSize:
+          type: string
+        effectiveInstanceSize:
+          type: string
+          readOnly: true
+```
+
+<Example.Reason>
+  The effective field is named `effectiveInstanceSize`, prefixing `effective` to
+  the mutable field name `instanceSize`.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-111-must-effective-value-read-only-true" given="schema" enforcement="automatable" effort="check">
+
+In OpenAPI, the effective value field **must** have `readOnly: true`
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Cluster:
+      type: object
+      properties:
+        effectiveInstanceSize:
+          type: string
+          readOnly: true
+```
+
+<Example.Reason>
+  The `effectiveInstanceSize` field sets `readOnly: true`, marking the
+  server-decided effective value as not settable by the client.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Example
 
@@ -89,11 +630,437 @@ the server may scale it up or down based on load.
 }
 ```
 
+### Sensitive Fields
+
+Some resource fields carry secrets — passwords, API keys, private credentials.
+The API design **must** prevent accidental exposure of these values in
+responses.
+
+<Guidelines>
+
+<Guideline id="IPA-111-must-mark-sensitive-fields" given="schema" enforcement="review" effort="reason" dependsOn={["IPA-117"]}>
+
+Sensitive fields **must** be marked in OpenAPI so that consumers and tooling can
+identify them (see [IPA-117](0117.mdx#sensitive-field-markings) for the required
+annotations).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    ApiKey:
+      type: object
+      properties:
+        displayName:
+          type: string
+        key:
+          type: string
+          format: password
+          writeOnly: true
+```
+
+<Example.Reason>
+  The `key` property carries `format: password` and `writeOnly: true`, so
+  tooling and reviewers know the field contains a secret and must not appear in
+  responses.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    ApiKey:
+      type: object
+      properties:
+        displayName:
+          type: string
+        key:
+          type: string
+```
+
+<Example.Reason>
+  The `key` property lacks any annotation — no `format: password`, no
+  `writeOnly` — so neither consumers nor tooling can tell that the field carries
+  a secret.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify fields that carry secrets — passwords, API keys, credentials, or
+    other sensitive material.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each sensitive field, confirm it carries an OpenAPI annotation (e.g.
+    `format: password`, `writeOnly: true`) that marks it as sensitive.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report sensitive fields that have no marking or rely only on naming
+    conventions.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+Sensitive fields **must** follow one of the following information-flow patterns:
+
+<Guidelines>
+
+<Guideline id="IPA-111-must-use-write-only-sensitive" given="schema" enforcement="review" effort="reason">
+
+**Write-only.** The client submits the value on [Create](0106.mdx) or
+[Update](0107.mdx) and the server **must not** return it in any response.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    ApiKeyCreate:
+      type: object
+      properties:
+        displayName:
+          type: string
+        key:
+          type: string
+          format: password
+          writeOnly: true
+```
+
+<Example.Reason>
+  The `key` is write-only — the client sends it on create, and the server never
+  returns it in subsequent Get or List responses.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    UserUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+          format: password
+          writeOnly: true
+```
+
+<Example.Reason>
+  When updating a user, the client submits the new `password` on
+  [Update](0107.mdx). It is `writeOnly: true`, so the server accepts it but
+  never returns it in any response.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    ApiKey:
+      type: object
+      properties:
+        displayName:
+          type: string
+        key:
+          type: string
+```
+
+<Example.Reason>
+  The `key` is not marked write-only, so the client expects it to appear in
+  responses — leaking the secret.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify fields whose value is submitted by the client and must not be
+    returned.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each such field is marked `writeOnly: true` and does not appear in
+    response schemas.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any write-only field that appears in a response schema.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-111-may-use-create-response-only-sensitive" given="schema" enforcement="review" effort="reason">
+
+**Create-response-only.** For values the client cannot retrieve later (e.g.
+server-generated API keys), the field **may** appear in the [Create](0106.mdx)
+response so the client can capture it, but **must not** appear in subsequent
+[Get](0104.mdx) or [List](0105.mdx) responses. Create-response-only is the
+sanctioned exception to the [schema consistency rule](0101.mdx#resources).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    # Create (POST) response: returns the secret once
+    ApiKeyCreateResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        key:
+          type: string
+          format: password
+          readOnly: true
+    # Get and List response: omits the secret
+    ApiKey:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+```
+
+<Example.Reason>
+  The server-generated `key` appears only in the Create response schema, marked
+  `readOnly` since the client never sets it. The Get and List schema omits it
+  entirely, so the secret cannot be retrieved later.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    # Single schema reused by Create, Get, and List
+    ApiKey:
+      type: object
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        key:
+          type: string
+          format: password
+          readOnly: true
+```
+
+<Example.Reason>
+  A single response schema carries `key` across Create, Get, and List, so the
+  secret is returned on every read instead of only once on creation.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify fields that are server-generated and shown only once (e.g., initial
+    API key secret).
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the field appears only in the Create response schema and is absent
+    from the Get and List response schemas.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any create-response-only field that appears in Get or List response
+    schemas.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+When a masked representation of a sensitive field (e.g. `****` or a last-4
+display value) needs to appear in [Get](0104.mdx) or [List](0105.mdx) responses,
+it **must** be modeled as a separate read-only **redacted sibling** property
+following the [Effective Values](#effective-values) pattern. The raw and
+redacted values **must not** share the same property name. A redacted sibling
+**may** be added to either a write-only or a create-response-only field
+independently of the chosen information-flow pattern.
+
+<Guidelines>
+
+<Guideline id="IPA-111-must-model-redacted-as-separate-property" given="schema" enforcement="review" effort="reason">
+
+A masked display of a sensitive field (e.g. `****` or a last-4 display value)
+**must** be modeled as a separate read-only **redacted sibling** property, not
+reusing the raw field's name.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    ApiKey:
+      type: object
+      properties:
+        key:
+          type: string
+          format: password
+          writeOnly: true
+        keyRedacted:
+          type: string
+          description: Last four characters of the API key.
+          readOnly: true
+```
+
+<Example.Reason>
+  The raw value is `key` (write-only); the masked display is `keyRedacted`
+  (read-only, last-4 display). They are distinct properties with different
+  names, so no ambiguity exists about which carries the secret.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    ApiKey:
+      type: object
+      properties:
+        key:
+          type: string
+```
+
+<Example.Reason>
+  A single property named `key` cannot simultaneously be write-only and carry a
+  masked display. Consumers cannot tell whether the value is the raw secret or a
+  redacted version.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Find fields whose response value is a masked or truncated display of a
+    secret (e.g. `****`, last-4).
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the masked value lives on a separate property with a distinct name
+    (e.g. `keyRedacted`) rather than replacing the raw field.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any field that mixes a raw secret and a masked display under the same
+    property name.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
 ### Boolean Values
 
-- Optional boolean fields **must** default to `false`
-  - Many serialization systems won’t distinguish `false` values from unset
-    values which introduces complications when a boolean defaults to `true`
+<Guidelines>
+
+<Guideline id="IPA-111-must-default-optional-boolean-false" given="schema" enforcement="review" effort="check">
+
+Optional boolean fields **must** default to `false`
+
+- Many serialization systems won’t distinguish `false` values from unset values
+  which introduces complications when a boolean defaults to `true`
+- This avoids a tri-state (true / false / unset) that is hard for both producers
+  and consumers to reason about, so optional booleans **must not** carry the
+  [server-default annotation](0131.mdx) used for other optional fields
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    ClusterDescriptionProcessArgs:
+      type: object
+      properties:
+        javascriptDisabled:
+          type: boolean
+          default: false
+```
+
+<Example.Reason>
+  The boolean is modeled as `javascriptDisabled` defaulting to `false`, so an
+  unset value and a `false` value mean the same thing and no user intervention
+  is required for the default.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    ClusterDescriptionProcessArgs:
+      type: object
+      properties:
+        javascriptEnabled:
+          type: boolean
+          default: true
+```
+
+<Example.Reason>
+  `javascriptEnabled` defaults to `true`, but many serialization systems cannot
+  distinguish `false` from unset, forcing users to always set the value
+  explicitly.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the default value of each boolean field.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the default is `false`, renaming the field if necessary so the
+    `false` default carries the intended meaning.
+  </Workflow.Step>
+  <Workflow.Step>Flag boolean fields that default to `true`.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 Example
 

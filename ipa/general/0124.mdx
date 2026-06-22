@@ -11,71 +11,760 @@ reduced when clients need to modify the lists.
 
 ## Guidance
 
-- Repeated fields **must** use a plural field name
-- Repeated fields **should** have an enforced upper bound that will not cause a
-  single resource payload to become too large
-  - A good rule of thumb is 100 elements
-  - If repeated data has the chance of being too large, the API **should** use a
-    sub-resource instead
-- [Client-owned](0111.mdx#single-owner-fields) repeated fields **must** be
-  respected by the server.
-  - The server **must not** modify the order of elements or remove duplicates,
-    unless the field is explicitly declared as a set (see List vs Set below).
+<Guidelines>
+
+<Guideline id="IPA-124-must-use-plural-name" given="schema" enforcement="review" effort="check">
+
+Repeated fields **must** use a plural field name.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+```
+
+<Example.Reason>
+  A plural name signals at a glance that the field holds many values, so a
+  reader expects an array before reading the type.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        tag:
+          type: array
+          items:
+            type: string
+```
+
+<Example.Reason>
+  A singular name on an array field is misleading: the name says one value while
+  the type says many. Naming and cardinality should agree.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each schema under `components.schemas`, list every property whose `type`
+    is `array`, including arrays nested inside objects and array items.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each array property, inspect the field name and decide whether it is
+    grammatically plural (`tags`, `members`, `items`) rather than singular
+    (`tag`, `member`, `item`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any array property whose name is singular as a violation.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-124-should-bound-list-size" given="schema" enforcement="rule" effort="check">
+
+Repeated fields **should** have an enforced upper bound that will not cause a
+single resource payload to become too large. A good rule of thumb is 100
+elements.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        members:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+```
+
+<Example.Reason>
+  `maxItems` caps the array, so a single resource payload cannot grow without
+  limit no matter how many members are added.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            type: string
+```
+
+<Example.Reason>
+  With no `maxItems`, the array is unbounded and the resource payload can grow
+  arbitrarily large as members accumulate.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-124-should-use-sub-resource-when-large" given="schema" enforcement="review" effort="reason" dependsOn={["IPA-124-should-bound-list-size"]}>
+
+If repeated data has the chance of being too large, the API **should** use a
+sub-resource instead.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}/members:
+    get:
+      operationId: listMembers
+      responses:
+        "200":
+          description: A page of members.
+```
+
+<Example.Reason>
+  A potentially large list is exposed as its own collection, so it can be paged
+  through rather than embedded whole in the parent resource payload.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        members:
+          type: array
+          maxItems: 100000
+          items:
+            type: string
+```
+
+<Example.Reason>
+  The data is expected to grow large, yet it is embedded as an inline array with
+  a huge bound. Every read of the parent resource carries the entire list, which
+  a sub-resource collection would avoid.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each array property in `components.schemas`, estimate the realistic
+    maximum element count from the field name, description, and any documented
+    limits.
+  </Workflow.Step>
+  <Workflow.Step>
+    Decide whether the data can grow large enough that embedding the whole list
+    in every parent payload is a concern (for example, an upper bound well above
+    the 100-element rule of thumb, or growth driven by end-user activity).
+  </Workflow.Step>
+  <Workflow.Step>
+    For such a property, check whether the list is instead exposed as a paged
+    sub-resource collection under the parent path.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any list that can grow large but is embedded inline rather than
+    modeled as a sub-resource.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-124-must-respect-client-owned-fields" given="schema" enforcement="review" implementation effort="explore">
+
+[Client-owned](0111.mdx#single-owner-fields) repeated fields **must** be
+respected by the server.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        labels:
+          type: array
+          items:
+            type: string
+          description: Client-owned. Stored and returned exactly as supplied.
+```
+
+<Example.Reason>
+  The field is client-owned, and the server stores and returns the array as
+  supplied, so a read returns the same list a write sent.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        labels:
+          type: array
+          items:
+            type: string
+          description: Client-owned. The server sorts and de-dupes it.
+```
+
+<Example.Reason>
+  The field is client-owned, but the server quietly reorders and de-duplicates
+  it, so the value read back differs from the value written and a declarative
+  client sees drift.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the repeated fields that are client-owned per IPA-111: those not
+    documented as server-owned or `readOnly`.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, inspect the implementing source or run the create and read
+    operations to observe what the server stores and returns.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm a written list is returned with the same elements, in the same
+    order, with duplicates preserved.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any client-owned repeated field that the server silently alters on
+    write or read.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-124-must-not-alter-client-list-unless-set" given="schema" enforcement="review" implementation effort="explore" dependsOn={["IPA-124-must-respect-client-owned-fields"]}>
+
+The server **must not** modify the order of elements or remove duplicates,
+unless the field is explicitly declared as a set (see
+[List vs Set](#list-vs-set) below).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        labels:
+          type: array
+          x-xgen-array-semantic: set
+          items:
+            type: string
+```
+
+<Example.Reason>
+  The field is declared a set with `x-xgen-array-semantic`, so reordering and
+  de-duplication are part of its contract. A consumer knows order is not
+  significant and treats equality without regard to it.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        labels:
+          type: array
+          items:
+            type: string
+          description: A list of labels.
+```
+
+<Example.Reason>
+  Absent `x-xgen-array-semantic: set`, the array is a list, so the server must
+  preserve order and duplicates. If it reorders or de-duplicates the value at
+  runtime, a declarative client sees drift it cannot anticipate.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each repeated field, send a write with a known element order that
+    includes a deliberate duplicate.
+  </Workflow.Step>
+  <Workflow.Step>
+    Read the resource back and compare the returned array to the written one for
+    reordering or removed duplicates.
+  </Workflow.Step>
+  <Workflow.Step>
+    When the list is transformed, confirm the field declares
+    `x-xgen-array-semantic: set`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any repeated field the server reorders or de-duplicates that is not
+    declared as a set.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ### List vs Set
 
-Every array property **must** be classified as either a **list** or a **set** so
-that clients and downstream tooling can reason correctly about order and
-equality.
+Arrays fall into two kinds, and the distinction governs whether order and
+duplicates are part of the resource state. Classifying each array — and
+declaring sets explicitly — lets clients and downstream tooling reason correctly
+about order and equality.
 
-- **List** — order is meaningful. Elements may repeat. This is the default
-  classification when the semantic is not explicitly declared.
-- **Set** — order is not meaningful. Elements are unique (no duplicates).
+<Guidelines>
 
-API producers **must** explicitly declare set-like arrays using the
-`x-xgen-array-semantic` extension (see [IPA-131](0131.mdx)) in the OpenAPI spec:
+<Guideline id="IPA-124-must-declare-set-semantics" given="schema" enforcement="review" effort="reason" dependsOn={["IPA-131-must-use-x-xgen-prefix"]}>
+
+Every array property **must** be classified as either a list or a set. Set-like
+arrays **must** be declared with the `x-xgen-array-semantic` extension (see
+[IPA-131](0131.mdx)); when the extension is absent, the array is treated as a
+list.
+
+- **List** — order is meaningful and elements may repeat. This is the default
+  when the semantic is not declared.
+- **Set** — order is not meaningful and elements are unique.
+
+<Guideline.Details>
+
+<Example.Correct>
 
 ```yaml
-tags:
-  type: array
-  x-xgen-array-semantic: set
-  items:
-    type: string
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        environments:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          x-xgen-array-semantic: set
+          items:
+            type: string
 ```
 
-If the extension is omitted, the array is treated as a list.
+<Example.Reason>
+  `environments` is left as a list because order matters, while `tags` declares
+  `x-xgen-array-semantic: set` because it is an unordered, duplicate-free
+  collection. Each array's intent is explicit.
+</Example.Reason>
 
-#### List (ordered) guarantees
+</Example.Correct>
 
-- For [client-owned](0111.mdx#single-owner-fields) lists, the server **must**
-  preserve the client-provided order of elements on round-trip (see above).
-- For all lists (client-owned or server-owned), the server **must** return
-  elements in a deterministic, stable order across repeated GET responses for
-  the same resource state. Unstable ordering causes false drift in declarative
-  clients.
+<Example.Incorrect>
 
-#### Set (unordered) guarantees
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+          description: An unordered, duplicate-free set of tags.
+```
 
-- The server **must not** return duplicate elements.
-- The server **may** return elements in any order; the order of elements in a
-  response is not part of the resource state.
+<Example.Reason>
+  The description says the field is an unordered set, but it carries no
+  `x-xgen-array-semantic: set` declaration, so tooling treats it as a list and
+  expects order and duplicates to be preserved.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each array property, determine whether element order is part of the
+    resource state.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm arrays whose order is not meaningful declare `x-xgen-array-semantic:
+    set`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any array described as unordered or duplicate-free that omits the set
+    declaration.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-124-must-return-deterministic-list-order" given="schema" enforcement="review" implementation effort="explore" dependsOn={["IPA-124-must-declare-set-semantics"]}>
+
+For all lists, the server **must** return elements in a deterministic, stable
+order across repeated GET responses for the same resource state
+
+- For [client-owned](0111.mdx#single-owner-fields) lists, the order must be the
+  one the client provided, per the client-owned fields rule above.
+- Unstable ordering causes false drift in declarative clients.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            type: string
+          description:
+            Server-owned list. Returned in a stable order across reads.
+```
+
+<Example.Reason>
+  Repeated reads of the same resource state return `members` in the same order,
+  so a declarative client never sees the list change without an actual change to
+  the resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            type: string
+          description: Server-owned list. Returned in arbitrary order per read.
+```
+
+<Example.Reason>
+  The server returns `members` in a different order on each read of an unchanged
+  resource, so a declarative client repeatedly detects and tries to reconcile
+  drift that does not exist.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each list field, read the same unchanged resource multiple times.
+  </Workflow.Step>
+  <Workflow.Step>Compare element order across the responses.</Workflow.Step>
+  <Workflow.Step>
+    Report any list whose order varies across reads of the same resource state.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-124-must-not-return-duplicate-set-elements" given="schema" enforcement="review" implementation effort="explore" dependsOn={["IPA-124-must-declare-set-semantics"]}>
+
+For arrays declared as sets, the server **must not** return duplicate elements
+
+- The server **may** return elements in any order; the order in a response is
+  not part of the resource state.
 - Clients **must** treat equality without regard to order.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        tags:
+          type: array
+          x-xgen-array-semantic: set
+          items:
+            type: string
+          description:
+            Set. Returned without duplicates; order is not significant.
+```
+
+<Example.Reason>
+  The set is returned with unique elements, and consumers compare two responses
+  by membership rather than position, so a reordered response is not treated as
+  a change.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        tags:
+          type: array
+          x-xgen-array-semantic: set
+          items:
+            type: string
+          description: Set that may contain repeated elements.
+```
+
+<Example.Reason>
+  The field is declared a set but the server returns duplicate elements, so its
+  contents contradict the set contract and consumers cannot rely on membership
+  semantics.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each field declared `x-xgen-array-semantic: set`, read the resource and
+    inspect the returned array.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the array contains no duplicate elements.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any set field whose response includes duplicates.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ## Update Strategy
 
-- A resource **may** use one of two strategies to enable updating a repeated
-  field:
-  - Direct update using the standard [Update](0107.mdx) method
-    - A standard `Update` method is only able to update the entire list
-  - Custom `Add` and `Remove` methods
-    - When choosing a [custom method](0109.mdx) approach, API consumers **must
-      not** be able to set the field via [Create](0106.mdx) or
-      [Update](0107.mdx) operations
+<Guidelines>
 
-:::note
+<Guideline id="IPA-124-may-choose-update-strategy" enforcement="advisory">
+
+A resource **may** use one of two strategies to enable updating a repeated
+field: direct update using the standard [Update](0107.mdx) method, which can
+only update the entire list; or custom `Add` and `Remove` methods.
+
+</Guideline>
+
+<Guideline id="IPA-124-must-not-set-custom-method-field-via-crud" given="schema" enforcement="review" effort="reason">
+
+When choosing a [custom method](0109.mdx) approach, the field **must not** be
+settable via [Create](0106.mdx) or [Update](0107.mdx) operations.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        members:
+          type: array
+          readOnly: true
+          items:
+            type: string
+```
+
+<Example.Reason>
+  The repeated field is managed only through the custom add and remove methods,
+  so it is marked `readOnly` and the create and update request bodies cannot set
+  it.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            type: string
+```
+
+<Example.Reason>
+  Custom add and remove methods manage the list, yet the field is also writable
+  through create and update, leaving two competing ways to set it and an
+  ambiguous source of truth.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Determine which repeated fields are managed by custom `Add` and `Remove`
+    methods by scanning for custom-method operations that target a list.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each such field, locate its property in the create and update request
+    body schemas.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the field is `readOnly` or absent from those request bodies, so the
+    standard create and update operations cannot set it.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any custom-method-managed repeated field that remains settable
+    through create or update.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-124-must-use-standard-update-when-declarative" given="schema" enforcement="review" effort="reason">
 
 Declarative-friendly resources **must** use the standard [Update](0107.mdx)
 method, and not introduce `Add` and `Remove` methods. To learn more, see
 [IPA-127](0127.mdx).
 
-:::
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /projects/{projectId}:
+    put:
+      operationId: updateProject
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                members:
+                  type: array
+                  items:
+                    type: string
+```
+
+<Example.Reason>
+  A declarative-friendly resource updates the whole list through the standard
+  update method, so the desired state is expressed in one place that a
+  declarative client can reconcile.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /projects/{projectId}:members:add:
+    post:
+      operationId: addProjectMembers
+  /projects/{projectId}:members:remove:
+    post:
+      operationId: removeProjectMembers
+```
+
+<Example.Reason>
+  A declarative-friendly resource exposes imperative add and remove methods,
+  which express list changes as deltas a declarative client cannot reconcile
+  against a desired state.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the resources documented as declarative-friendly per IPA-127.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each, list the operations that modify its repeated fields.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm those fields are updated through the standard update method, and
+    that no custom `Add` or `Remove` methods exist for them.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any declarative-friendly resource that exposes `Add` or `Remove`
+    methods for a repeated field.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>

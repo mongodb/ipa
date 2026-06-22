@@ -1,0 +1,14 @@
+.root {
+  margin-top: 1rem;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Reset child margins so <Workflow>'s own margin doesn't compound with the gap. */
+.content > * {
+  margin: 0;
+}

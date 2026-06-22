@@ -11,23 +11,313 @@ methods.
 
 ## Guidance
 
-- Custom methods **should** only be used for functionality that cannot be easily
-  expressed via standard methods
-  - Prefer standard methods if possible, due to their consistent semantics
-- The name of the method **should** be a verb and **may** be followed by a noun
-- The HTTP method **must** be `GET` or `POST`:
-  - `GET` **must** be used for methods retrieving data or resource state.
-  - `POST` **must** be used if the method has side effects or mutates resources
-    or data
-- Custom methods using the `GET` HTTP method **must** return a
-  [200 OK](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200)
-  response.
-- The HTTP URI **must** use a colon(:) character followed by the custom method
-  name
-  - This aims to clearly distinguish between custom methods and other resources
-  - The custom method name **must** be written in `camelCase`
-- See [Declarative-friendly resources](#declarative-friendly-resources) for
-  further guidance
+<Guidelines>
+
+<Guideline id="IPA-109-should-use-only-when-standard-methods-do-not-fit" given="operation" enforcement="review" effort="reason">
+
+Custom methods **should** only be used for functionality that cannot be easily
+expressed via standard methods
+
+- Prefer standard methods if possible, due to their consistent semantics
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:pause:
+    post:
+      operationId: pauseGroupCluster
+      summary: Pause a cluster
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: clusterName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The paused cluster.
+```
+
+<Example.Reason>
+  Pausing a cluster is a state transition with side effects, not a field edit or
+  a read. No standard method captures it, so a custom `:pause` is justified.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:setName:
+    post:
+      operationId: setGroupClusterName
+      summary: Set the name of a cluster
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: clusterName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+      responses:
+        "200":
+          description: The updated cluster.
+```
+
+<Example.Reason>
+  Setting a field is a partial update of an existing resource, which the
+  standard Update method already covers. A custom `:setName` verb provides none
+  of Update's consistent semantics and tooling that knows the standard methods
+  can't see what the call does.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the custom method by its `:verb` suffix in the path (e.g. `/groups/
+    {groupId}/clusters/{clusterName}:pause`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Read its summary, request body, and response to work out what state it reads
+    or changes, and on which resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    Ask whether that intent maps onto a standard method: retrieving one resource
+    (Get), retrieving a collection (List), creating a resource (Create),
+    modifying an existing resource's fields (Update), or removing a resource
+    (Delete).
+  </Workflow.Step>
+  <Workflow.Step>
+    If the intent fits a standard method, flag it — the standard method should
+    be used instead. The custom method is fine only when no standard method
+    captures the behavior.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-should-name-method-as-verb" given="operation" enforcement="review" effort="check">
+
+The name of the method **should** be a verb and **may** be followed by a noun
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:pause:
+    post:
+      operationId: pauseGroupCluster
+  /groups/{groupId}/clusters/{clusterName}:addNode:
+    post:
+      operationId: addGroupClusterNode
+```
+
+<Example.Reason>
+  `pause` is a bare verb; `addNode` is a verb followed by a noun. Both name an
+  action, which is what a custom method represents.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Read the custom method name from the path section after the colon (`:`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the name begins with a verb describing the action performed.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any custom method whose name is not a verb (for example a bare noun or
+    adjective).
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-must-use-get-or-post" given="operation" enforcement="automatable">
+
+The HTTP method **must** be `GET` or `POST`:
+
+- `GET` **must** be used for methods retrieving data or resource state.
+- `POST` **must** be used if the method has side effects or mutates resources or
+  data
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:search:
+    get:
+      operationId: searchGroupClusters
+      summary: Search clusters
+  /groups/{groupId}/clusters/{clusterName}:pause:
+    post:
+      operationId: pauseGroupCluster
+      summary: Pause a cluster
+```
+
+<Example.Reason>
+  `:search` only reads data, so it uses `GET`. `:pause` mutates the cluster's
+  state, so it uses `POST`. The HTTP method matches whether the call reads or
+  changes state.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:pause:
+    put:
+      operationId: pauseGroupCluster
+      summary: Pause a cluster
+```
+
+<Example.Reason>
+  A custom method must use `GET` or `POST`. `:pause` has side effects, so it
+  must use `POST`; `PUT` is not a permitted HTTP method for a custom method.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-must-return-200-for-get" given="get-operation" enforcement="automatable">
+
+Custom methods using the `GET` HTTP method **must** return a
+[200 OK](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/200) response.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:search:
+    get:
+      operationId: searchGroupClusters
+      summary: Search clusters
+      responses:
+        "200":
+          description: The matching clusters.
+```
+
+<Example.Reason>
+  The `GET` custom method `:search` retrieves data and documents a `200 OK`
+  response, the expected success status for a read.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:search:
+    get:
+      operationId: searchGroupClusters
+      summary: Search clusters
+      responses:
+        "204":
+          description: No content.
+```
+
+<Example.Reason>
+  A `GET` custom method retrieves data, so it must return `200 OK`. A `204 No
+  Content` advertises that the read produces no body, which contradicts the
+  purpose of the method.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-must-use-colon-before-method-name" given="paths" enforcement="automatable">
+
+The HTTP URI **must** use a colon(:) character followed by the custom method
+name
+
+- This aims to clearly distinguish between custom methods and other resources
+- The custom method name **must** be written in `camelCase`
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:addNode:
+    post:
+      operationId: addGroupClusterNode
+```
+
+<Example.Reason>
+  The custom method is appended to the resource identifier with a colon, and
+  `addNode` is `camelCase`. The colon clearly separates the custom method from
+  the resources in the path.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}/add-node:
+    post:
+      operationId: addGroupClusterNode
+```
+
+<Example.Reason>
+  `add-node` is appended as a path segment rather than after a colon, so it
+  reads as another resource instead of a custom method, and `add-node` is not
+  `camelCase`.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+See [Declarative-friendly resources](#declarative-friendly-resources) for
+further guidance
+
+</Guidelines>
 
 Example
 
@@ -40,15 +330,245 @@ POST /groups/${groupId}/clusters/${clusterName}:removeNode
 
 ### Naming
 
-- Operation ID **must** be unique
-- Operation ID **must** be in `camelCase`
-- Operation ID **must** start with the custom method verb
+<Guidelines>
+
+<Guideline id="IPA-109-must-have-unique-operation-id" given="operation" enforcement="automatable">
+
+Operation ID **must** be unique
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:pause:
+    post:
+      operationId: pauseGroupCluster
+  /groups/{groupId}/clusters/{clusterName}:addNode:
+    post:
+      operationId: addGroupClusterNode
+```
+
+<Example.Reason>
+  Each operation has its own distinct `operationId`. Unique operation IDs let
+  generated clients expose one unambiguous method per operation.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:pause:
+    post:
+      operationId: clusterAction
+  /groups/{groupId}/clusters/{clusterName}:resume:
+    post:
+      operationId: clusterAction
+```
+
+<Example.Reason>
+  Two operations share the `operationId` `clusterAction`. A duplicate operation
+  ID collides in generated code, where one method name would have to stand for
+  two different operations.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-must-use-camel-case-operation-id" given="operation" enforcement="automatable">
+
+Operation ID **must** be in `camelCase`
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:pause:
+    post:
+      operationId: pauseGroupCluster
+```
+
+<Example.Reason>
+  `pauseGroupCluster` is `camelCase`, matching the convention used for operation
+  IDs across the API.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:pause:
+    post:
+      operationId: pause_group_cluster
+```
+
+<Example.Reason>
+  `pause_group_cluster` is `snake_case`, not `camelCase`, breaking the operation
+  ID naming convention.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-must-start-operation-id-with-verb" given="operation" enforcement="review" effort="check">
+
+Operation ID **must** start with the custom method verb
+
+- Derived from the path section delimited by the colon (:) character
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:pause:
+    post:
+      operationId: pauseGroupCluster
+```
+
+<Example.Reason>
+  The custom method verb is `pause` (the path section after the colon), and the
+  operation ID `pauseGroupCluster` starts with it.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:pause:
+    post:
+      operationId: groupClusterPause
+```
+
+<Example.Reason>
+  The verb `pause` from the path is buried at the end of `groupClusterPause`
+  rather than leading it. The operation ID must start with the custom method
+  verb.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Take the path section after the colon (`:`) — this is the custom method verb
+    (for example, `pause` in `:pause`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the `operationId` begins with that verb.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any operation ID that does not start with the custom method verb.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-should-follow-operation-id-verb-with-noun" given="operation" enforcement="review" effort="check">
+
+Operation ID **should** be followed by a noun or compound nouns
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:pause:
+    post:
+      operationId: pauseGroupCluster
+```
+
+<Example.Reason>
+  After the verb `pause`, the operation ID continues with the nouns
+  `GroupCluster`, naming what the action applies to.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>Strip the leading verb from the operation ID.</Workflow.Step>
+  <Workflow.Step>
+    Confirm what remains is a noun or compound nouns describing the target of
+    the action.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag an operation ID that is a bare verb with no following noun.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-109-should-derive-operation-id-nouns" given="operation" enforcement="review" effort="reason">
+
+The noun(s) in the Operation ID **should** be
+
+- The collection identifiers from the resource identifier in singular form
+- The custom method noun(s)
   - Derived from the path section delimited by the colon (:) character
-- Operation ID **should** be followed by a noun or compound nouns
-- The noun(s) in the Operation ID **should** be
-  - The collection identifiers from the resource identifier in singular form
-  - The custom method noun(s)
-    - Derived from the path section delimited by the colon (:) character
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:addNode:
+    post:
+      operationId: addGroupClusterNode
+```
+
+<Example.Reason>
+  The nouns in `addGroupClusterNode` are the singular collection identifiers
+  from the path — `groups` → `Group`, `clusters` → `Cluster` — followed by the
+  custom method noun `Node` from `:addNode`.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    List the collection identifiers in the resource identifier (for example
+    `groups` and `clusters`) and put each in singular form.
+  </Workflow.Step>
+  <Workflow.Step>
+    Take any noun(s) from the custom method name in the path section after the
+    colon (`:`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the operation ID's nouns are composed of the singular collection
+    identifiers followed by the custom method noun(s).
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag an operation ID whose nouns do not derive from the resource identifier
+    and the custom method name.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 | Resource Identifier                                  | Operation ID          |
 | ---------------------------------------------------- | --------------------- |
@@ -58,12 +578,41 @@ POST /groups/${groupId}/clusters/${clusterName}:removeNode
 
 ### Declarative-friendly resources
 
-- Declarative-friendly resources **should not** use custom methods. To learn
-  more, see [IPA-127](0127.mdx).
-  - Custom methods require manual curation, implementation, and review for API
-    tooling, which increases feature latency.
-  - Declarative-friendly tools are unable to automatically determine what to do
-    with them
+<Guidelines>
+
+<Guideline id="IPA-109-should-not-use-custom-methods-on-declarative-resources" given="operation" enforcement="review" effort="reason">
+
+Declarative-friendly resources **should not** use custom methods. To learn more,
+see [IPA-127](0127.mdx).
+
+- Custom methods require manual curation, implementation, and review for API
+  tooling, which increases feature latency.
+- Declarative-friendly tools are unable to automatically determine what to do
+  with them
+
+<Guideline.Details>
+
+{/* TODO: add example */}
+
+<Workflow>
+  <Workflow.Step>
+    Determine whether the resource is declarative-friendly (see
+    [IPA-127](0127.mdx)).
+  </Workflow.Step>
+  <Workflow.Step>
+    Look for custom methods (paths with a `:verb` suffix) on that resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any custom method on a declarative-friendly resource, since declarative
+    tooling cannot automatically determine what to do with it.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 :::tip
 

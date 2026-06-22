@@ -13,39 +13,353 @@ state management.
 
 ## Guidance
 
-- Splitting Fields for Multiple Value Types
-  - API producers **should not** use oneOf with base types like int or string if
-    the field can have multiple distinct value types
-  - API producers **should** split such fields into separate, clearly named
-    fields with appropriate types
-- API producers **may** use fields that contain multiple objects when request
-  and response objects allow explicitly setting the type of the object
-  - In OpenAPI each `oneOf` property **must** be accompanied by a
-    `discriminator` property defining when the exact type will be used
-  - In OpenAPI each `discriminator` property **must** be accompanied by a
-    `oneOf`, `anyOf` or `allOf` property
-    ([OAS 3.1.0 4.8.25.1](https://spec.openapis.org/oas/v3.1.0#fixed-fields-20))
-  - If multiple `oneOf` models define a property with the same name, that
-    property **must** have the same data type in each model
+### Splitting Fields for Multiple Value Types
 
-## Example
+<Guidelines>
 
-Avoid this design, using the same field for multiple types:
+<Guideline id="IPA-125-should-not-oneof-base-types" given="schema" enforcement="rule">
 
-```http
-POST /groups/search/index
-{
-  "indexArray": false, // Can be a boolean, an array or a single object
-}
+API producers **should not** use `oneOf` with base types like `integer` or
+`string` when the field can hold multiple distinct value types.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Setting:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        threshold:
+          type: integer
 ```
 
-Preferred design, splitting the field into distinct types:
+<Example.Reason>
 
-```http
-POST /groups/search/index
-{
-  "isArray": false, //Explicitly a boolean
-  "indexArrayObjects": [{<object1>}, {<object2>}], //Expilicitly an array
-  "singleIndexObject": {"key1": "value1", "key2": "value2"} //Explicitly a single object
-}
+Each value type lives in its own typed field, so a consumer reads `enabled` as a
+boolean and `threshold` as an integer without inspecting the payload to find out
+which type arrived.
+
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Setting:
+      type: object
+      properties:
+        value:
+          oneOf:
+            - type: boolean
+            - type: integer
+            - type: string
 ```
+
+<Example.Reason>
+
+A single field that may arrive as a boolean, an integer, or a string forces
+every consumer to branch on the runtime type, and generated clients cannot give
+the field one stable static type.
+
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-125-should-split-into-typed-fields" given="schema" enforcement="review" effort="reason" dependsOn={["IPA-125-should-not-oneof-base-types"]}>
+
+API producers **should** split such fields into separate, clearly named fields
+with appropriate types.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Index:
+      type: object
+      properties:
+        isArray:
+          type: boolean
+        arrayObjects:
+          type: array
+          items:
+            type: object
+        singleObject:
+          type: object
+```
+
+<Example.Reason>
+
+The three value shapes become three named fields with explicit types, so the
+name of each field documents what it holds and the type system enforces it.
+
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Index:
+      type: object
+      properties:
+        index:
+          oneOf:
+            - type: boolean
+            - type: array
+              items:
+                type: object
+            - type: object
+```
+
+<Example.Reason>
+
+One overloaded field carries a boolean, an array, or an object depending on the
+case, so the field name describes none of them and a consumer cannot tell from
+the schema which shape to send.
+
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each schema under `$.components.schemas`, list every property whose
+    definition uses `oneOf`.
+  </Workflow.Step>
+  <Workflow.Step>
+    For each such `oneOf`, determine whether the members are distinct base types
+    (`boolean`, `integer`, `number`, `string`) or different structural shapes
+    (object versus array versus scalar).
+  </Workflow.Step>
+  <Workflow.Step>
+    When the members are distinct value types rather than variants of one typed
+    object, treat the single field as overloaded.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report each overloaded field, noting that the fix is one named, single-typed
+    field per value shape.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+### Fields Containing Multiple Object Types
+
+<Guidelines>
+
+<Guideline id="IPA-125-may-use-typed-object-variants" enforcement="advisory">
+
+API producers **may** use fields that contain multiple objects when request and
+response objects allow explicitly setting the type of the object.
+
+</Guideline>
+
+<Guideline id="IPA-125-must-oneof-have-discriminator" given="schema" enforcement="rule">
+
+In OpenAPI each `oneOf` property **must** be accompanied by a `discriminator`
+property that defines when each exact type is used.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Notification:
+      oneOf:
+        - $ref: "#/components/schemas/EmailNotification"
+        - $ref: "#/components/schemas/SmsNotification"
+      discriminator:
+        propertyName: channel
+        mapping:
+          email: "#/components/schemas/EmailNotification"
+          sms: "#/components/schemas/SmsNotification"
+```
+
+<Example.Reason>
+
+The `discriminator` names the field (`channel`) that selects a variant and maps
+each value to one schema, so a consumer resolves the concrete type from the
+payload without guessing.
+
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Notification:
+      oneOf:
+        - $ref: "#/components/schemas/EmailNotification"
+        - $ref: "#/components/schemas/SmsNotification"
+```
+
+<Example.Reason>
+
+Without a `discriminator`, nothing in the schema indicates which variant a given
+payload represents, so the concrete type must be inferred by trial validation
+against each branch.
+
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-125-must-discriminator-have-composition" given="schema" enforcement="rule">
+
+In OpenAPI each `discriminator` property **must** be accompanied by a `oneOf`,
+`anyOf`, or `allOf` property
+([OAS 3.1.0 4.8.25.1](https://spec.openapis.org/oas/v3.1.0#fixed-fields-20)).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Payment:
+      oneOf:
+        - $ref: "#/components/schemas/CardPayment"
+        - $ref: "#/components/schemas/BankPayment"
+      discriminator:
+        propertyName: method
+```
+
+<Example.Reason>
+
+The `discriminator` sits beside a `oneOf` composition, so it has a set of
+candidate schemas to select among.
+
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Payment:
+      type: object
+      properties:
+        method:
+          type: string
+      discriminator:
+        propertyName: method
+```
+
+<Example.Reason>
+
+A `discriminator` with no `oneOf`, `anyOf`, or `allOf` sibling has no candidate
+schemas to choose between, so the selection it describes points at nothing.
+
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-125-must-shared-property-same-type" given="schema" enforcement="rule">
+
+If multiple `oneOf` models define a property with the same name, that property
+**must** have the same data type in each model.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Event:
+      oneOf:
+        - $ref: "#/components/schemas/CreatedEvent"
+        - $ref: "#/components/schemas/DeletedEvent"
+    CreatedEvent:
+      type: object
+      properties:
+        id:
+          type: string
+    DeletedEvent:
+      type: object
+      properties:
+        id:
+          type: string
+```
+
+<Example.Reason>
+
+Both variants type the shared `id` field as a string, so a consumer reads `id`
+the same way regardless of which variant arrives.
+
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Event:
+      oneOf:
+        - $ref: "#/components/schemas/CreatedEvent"
+        - $ref: "#/components/schemas/DeletedEvent"
+    CreatedEvent:
+      type: object
+      properties:
+        id:
+          type: string
+    DeletedEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+```
+
+<Example.Reason>
+
+The `id` field is a string in one variant and an integer in the other, so the
+type of a field with one name depends on which variant arrived, defeating the
+single-type goal.
+
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>

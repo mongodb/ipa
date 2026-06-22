@@ -13,32 +13,382 @@ error-handling code.
 
 ## Guidance
 
-- APIs **must** return [`ApiError`](#api-error-format) when errors occur
-- APIs **should** avoid unexpected errors (5XX) by correctly handling
-  validations and exposing the appropriate error user error (4XX)
-- Errors **must** use the canonical error codes allowed for the `errorCode`
-  field
-- APIs **may** make the best effort to help customers with possible next steps
-  in case of an error by adding a `help` field
-  - `help` **must** include a short description as description
-  - `help` **must** include a link to the documentation url
-- [Methods](0103.mdx) **must** document any possible error and their associated
-  [HTTP status code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status)
+<Guidelines>
+
+<Guideline id="IPA-114-must-return-apierror" given="operation" enforcement="automatable">
+
+APIs **must** return [`ApiError`](#api-error-format) when errors occur
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```json
+{
+  "error": 400,
+  "reason": "Bad Request",
+  "detail": "The request content produced validation errors.",
+  "errorCode": "BAD_REQUEST",
+  "parameters": []
+}
+```
+
+<Example.Reason>
+  The error response uses the standardized `ApiError` format, letting clients
+  build common error-handling logic.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-114-should-avoid-unexpected-errors" given="operation" enforcement="review" effort="explore" implementation>
+
+APIs **should** avoid unexpected errors (5XX) by correctly handling validations
+and exposing the appropriate error user error (4XX)
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```json
+{
+  "error": 400,
+  "reason": "Bad Request",
+  "detail": "The request content produced validation errors.",
+  "errorCode": "BAD_REQUEST",
+  "parameters": []
+}
+```
+
+<Example.Reason>
+  A malformed request surfaces as a `400 Bad Request` client error rather than
+  an unexpected `5XX` server error.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Exercise the operation with invalid and edge-case input.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm validation failures and other client-caused conditions return an
+    appropriate `4XX` status rather than a `5XX`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag operations that return `5XX` for conditions that should have been
+    caught and reported as client errors.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-114-must-use-canonical-error-codes" given="operation" enforcement="automatable">
+
+Errors **must** use the canonical error codes allowed for the `errorCode` field
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```json
+{
+  "error": 400,
+  "reason": "Bad Request",
+  "detail": "The request content produced validation errors.",
+  "errorCode": "BAD_REQUEST",
+  "parameters": []
+}
+```
+
+<Example.Reason>
+  The `errorCode` value `BAD_REQUEST` is drawn from the canonical set of allowed
+  error codes.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-114-may-add-help-field" enforcement="advisory">
+
+APIs **may** make the best effort to help customers with possible next steps in
+case of an error by adding a `help` field
+
+- `help` **must** include a short description as description
+- `help` **must** include a link to the documentation url
+
+</Guideline>
+
+<Guideline id="IPA-114-must-document-errors-and-status-codes" given="operation" enforcement="review" effort="check">
+
+[Methods](0103.mdx) **must** document any possible error and their associated
+[HTTP status code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status)
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getGroupCluster
+      responses:
+        "200":
+          description: The cluster.
+        "404":
+          description: The cluster was not found.
+        "401":
+          description: The client lacks valid credentials.
+```
+
+<Example.Reason>
+  The operation documents each error it can return alongside its HTTP status
+  code, so clients know what to handle.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    For each operation, enumerate the errors it can return.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm every possible error is documented with its associated HTTP status
+    code in the responses.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag operations that can return errors that are not documented.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
 
 ### Authentication and Authorization
 
-- APIs **must** document `401 Unauthorized` and `403 Forbidden` status codes for
-  endpoints that require authentication.
-- APIs **must** return `401 Unauthorized` if the client lacks valid credentials.
-- APIs **must** return `403 Forbidden` if the client is authenticated but does
-  not have permission to access the resource.
+<Guideline id="IPA-114-must-document-401-403" given="operation" enforcement="review" effort="check">
+
+APIs **must** document `401 Unauthorized` and `403 Forbidden` status codes for
+endpoints that require authentication.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getGroupCluster
+      responses:
+        "401":
+          description: The client lacks valid credentials.
+        "403":
+          description: The client does not have permission for the resource.
+```
+
+<Example.Reason>
+  The authenticated endpoint documents both `401 Unauthorized` and `403
+  Forbidden`, so clients know how authentication and authorization failures are
+  reported.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>Identify endpoints that require authentication.</Workflow.Step>
+  <Workflow.Step>
+    Confirm each documents both the `401 Unauthorized` and `403 Forbidden`
+    status codes.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag authenticated endpoints missing either status code.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-114-must-return-401-without-credentials" given="operation" enforcement="review" effort="explore" implementation>
+
+APIs **must** return `401 Unauthorized` if the client lacks valid credentials.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```json
+{
+  "error": 401,
+  "reason": "Unauthorized",
+  "detail": "The request lacks valid authentication credentials.",
+  "errorCode": "UNAUTHORIZED",
+  "parameters": []
+}
+```
+
+<Example.Reason>
+  A request without valid credentials receives `401 Unauthorized`, the status
+  code for missing or invalid authentication.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Call an authenticated endpoint with missing or invalid credentials.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the response status code is `401 Unauthorized`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag endpoints that respond with a different status code when credentials
+    are absent or invalid.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-114-must-return-403-without-permission" given="operation" enforcement="review" effort="explore" implementation>
+
+APIs **must** return `403 Forbidden` if the client is authenticated but does not
+have permission to access the resource.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```json
+{
+  "error": 403,
+  "reason": "Forbidden",
+  "detail": "The client does not have permission to access this resource.",
+  "errorCode": "FORBIDDEN",
+  "parameters": []
+}
+```
+
+<Example.Reason>
+  An authenticated client without permission for the resource receives `403
+  Forbidden`, distinguishing authorization failure from missing authentication.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Call an endpoint as an authenticated client that lacks permission for the
+    resource.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the response status code is `403 Forbidden`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag endpoints that respond with a different status code in this case.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
 
 ### Not Found
 
-- APIs **must** document the `404 Not Found` status code when the resource
-  identifier includes one or more resource IDs.
-- APIs **must** return a `404 Not Found` status code if the client provides an
-  invalid or non-existent ID
+<Guideline id="IPA-114-must-document-404" given="operation" enforcement="review" effort="check">
+
+APIs **must** document the `404 Not Found` status code when the resource
+identifier includes one or more resource IDs.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters/{clusterName}:
+    get:
+      operationId: getGroupCluster
+      responses:
+        "404":
+          description: The cluster was not found.
+```
+
+<Example.Reason>
+  The path includes resource IDs, so the operation documents `404 Not Found` for
+  the case where an ID does not resolve to a resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Identify operations whose path includes one or more resource IDs.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each documents the `404 Not Found` status code.
+  </Workflow.Step>
+  <Workflow.Step>Flag such operations that omit `404 Not Found`.</Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-114-must-return-404-for-invalid-id" given="operation" enforcement="review" effort="explore" implementation>
+
+APIs **must** return a `404 Not Found` status code if the client provides an
+invalid or non-existent ID
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```json
+{
+  "error": 404,
+  "reason": "Not Found",
+  "detail": "No cluster matches the provided identifier.",
+  "errorCode": "NOT_FOUND",
+  "parameters": []
+}
+```
+
+<Example.Reason>
+  A request for an invalid or non-existent ID returns `404 Not Found` rather
+  than a success or a `400 Bad Request`.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Call an operation with an invalid or non-existent resource ID.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the response status code is `404 Not Found`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag operations that respond with a different status code for invalid or
+    non-existent IDs.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
 
 :::tip
 
@@ -60,37 +410,334 @@ Validation errors typically occur when:
 - Values fall outside acceptable ranges
 - Business rules are violated
 
-- APIs **must** return a `400 Bad Request` status code when validation fails
-- APIs **must not** accept invalid requests and silently modify field values to
-  make them valid
-  - This violates the principle that client-owned fields must not be modified by
-    the server (see [IPA-111](0111.mdx#single-owner-fields))
-- APIs **should** make the best effort to validate as much as possible of the
-  request and include all validation errors in the field `badRequestDetail`
-  - `badRequestDetail` **must** include an array of fields and each field
-    **must** include:
-    - the error description as `description`
-    - field with errors as `field`
+<Guideline id="IPA-114-must-return-400-on-validation-failure" given="operation" enforcement="review" effort="explore" implementation>
+
+APIs **must** return a `400 Bad Request` status code when validation fails
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```json
+{
+  "error": 400,
+  "reason": "Bad Request",
+  "detail": "The request content produced validation errors.",
+  "errorCode": "BAD_REQUEST",
+  "parameters": []
+}
+```
+
+<Example.Reason>
+  A request that fails validation returns `400 Bad Request`, telling the client
+  the request itself was invalid.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Submit a request that violates the operation's validation requirements.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the response status code is `400 Bad Request`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag operations that respond with a different status code when validation
+    fails.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-114-must-not-silently-modify-invalid-requests" given="operation" enforcement="review" effort="explore" implementation>
+
+APIs **must not** accept invalid requests and silently modify field values to
+make them valid
+
+- This violates the principle that client-owned fields must not be modified by
+  the server (see [IPA-111](0111.mdx#single-owner-fields))
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```json
+{
+  "error": 400,
+  "reason": "Bad Request",
+  "detail": "The request content produced validation errors.",
+  "errorCode": "BAD_REQUEST",
+  "parameters": []
+}
+```
+
+<Example.Reason>
+  The API rejects an invalid request with `400 Bad Request` instead of silently
+  adjusting client-owned field values to make the request valid.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Submit a request with an invalid value for a client-owned field.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the request is rejected rather than accepted with the value silently
+    modified by the server.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag operations that coerce or overwrite invalid client-owned field values
+    instead of rejecting the request.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-114-should-include-all-validation-errors" given="operation" enforcement="review" effort="explore" implementation>
+
+APIs **should** make the best effort to validate as much as possible of the
+request and include all validation errors in the field `badRequestDetail`
+
+- `badRequestDetail` **must** include an array of fields and each field **must**
+  include:
+  - the error description as `description`
+  - field with errors as `field`
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```json
+{
+  "error": 400,
+  "reason": "Bad Request",
+  "detail": "The request content produced validation errors.",
+  "errorCode": "BAD_REQUEST",
+  "parameters": [],
+  "badRequestDetail": {
+    "fields": [
+      {
+        "description": "must not be null",
+        "field": "groupId"
+      },
+      {
+        "description": "must not be empty",
+        "field": "authors[0].name"
+      }
+    ]
+  }
+}
+```
+
+<Example.Reason>
+  The response collects every validation failure in `badRequestDetail.fields`,
+  each entry naming the offending `field` and its `description`, so the client
+  can fix all problems at once.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Submit a request that violates several validation requirements at once.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the response reports all of the violations in `badRequestDetail`,
+    with each field providing both `description` and `field`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag operations that report only the first validation error or omit the
+    required `description` or `field` entries.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
 
 ### Rate Limiting
 
-- APIs **must** document the `429 Too Many Requests` status code for endpoints
-  that implement rate limiting.
-- APIs **must** return `429 Too Many Requests` when a client exceeds the allowed
-  request rate.
-- APIs **should** include the `Retry-After` HTTP response header when returning
-  `429 Too Many Requests` to indicate how long the client should wait before
-  retrying the request.
-  - The `Retry-After` header value **must** be expressed as time in seconds
-    until the next request can be made.
-- APIs **should** include rate limit information in response headers to help
-  clients manage their request rates proactively:
-  - `RateLimit-Limit`: The maximum number of requests allowed in the current
-    rate limit window
-  - `RateLimit-Remaining`: The number of requests remaining in the current rate
-    limit window
+<Guideline id="IPA-114-must-document-429" given="operation" enforcement="review" effort="check">
 
-:::
+APIs **must** document the `429 Too Many Requests` status code for endpoints
+that implement rate limiting.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/clusters:
+    get:
+      operationId: listGroupClusters
+      responses:
+        "429":
+          description: The client has exceeded the allowed request rate.
+```
+
+<Example.Reason>
+  The rate-limited endpoint documents `429 Too Many Requests`, so clients know
+  how exceeding the request rate is reported.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Identify endpoints that implement rate limiting.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each documents the `429 Too Many Requests` status code.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag rate-limited endpoints that omit `429 Too Many Requests`.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-114-must-return-429-when-rate-exceeded" given="operation" enforcement="review" effort="explore" implementation>
+
+APIs **must** return `429 Too Many Requests` when a client exceeds the allowed
+request rate.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```json
+{
+  "error": 429,
+  "reason": "Too Many Requests",
+  "detail": "The client has exceeded the allowed request rate.",
+  "errorCode": "TOO_MANY_REQUESTS",
+  "parameters": []
+}
+```
+
+<Example.Reason>
+  When a client exceeds the allowed request rate, the API returns `429 Too Many
+  Requests` rather than continuing to serve or returning another status.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Issue requests to a rate-limited endpoint until the allowed request rate is
+    exceeded.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the response status code is `429 Too Many Requests`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag rate-limited endpoints that respond with a different status code once
+    the rate is exceeded.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-114-should-include-retry-after" given="operation" enforcement="review" effort="explore" implementation>
+
+APIs **should** include the `Retry-After` HTTP response header when returning
+`429 Too Many Requests` to indicate how long the client should wait before
+retrying the request.
+
+- The `Retry-After` header value **must** be expressed as time in seconds until
+  the next request can be made.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+HTTP/1.1 429 Too Many Requests
+Retry-After: 30
+```
+
+<Example.Reason>
+  The `429 Too Many Requests` response includes `Retry-After: 30`, telling the
+  client to wait 30 seconds before retrying.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Trigger a `429 Too Many Requests` response from a rate-limited endpoint.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the response includes a `Retry-After` header whose value is a time
+    in seconds.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag `429` responses that omit `Retry-After` or express it in units other
+    than seconds.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-114-should-include-rate-limit-headers" given="operation" enforcement="review" effort="explore" implementation>
+
+APIs **should** include rate limit information in response headers to help
+clients manage their request rates proactively:
+
+- `RateLimit-Limit`: The maximum number of requests allowed in the current rate
+  limit window
+- `RateLimit-Remaining`: The number of requests remaining in the current rate
+  limit window
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+HTTP/1.1 200 OK
+RateLimit-Limit: 100
+RateLimit-Remaining: 73
+```
+
+<Example.Reason>
+  The response exposes `RateLimit-Limit` and `RateLimit-Remaining`, letting the
+  client see its budget and pace requests before hitting the limit.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    Call a rate-limited endpoint within the allowed rate.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the response includes the `RateLimit-Limit` and
+    `RateLimit-Remaining` headers.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag rate-limited endpoints that do not surface this rate limit information
+    in response headers.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
 
 ### API Error Format
 

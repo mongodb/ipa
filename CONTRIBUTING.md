@@ -34,6 +34,24 @@ help you understand our development process and requirements.
    npm run docusaurus:build
    ```
 
+## Reviewing a pull request locally
+
+Check out a PR and serve the docs to see how it renders. The helper script does
+both (it needs the [GitHub CLI](https://cli.github.com/)):
+
+```bash
+scripts/preview-pr.sh <pr-number>              # current branch if no number
+scripts/preview-pr.sh <pr-number> --port 3001  # if port 3000 is taken
+```
+
+The site is served under `/ipa/`, so it opens at `http://localhost:<port>/ipa/`
+(default port 3000) with hot reload. A guideline renders at
+`http://localhost:<port>/ipa/<id>`, where `<id>` is the IPA number — the file's
+name without leading zeros (e.g. `ipa/general/0101.mdx` → `/ipa/101`).
+
+> Using Claude Code? The `preview-ipa` skill wraps this flow — just ask it to
+> "preview PR `<number>`".
+
 ## Code Quality
 
 Before submitting your changes, ensure they pass our quality checks:
@@ -79,13 +97,13 @@ Introductory prose explaining the section.
 
 <Guidelines>
 
-<Guideline id="IPA-100-must-use-american-english" given="spec" lintable>
+<Guideline id="IPA-100-must-use-american-english" given="spec" enforcement="rule">
 
 API producers **must** use American English across the API.
 
 </Guideline>
 
-<Guideline id="IPA-100-should-follow-style-guide" given="spec">
+<Guideline id="IPA-100-should-follow-style-guide" given="spec" enforcement="review">
 
 API producers **should** follow the MongoDB Style Guide for terminology.
 
@@ -99,7 +117,7 @@ More explanatory prose.
 
 <Guidelines>
 
-<Guideline id="IPA-100-must-not-use-slang" given="spec">
+<Guideline id="IPA-100-must-not-use-slang" given="spec" enforcement="review">
 
 ...
 
@@ -121,9 +139,9 @@ check it from the component alone.
 **`id`** (required)
 
 A unique identifier in the format `IPA-{nnn}-{must|should|may}-{slug}`. The
-four-digit number is the principle number (zero-padded), and the severity token
-must match the bolded keyword in the prose — `must not` maps to `must`,
-`should not` to `should`.
+three-digit number is the principle number, and the severity token must match
+the bolded keyword in the prose — `must not` maps to `must`, `should not` to
+`should`.
 
 ```text
 IPA-104-must-resource-has-get
@@ -131,7 +149,7 @@ IPA-104-must-resource-has-get
      prin  sev   slug (kebab-case description)
 ```
 
-**`given`** (required unless `informational`)
+**`given`** (required unless `enforcement="advisory"`)
 
 The part of the OpenAPI spec the rule applies to. Pick the narrowest alias that
 fits:
@@ -153,16 +171,23 @@ fits:
 
 If no alias fits, pass a raw JSONPath starting with `$`.
 
-**`lintable`** (boolean, default false)
+**`enforcement`** (default `"review"`)
 
-Set this when automated checks enforce the guideline. The component derives the
-lint rule link from the `id` automatically.
+How the guideline is enforced. Replaces the old `lintable` / `informational`
+flags:
 
-**`informational`** (boolean, default false)
-
-For advisory or contextual statements that aren't checkable against a spec —
-things like "Resources **may** have any number of sub-resources." These don't
-need a `given`, examples, or a workflow.
+- `rule` — a live Spectral rule enforces it. The component derives the "Lint
+  rule ↗" link from the `id` automatically.
+- `automatable` — the check is mechanical (it could be a lint rule). Either:
+  - No Spectral rule exists for it yet,
+  - The check is fully carried out by the lintable rules it references through
+    `dependsOn`. In this case, the `depended-on` lintable guidelines together
+    cover this one, so no separate rule of its own is needed.
+- `review` — needs agentic or human review against the spec. This is the default
+  and covers most not-yet-linted guidelines.
+- `advisory` — not enforced: a consumer advisory or guiding principle, often a
+  bare **may** ("Resources **may** have any number of sub-resources"). Needs no
+  `given`, examples, or workflow.
 
 **`implementation`** (boolean, default false)
 
@@ -193,7 +218,7 @@ sense.
 <Guideline
   id="IPA-104-must-resource-has-get"
   given="resource"
-  lintable
+  enforcement="rule"
   dependsOn={["IPA-101-must-resource-oriented-design"]}
 >
 ```
@@ -203,7 +228,7 @@ same split are parallel — don't link them to each other.
 
 ### Examples
 
-Every non-informational guideline should have a `<Example.Correct>` and
+Every non-advisory guideline should have a `<Example.Correct>` and
 `<Example.Incorrect>` pair showing a compliant and a non-compliant OpenAPI
 fragment. Each example block must contain an `<Example.Reason>` explaining _why_
 the fragment is correct or incorrect — not just restating the rule.
@@ -230,9 +255,8 @@ what the rule is about so the correct/incorrect contrast is obvious.
 
 ### Workflows
 
-A `<Workflow>` documents the manual evaluation steps for an unlintable guideline
-— the ordered checks a reviewer follows to decide whether a spec satisfies the
-rule.
+A `<Workflow>` documents the manual evaluation steps for a guideline — the
+ordered checks a reviewer follows to decide whether a spec satisfies the rule.
 
 ```mdx
 <Workflow>
@@ -245,9 +269,6 @@ rule.
   </Workflow.Step>
 </Workflow>
 ```
-
-Unlintable, non-informational guidelines require a workflow. Lintable guidelines
-don't need one.
 
 ### Admonition gotcha
 
@@ -277,17 +298,17 @@ broken form, so it only surfaces at `npm run docusaurus:build`.
 `.vscode/ipa-guidelines.code-snippets` has tab-stop scaffolding for all IPA
 components. Type a prefix in any `.mdx` file and press Tab:
 
-| Prefix                 | Inserts                                       |
-| ---------------------- | --------------------------------------------- |
-| `guideline`            | `<Guideline>` with required props             |
-| `guideline-info`       | `<Guideline informational>`                   |
-| `guideline-lintable`   | `<Guideline lintable>` with examples          |
-| `guideline-unlintable` | `<Guideline>` with examples and a workflow    |
-| `example-correct`      | `<Example.Correct>` with `<Example.Reason>`   |
-| `example-incorrect`    | `<Example.Incorrect>` with `<Example.Reason>` |
-| `example-reason`       | `<Example.Reason>` standalone                 |
-| `workflow`             | `<Workflow>` with three steps                 |
-| `workflow-step`        | One `<Workflow.Step>`                         |
+| Prefix                 | Inserts                                                     |
+| ---------------------- | ----------------------------------------------------------- |
+| `guideline`            | `<Guideline>` with required props + `enforcement`           |
+| `guideline-info`       | `<Guideline enforcement="advisory">`                        |
+| `guideline-lintable`   | `<Guideline enforcement="rule">` with examples              |
+| `guideline-unlintable` | `<Guideline enforcement="review">` with examples + workflow |
+| `example-correct`      | `<Example.Correct>` with `<Example.Reason>`                 |
+| `example-incorrect`    | `<Example.Incorrect>` with `<Example.Reason>`               |
+| `example-reason`       | `<Example.Reason>` standalone                               |
+| `workflow`             | `<Workflow>` with three steps                               |
+| `workflow-step`        | One `<Workflow.Step>`                                       |
 
 ## Commit Message Guidelines
 

@@ -2,7 +2,6 @@ import type { ReactElement } from "react";
 import { useGuideline } from "../../../hooks/useGuideline";
 import { usePrinciple } from "../../../hooks/usePrinciple";
 import { StateBadge } from "../shared/StateBadge";
-import { Badge } from "../../ui/Badge";
 import styles from "./GuidelineHeader.module.css";
 
 const SPECTRAL_RULESETS_URL =
@@ -15,22 +14,23 @@ function spectralFileUrl(id: string): string {
   return `${SPECTRAL_RULESETS_URL}/IPA-${String(num).padStart(3, "0")}.yaml`;
 }
 
-export function GuidelineHeader(): ReactElement {
+export function GuidelineHeader(): ReactElement | null {
   const guideline = useGuideline();
   const principle = usePrinciple();
 
+  const stateBadge =
+    guideline.state !== undefined && guideline.state !== principle.state ? (
+      <StateBadge state={guideline.state} />
+    ) : null;
+
+  // Nothing to show → render no header at all, so it doesn't leave an empty
+  // bar above the body.
+  if (!stateBadge && guideline.enforcement !== "rule") return null;
+
   return (
     <div className={styles.root}>
-      <div className={styles.badges}>
-        {guideline.state !== undefined &&
-          guideline.state !== principle.state && (
-            <StateBadge state={guideline.state} />
-          )}
-        <Badge color="muted" variant="outline">
-          {guideline.informational ? "Informational" : "Enforced"}
-        </Badge>
-      </div>
-      {guideline.lintable && (
+      {stateBadge && <div className={styles.badges}>{stateBadge}</div>}
+      {guideline.enforcement === "rule" && (
         <a
           href={spectralFileUrl(guideline.id)}
           target="_blank"
