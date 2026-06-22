@@ -300,7 +300,7 @@ components:
     Project:
       type: object
       properties:
-        labels:
+        roles:
           type: array
           x-xgen-array-semantic: set
           items:
@@ -323,11 +323,11 @@ components:
     Project:
       type: object
       properties:
-        labels:
+        roles:
           type: array
           items:
             type: string
-          description: A list of labels.
+          description: A list of roles.
 ```
 
 <Example.Reason>
@@ -397,7 +397,7 @@ components:
           type: array
           items:
             type: string
-        tags:
+        roles:
           type: array
           x-xgen-array-semantic: set
           items:
@@ -405,7 +405,7 @@ components:
 ```
 
 <Example.Reason>
-  `environments` is left as a list because order matters, while `tags` declares
+  `environments` is left as a list because order matters, while `roles` declares
   `x-xgen-array-semantic: set` because it is an unordered, duplicate-free
   collection. Each array's intent is explicit.
 </Example.Reason>
@@ -420,11 +420,11 @@ components:
     Project:
       type: object
       properties:
-        tags:
+        roles:
           type: array
           items:
             type: string
-          description: An unordered, duplicate-free set of tags.
+          description: An unordered, duplicate-free set of roles.
 ```
 
 <Example.Reason>
@@ -544,7 +544,7 @@ components:
     Project:
       type: object
       properties:
-        tags:
+        roles:
           type: array
           x-xgen-array-semantic: set
           items:
@@ -569,7 +569,7 @@ components:
     Project:
       type: object
       properties:
-        tags:
+        roles:
           type: array
           x-xgen-array-semantic: set
           items:
