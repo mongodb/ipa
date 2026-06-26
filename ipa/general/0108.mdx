@@ -266,7 +266,7 @@ wiped-out child resources may be quite challenging.
 
 <Guidelines>
 
-<Guideline id="IPA-108-must-not-delete-child-resources-by-default" given="delete-operation" enforcement="review" effort="reason">
+<Guideline id="IPA-108-must-not-delete-child-resources-by-default" given="delete-operation" enforcement="review" implementation effort="explore">
 
 The API **must not** automatically delete child resources when a parent resource
 is deleted.
@@ -295,15 +295,17 @@ is deleted.
 
 <Workflow>
   <Workflow.Step>
-    For each delete operation, determine whether the resource may have child
+    For each Delete operation, determine whether the resource may have child
     resources.
   </Workflow.Step>
   <Workflow.Step>
-    If it can, determine if the operation exposes a `cascading` query parameter.
+    If it can, read the Delete operation description and, where available, the handler source it maps to.
   </Workflow.Step>
   <Workflow.Step>
-    Flag delete operations on resources with children that omit the `cascading`
-    parameter, forcing destructive deletes without an explicit opt-in.
+    Determine whether the operation automatically deletes its child resources.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any Delete operation that automatically deletes child resources without a validation error and without explicit opt-in.
   </Workflow.Step>
 </Workflow>
 
