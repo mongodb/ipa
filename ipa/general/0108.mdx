@@ -266,6 +266,51 @@ wiped-out child resources may be quite challenging.
 
 <Guidelines>
 
+<Guideline id="IPA-108-must-not-delete-child-resources-by-default" given="delete-operation" enforcement="review" effort="reason">
+
+The API **must not** automatically delete child resources when a parent resource
+is deleted.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```json
+{
+  "error": 400,
+  "reason": "Bad Request",
+  "detail": "The request content produced validation errors.",
+  "errorCode": "BAD_REQUEST",
+  "parameters": []
+}
+```
+
+<Example.Reason>
+  The API fails with a validation error if child resources are present, instead
+  of deleting them. The validation should instruct the user which child
+  resources to delete first.
+</Example.Reason>
+
+</Example.Correct>
+
+<Workflow>
+  <Workflow.Step>
+    For each delete operation, determine whether the resource may have child
+    resources.
+  </Workflow.Step>
+  <Workflow.Step>
+    If it can, determine if the operation exposes a `cascading` query parameter.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag delete operations on resources with children that omit the `cascading`
+    parameter, forcing destructive deletes without an explicit opt-in.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
 <Guideline id="IPA-108-should-provide-cascading-parameter" given="delete-operation" enforcement="review" effort="reason">
 
 If an API allows deletion of a resource that may have child resources, the API
