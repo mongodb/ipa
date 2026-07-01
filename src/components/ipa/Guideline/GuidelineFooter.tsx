@@ -1,12 +1,13 @@
 import type { ReactElement } from "react";
+import Link from "@docusaurus/Link";
 import { useGuideline } from "../../../hooks/useGuideline";
 import { usePrinciple } from "../../../hooks/usePrinciple";
 import styles from "./GuidelineFooter.module.css";
 
-// IPA-107-must-use-http-patch → "Use HTTP Patch"
+// IPA-107-must-use-http-patch → "Must Use HTTP Patch"
 function slugToTitle(id: string): string {
-  const slug = id.replace(/^IPA-\d{3}-(must|should|may)-/, "");
-  return slug
+  const slug = id.split("-").slice(2).join("-");
+  return (slug || id)
     .split("-")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
@@ -14,22 +15,34 @@ function slugToTitle(id: string): string {
 
 // IPA-107-must-use-http-patch → 107
 function ipaNumber(id: string): number | null {
-  const match = id.match(/^IPA-(\d{3})/);
-  return match ? parseInt(match[1], 10) : null;
+  const [prefix, number] = id.split("-");
+  if (prefix !== "IPA") return null;
+
+  const parsed = Number(number);
+  return Number.isInteger(parsed) ? parsed : null;
 }
 
-// "IPA-107-must-use-http-patch" → "IPA-107: Use HTTP Patch"
+function hasGuidelineAnchor(id: string): boolean {
+  return id.split("-").length > 2;
+}
+
+// "IPA-107-must-use-http-patch" → "IPA 107: Must Use HTTP Patch"
 function depLabel(depId: string): string {
+  if (!hasGuidelineAnchor(depId)) return depId;
+
   const num = ipaNumber(depId);
   const title = slugToTitle(depId);
-  return num !== null ? `IPA-${num}: ${title}` : title;
+  return num !== null ? `IPA ${num}: ${title}` : title;
 }
 
 // Cross-IPA: /107#IPA-107-must-use-http-patch
 // Same-IPA:  #IPA-107-must-use-http-patch
 function depHref(depId: string, currentIpa: number): string {
   const depIpa = ipaNumber(depId);
+  const hasAnchor = hasGuidelineAnchor(depId);
   const anchor = `#${depId}`;
+  if (!hasAnchor) return depIpa !== null ? `/${depIpa}` : anchor;
+
   return depIpa !== null && depIpa !== currentIpa
     ? `/${depIpa}${anchor}`
     : anchor;
@@ -46,13 +59,13 @@ export function GuidelineFooter(): ReactElement | null {
       <span className={styles.label}>Depends on</span>
       <div className={styles.deps}>
         {guideline.dependsOn.map((depId) => (
-          <a
+          <Link
             key={depId}
-            href={depHref(depId, principle.id)}
+            to={depHref(depId, principle.id)}
             className={styles.depTag}
           >
             {depLabel(depId)}
-          </a>
+          </Link>
         ))}
       </div>
     </div>

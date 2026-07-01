@@ -21,6 +21,7 @@ describe("<Guideline> standalone", () => {
     const guideline = document.querySelector("[data-guideline-id]");
 
     expect(guideline?.tagName).toBe("DIV");
+    expect(guideline).toHaveAttribute("id", "IPA-001-must-test-a");
     expect(
       document.querySelector("[data-guideline-id] [aria-hidden='true']"),
     ).toBeNull();
