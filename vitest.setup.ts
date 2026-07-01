@@ -15,9 +15,7 @@ vi.mock("@docusaurus/Link", () => ({
     createElement("a", { href: to ?? href, ...props }, children),
 }));
 
+const _brokenLinksMock = { collectAnchor: vi.fn(), collectLink: vi.fn() };
 vi.mock("@docusaurus/useBrokenLinks", () => ({
-  default: () => ({
-    collectAnchor: vi.fn(),
-    collectLink: vi.fn(),
-  }),
+  default: vi.fn(() => _brokenLinksMock),
 }));

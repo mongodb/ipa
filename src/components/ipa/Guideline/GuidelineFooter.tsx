@@ -7,7 +7,7 @@ import styles from "./GuidelineFooter.module.css";
 // IPA-107-must-use-http-patch → "Must Use HTTP Patch"
 function slugToTitle(id: string): string {
   const slug = id.split("-").slice(2).join("-");
-  return (slug || id)
+  return slug
     .split("-")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
@@ -19,7 +19,7 @@ function ipaNumber(id: string): number | null {
   if (prefix !== "IPA") return null;
 
   const parsed = Number(number);
-  return Number.isInteger(parsed) ? parsed : null;
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
 function hasGuidelineAnchor(id: string): boolean {
@@ -27,10 +27,11 @@ function hasGuidelineAnchor(id: string): boolean {
 }
 
 // "IPA-107-must-use-http-patch" → "IPA 107: Must Use HTTP Patch"
+// "IPA-107" → "IPA 107"
 function depLabel(depId: string): string {
-  if (!hasGuidelineAnchor(depId)) return depId;
-
   const num = ipaNumber(depId);
+  if (!hasGuidelineAnchor(depId)) return num !== null ? `IPA ${num}` : depId;
+
   const title = slugToTitle(depId);
   return num !== null ? `IPA ${num}: ${title}` : title;
 }
@@ -41,7 +42,8 @@ function depHref(depId: string, currentIpa: number): string {
   const depIpa = ipaNumber(depId);
   const hasAnchor = hasGuidelineAnchor(depId);
   const anchor = `#${depId}`;
-  if (!hasAnchor) return depIpa !== null ? `/${depIpa}` : anchor;
+  if (!hasAnchor)
+    return depIpa !== null && depIpa !== currentIpa ? `/${depIpa}` : anchor;
 
   return depIpa !== null && depIpa !== currentIpa
     ? `/${depIpa}${anchor}`

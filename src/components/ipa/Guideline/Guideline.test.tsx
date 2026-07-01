@@ -1,5 +1,6 @@
 import { render } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import useBrokenLinks from "@docusaurus/useBrokenLinks";
 
 import { Guideline } from "./index";
 import type { Guideline as GuidelineData } from "../../../types/guideline";
@@ -16,6 +17,10 @@ const minimalGuideline = {
 } satisfies GuidelineData;
 
 describe("<Guideline> standalone", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("renders as a standalone block without a numbering circle", () => {
     render(<Guideline {...minimalGuideline}>content</Guideline>);
     const guideline = document.querySelector("[data-guideline-id]");
@@ -25,5 +30,11 @@ describe("<Guideline> standalone", () => {
     expect(
       document.querySelector("[data-guideline-id] [aria-hidden='true']"),
     ).toBeNull();
+  });
+
+  it("registers the guideline anchor with the Docusaurus broken-link checker", () => {
+    const { collectAnchor } = vi.mocked(useBrokenLinks)();
+    render(<Guideline {...minimalGuideline}>content</Guideline>);
+    expect(collectAnchor).toHaveBeenCalledWith("IPA-001-must-test-a");
   });
 });
