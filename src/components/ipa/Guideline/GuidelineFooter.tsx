@@ -38,7 +38,7 @@ function depLabel(depId: string): string {
 
 // Cross-IPA: /107#IPA-107-must-use-http-patch
 // Same-IPA:  #IPA-107-must-use-http-patch
-function depHref(depId: string, currentIpa: number): string {
+function dependencyHref(depId: string, currentIpa: number): string {
   const depIpa = ipaNumber(depId);
   const hasAnchor = hasGuidelineAnchor(depId);
   const anchor = `#${depId}`;
@@ -63,7 +63,7 @@ export function GuidelineFooter(): ReactElement | null {
         {guideline.dependsOn.map((depId) => (
           <Link
             key={depId}
-            to={depHref(depId, principle.id)}
+            to={dependencyHref(depId, principle.id)}
             className={styles.depTag}
           >
             {depLabel(depId)}
