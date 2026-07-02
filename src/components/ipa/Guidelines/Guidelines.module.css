@@ -2,8 +2,7 @@
   counter-reset: number-circle;
   list-style: none;
   margin: 2rem 0;
-  /* Horizontal padding only. */
-  padding: 0 1.5rem;
+  padding: 0;
   border-radius: 0.5rem;
   border: 1px solid var(--ifm-color-emphasis-200);
   background-color: var(--ifm-card-background-color);
@@ -11,9 +10,9 @@
   overflow: hidden;
 }
 
-/* Vertical padding per guideline. */
+/* Padding per guideline, so target highlights include the inset space. */
 .root > * {
-  padding: 1.5rem 0;
+  padding: 1.5rem;
 }
 
 /* Separator, centered between guidelines (mirrors the infima list-item margin). */
