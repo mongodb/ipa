@@ -12,6 +12,9 @@ export default defineConfig({
     // Docusaurus aliases @site to the repo root; tests must match.
     alias: {
       "@site": fileURLToPath(new URL(".", import.meta.url)),
+      "@docusaurus/Link": "@docusaurus/core/lib/client/exports/Link",
+      "@docusaurus/useBrokenLinks":
+        "@docusaurus/core/lib/client/exports/useBrokenLinks",
       "@docusaurus/useDocusaurusContext":
         "@docusaurus/core/lib/client/exports/useDocusaurusContext",
     },

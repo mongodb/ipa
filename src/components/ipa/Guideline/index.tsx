@@ -1,4 +1,5 @@
 import { type ReactNode, type ReactElement } from "react";
+import useBrokenLinks from "@docusaurus/useBrokenLinks";
 import clsx from "clsx";
 import type { Guideline as GuidelineData } from "../../../types/guideline";
 import { GuidelineContext } from "../../../hooks/useGuideline";
@@ -18,12 +19,14 @@ function GuidelineBase({
   ...guideline
 }: GuidelineProps): ReactElement {
   const isInsideGuidelines = useIsInsideGuidelines();
+  useBrokenLinks().collectAnchor(guideline.id);
   const Root = isInsideGuidelines ? "li" : "div";
 
   return (
     <GuidelineContext.Provider value={{ guideline }}>
       <Root
         className={clsx(styles.root, isInsideGuidelines && styles.numbered)}
+        id={guideline.id}
         data-guideline-id={guideline.id}
       >
         {isInsideGuidelines && <NumberCircle />}
