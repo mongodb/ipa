@@ -1205,8 +1205,11 @@ components:
 
 <Guideline id="IPA-132-in-progress-operations-must-expose-retry-after-seconds" given="lro-schema" enforcement="automatable" dependsOn={["IPA-132-operation-endpoints-must-return-operation-response"]}>
 
-An Operation **must** expose `retryAfterSeconds`, the suggested minimum poll
-interval in seconds, so clients know how often to poll rather than guessing.
+While an Operation is in a non-terminal state (`PENDING` or `IN_PROGRESS`), it
+**must** expose `retryAfterSeconds`, the suggested minimum poll interval in
+seconds, so clients know how often to poll rather than guessing. Once an
+Operation reaches a terminal state, `retryAfterSeconds` **must** be omitted,
+since there is no further work to poll for.
 
 <Guideline.Details>
 
@@ -1226,9 +1229,9 @@ components:
 ```
 
 <Example.Reason>
-  The in-flight order operation exposes retryAfterSeconds alongside status, so
+  An in-flight order operation exposes retryAfterSeconds alongside status, so
   the client has a concrete poll-cadence hint instead of guessing an interval on
-  its own.
+  its own; the field is omitted once the operation reaches a terminal state.
 </Example.Reason>
 
 </Example.Correct>
@@ -1562,7 +1565,7 @@ paths:
   // Required on SUCCEEDED. URL of the completed resource.
   "resultHref": "https://api.example.com/...",
 
-  // Required. Suggested minimum poll interval in seconds.
+  // Required while non-terminal (PENDING or IN_PROGRESS). Must be omitted once the operation reaches a terminal state.
   "retryAfterSeconds": 30,
 
   // Optional non-binding completion estimate.
@@ -1588,7 +1591,6 @@ Example
   "operationType": "CREATE",
   "statusMessage": "Order created successfully.",
   "resultHref": "https://api.example.com/orders/64f1b2e3c4d5e6f7a8b9c0d1",
-  "retryAfterSeconds": 30,
   "createdAt": "2026-07-01T12:00:00Z",
   "updatedAt": "2026-07-01T12:03:00Z",
   "expiredAt": "2026-08-01T12:00:00Z"
