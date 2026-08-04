@@ -5,7 +5,6 @@ import { stateSchema } from "./ipa";
 // Maps readable alias names to JSONPath expressions.
 const GIVEN_ALIASES = {
   "get-operation": "$.paths[*].get",
-  "list-operation": "$.paths[*].get",
   "create-operation": "$.paths[*].post",
   "update-operation": "$.paths[*][put,patch]",
   "delete-operation": "$.paths[*].delete",

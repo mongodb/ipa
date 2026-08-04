@@ -161,7 +161,6 @@ fits:
 | `resource`         | Every path item                         |
 | `operation`        | Every operation across all HTTP methods |
 | `get-operation`    | GET operations only                     |
-| `list-operation`   | GET operations only (collection reads)  |
 | `create-operation` | POST operations only                    |
 | `update-operation` | PUT and PATCH operations                |
 | `delete-operation` | DELETE operations only                  |
