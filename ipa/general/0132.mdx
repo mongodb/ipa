@@ -596,8 +596,8 @@ paths:
 
 <Example.Reason>
   A long-running update on an existing order instance exposes its Operation
-  resources under `/orders/{orderId}/operations` and `/orders/{orderId}
-  /operations/{operationId}`, making the parent–child relationship explicit.
+  resources under `/orders/{orderId}/operations` and `/orders/{orderId}/operations/{operationId}`,
+  making the parent–child relationship explicit.
 </Example.Reason>
 
 </Example.Correct>
@@ -733,9 +733,9 @@ paths:
 ```
 
 <Example.Reason>
-  The Operations endpoints are defined under `/orgs/{orgId}/orders/{orderId}
-  /operations` instead of nested under the order's own path at `/groups/
-  {groupId}/orders/{orderId}`, so the Operations endpoint no longer stems from
+  The Operations endpoints are defined under `/orgs/{orgId}/orders/{orderId}/operations`
+  instead of nested under the order's own path at `/groups/{groupId}/orders/{orderId}`,
+  so the Operations endpoint no longer stems from
   its parent resource's path.
 </Example.Reason>
 
