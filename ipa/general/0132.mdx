@@ -106,7 +106,7 @@ paths:
 
 </Guideline>
 
-<Guideline id="IPA-132-get-method-must-not-be-lro" given="get-operation" enforcement="rule" effort="check" dependsOn={["IPA-132-lro-classification-must-be-at-design-phase"]}>
+<Guideline id="IPA-132-get-method-must-not-be-lro" given="get-operation" enforcement="rule" effort="check">
 
 A Get method **must not** be an LRO.
 
@@ -169,7 +169,7 @@ paths:
 
 </Guideline>
 
-<Guideline id="IPA-132-list-method-must-not-be-lro" given="list-operation" enforcement="rule" effort="check" dependsOn={["IPA-132-lro-classification-must-be-at-design-phase"]}>
+<Guideline id="IPA-132-list-method-must-not-be-lro" given="list-operation" enforcement="rule" effort="check">
 
 A List method **must not** be an LRO.
 
@@ -245,7 +245,7 @@ returns a handle the client uses to observe it.
 
 <Guidelines>
 
-<Guideline id="IPA-132-lro-initiation-must-return-202-accepted-with-location" given="operation" enforcement="rule" effort="check" dependsOn={["IPA-132-lro-classification-must-be-at-design-phase"]}>
+<Guideline id="IPA-132-lro-initiation-must-return-202-accepted-with-location" given="operation" enforcement="rule" effort="check">
 
 A method that starts a long-running operation **must** return 202 Accepted with
 a Location header pointing at the Operation resource URI that clients poll for
@@ -303,7 +303,7 @@ paths:
 
 </Guideline>
 
-<Guideline id="IPA-132-lro-must-not-return-success-status-code-other-than-202" given="operation" enforcement="rule" effort="check" dependsOn={["IPA-132-lro-classification-must-be-at-design-phase"]}>
+<Guideline id="IPA-132-lro-must-not-return-success-status-code-other-than-202" given="operation" enforcement="rule" effort="check">
 
 A method modeled as a long-running operation **must not** advertise any other
 2XX success status code besides 202 Accepted.
@@ -519,7 +519,7 @@ resource nested under its parent.
 
 <Guidelines>
 
-<Guideline id="IPA-132-lros-must-expose-an-operations-endpoint" given="operation" enforcement="rule" effort="check" dependsOn={["IPA-132-lro-classification-must-be-at-design-phase"]}>
+<Guideline id="IPA-132-lros-must-expose-an-operations-endpoint" given="operation" enforcement="rule" effort="check">
 
 An operation marked as long-running **must** expose its status through a nested
 `/operations` endpoint on its parent resource.
