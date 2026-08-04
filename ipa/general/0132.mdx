@@ -1533,9 +1533,6 @@ paths:
 
 ## OperationResponse schema
 
-The `OperationResponse` schema (`$.components.schemas.OperationResponse`) is the
-schema returned by every Operations endpoint referenced above:
-
 ```json
 {
   // Required. Unique identifier for this Operation.
@@ -1593,6 +1590,22 @@ schema returned by every Operations endpoint referenced above:
   "updatedAt": "2026-07-01T12:01:00Z",
 
   // Required. When the Operation record expires and returns 404.
+  "expiredAt": "2026-08-01T12:00:00Z"
+}
+```
+
+Example
+
+```json
+{
+  "operationId": "5f2e1a9c3b7d4e6f8a0b1c2d3e4f5a6b",
+  "status": "SUCCEEDED",
+  "operationType": "CREATE",
+  "statusMessage": "Order created successfully.",
+  "resultHref": "https://api.example.com/orders/64f1b2e3c4d5e6f7a8b9c0d1",
+  "retryAfterSeconds": 30,
+  "createdAt": "2026-07-01T12:00:00Z",
+  "updatedAt": "2026-07-01T12:03:00Z",
   "expiredAt": "2026-08-01T12:00:00Z"
 }
 ```
