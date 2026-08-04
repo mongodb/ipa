@@ -556,10 +556,10 @@ paths:
                 format: uri
   /orders/operations:
     get:
-      operationId: listOrderOperations
+      operationId: listOrdersOperations
   /orders/operations/{operationId}:
     get:
-      operationId: getOrderOperation
+      operationId: getOrdersOperation
 ```
 
 <Example.Reason>
@@ -588,10 +588,10 @@ paths:
                 format: uri
   /orders/{orderId}/operations:
     get:
-      operationId: listOrderInstanceOperations
+      operationId: listOrderOperations
   /orders/{orderId}/operations/{operationId}:
     get:
-      operationId: getOrderInstanceOperation
+      operationId: getOrderOperation
 ```
 
 <Example.Reason>
@@ -695,10 +695,10 @@ resource's own path, at both the collection and instance level.
 paths:
   /groups/{groupId}/orders/operations:
     get:
-      operationId: listOrderOperations
+      operationId: listOrdersOperations
   /groups/{groupId}/orders/{orderId}/operations:
     get:
-      operationId: listOrderInstanceOperations
+      operationId: listOrderOperations
 ```
 
 <Example.Reason>
@@ -773,10 +773,10 @@ with no parent resource in their path.
 paths:
   /groups/{groupId}/orders/operations:
     get:
-      operationId: listOrderOperations
+      operationId: listOrdersOperations
   /groups/{groupId}/orders/operations/{operationId}:
     get:
-      operationId: getOrderOperation
+      operationId: getOrdersOperation
 ```
 
 <Example.Reason>
@@ -792,7 +792,7 @@ paths:
 paths:
   /groups/{groupId}/orders/operations:
     get:
-      operationId: listOrderOperations
+      operationId: listOrdersOperations
   /orders/operations:
     get:
       operationId: listAllOrderOperations
