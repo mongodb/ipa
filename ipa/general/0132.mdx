@@ -1001,20 +1001,6 @@ components:
 
 </Example.Incorrect>
 
-<Workflow>
-  <Workflow.Step>
-    Locate the schema returned by the Operations endpoints and its status field.
-  </Workflow.Step>
-  <Workflow.Step>
-    Confirm the enum is exactly PENDING, IN_PROGRESS, SUCCEEDED, FAILED,
-    CANCELED, SUPERSEDED.
-  </Workflow.Step>
-  <Workflow.Step>
-    Flag renamed status fields, non-standard values, extra success terminals, or
-    non-American spellings such as CANCELLED.
-  </Workflow.Step>
-</Workflow>
-
 </Guideline.Details>
 
 </Guideline>
@@ -1275,9 +1261,8 @@ components:
 <Guideline id="IPA-132-operations-must-expire-after-a-finite-retention-period" given="lro-schema" enforcement="review" effort="explore" implementation dependsOn={["IPA-132-operation-endpoints-must-return-operation-response"]}>
 
 Operation records **must** be transient: they **must** expire after a finite
-retention period (the standard default is around 30 days after reaching a
-terminal state) and the Operation schema **must** expose an `expiredAt`
-timestamp indicating when this will happen. After expiry the Operations endpoint
+retention period, exposed via an `expiredAt` timestamp on the Operation
+schema indicating when this will happen. After expiry the Operations endpoint
 returns 404; the underlying resource read is unaffected.
 
 <Guideline.Details>
@@ -1293,7 +1278,7 @@ components:
         expiredAt:
           type: string
           format: date-time
-          description: When this operation record expires and returns 404.
+          description: When this operation record expires and returns 404. Default retention is ~30 days after reaching a terminal state.
 ```
 
 <Example.Reason>
@@ -1589,7 +1574,7 @@ paths:
   // Required. Last status update timestamp.
   "updatedAt": "2026-07-01T12:01:00Z",
 
-  // Required. When the Operation record expires and returns 404.
+  // Required. When the Operation record expires and returns 404. Default retention ~30 days after terminal state.
   "expiredAt": "2026-08-01T12:00:00Z"
 }
 ```
