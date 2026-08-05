@@ -287,7 +287,7 @@ for all fields in the request (see
   - Any fields not included in the request body **must** be unset or set to
     their default value(s)
 - If the client explicitly provides `null` for an optional field in the request,
-  the server **should** unset the field or reset it to its default value
+  the server **should** unset the field
   - The server **should** return a
     [validation error](0114.mdx#validation-errors) if the client provides `null`
     for a field that is not nullable and cannot be unset
@@ -319,13 +319,12 @@ for all fields in the request (see
   </Workflow.Step>
   <Workflow.Step>
     For partial updates, confirm fields absent from the request body are left
-    unchanged. For full replacements, confirm absent fields are unset or reset
-    to their defaults.
+    unchanged. For full replacements, confirm absent fields are unset.
   </Workflow.Step>
   <Workflow.Step>
     Check `null` handling: an explicit `null` on an optional field should unset
-    it or reset it to its default, and a `null` on a non-nullable field that
-    cannot be unset should yield a validation error.
+    it, and a `null` on a non-nullable field that cannot be unset should yield a
+    validation error.
   </Workflow.Step>
   <Workflow.Step>
     Flag any field whose ownership is not respected, cross-checking client-owned
