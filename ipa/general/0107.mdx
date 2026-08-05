@@ -284,8 +284,7 @@ for all fields in the request (see
   included in the request body and leave all other fields unchanged
 - For full resource replacements, the Update method **must** update the full
   resource to match the request
-  - Any fields not included in the request body **must** be unset or set to
-    their default value(s)
+  - Any fields not included in the request body **must** be unset
 - If the client explicitly provides `null` for an optional field in the request,
   the server **should** unset the field
   - The server **should** return a
