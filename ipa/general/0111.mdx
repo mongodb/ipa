@@ -330,11 +330,11 @@ For resources where all fields are server-owned, see
 
 ### Optional Fields with Server Defaults
 
-Assigning a server-side default in place of a client-omitted value during
-resource creation is an anti-pattern: it creates hybrid ownership where the
-field is client-owned but the server effectively chooses a value. State-driven
-clients and downstream tooling then cannot tell whether a returned value was
-client-set or server-filled, and they report drift on every reconciliation.
+Assigning a server-side default in place of a client-omitted value is an
+anti-pattern: it creates hybrid ownership where the field is client-owned but
+the server effectively chooses a value. State-driven clients and downstream
+tooling then cannot tell whether a returned value was client-set or
+server-filled, and they report drift on every reconciliation.
 
 <Guidelines>
 
