@@ -596,8 +596,9 @@ paths:
 
 <Example.Reason>
   A long-running update on an existing order instance exposes its Operation
-  resources under `/orders/{orderId}/operations` and `/orders/{orderId}/operations/{operationId}`,
-  making the parent–child relationship explicit.
+  resources under `/orders/{orderId}/operations` and its instance-level
+  counterpart `/orders/{orderId}/operations/{operationId}`, making the
+  parent–child relationship explicit.
 </Example.Reason>
 
 </Example.Correct>
@@ -733,10 +734,10 @@ paths:
 ```
 
 <Example.Reason>
-  The Operations endpoints are defined under `/orgs/{orgId}/orders/{orderId}/operations`
-  instead of nested under the order's own path at `/groups/{groupId}/orders/{orderId}`,
-  so the Operations endpoint no longer stems from
-  its parent resource's path.
+  These Operations endpoints sit at a path detached from the parent order,
+  namely `/orgs/{orgId}/orders/{orderId}/operations`, instead of nested under
+  the order's own path at `/groups/{groupId}/orders/{orderId}`, so the
+  Operations endpoint no longer stems from its parent resource's path.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -1264,9 +1265,9 @@ components:
 <Guideline id="IPA-132-operations-must-expire-after-a-finite-retention-period" given="lro-schema" enforcement="review" effort="explore" implementation dependsOn={["IPA-132-operation-endpoints-must-return-operation-response"]}>
 
 Operation records **must** be transient: they **must** expire after a finite
-retention period, exposed via an `expiredAt` timestamp on the Operation
-schema indicating when this will happen. After expiry the Operations endpoint
-returns 404; the underlying resource read is unaffected.
+retention period, exposed via an `expiredAt` timestamp on the Operation schema
+indicating when this will happen. After expiry the Operations endpoint returns
+404; the underlying resource read is unaffected.
 
 <Guideline.Details>
 
@@ -1281,7 +1282,9 @@ components:
         expiredAt:
           type: string
           format: date-time
-          description: When this operation record expires and returns 404. Default retention is ~30 days after reaching a terminal state.
+          description:
+            When this operation record expires and returns 404. Default
+            retention is ~30 days after reaching a terminal state.
 ```
 
 <Example.Reason>
