@@ -951,11 +951,16 @@ paths:
 
 <Guideline id="IPA-132-operation-status-must-use-the-standard-status-enum" given="lro-schema" enforcement="automatable" dependsOn={["IPA-132-operation-endpoints-must-return-operation-response"]}>
 
-An Operation **must** report progress through a `status` field.
+An Operation **must** report progress through a `status` field, using exactly
+this enum:
 
-- The `status` field must use exactly this enum: `PENDING`, `IN_PROGRESS`,
-  `SUCCEEDED`, `FAILED`, `CANCELED`, `SUPERSEDED`.
-- `SUCCEEDED` is the only success terminal state.
+- `PENDING` — the request was accepted but work has not started.
+- `IN_PROGRESS` — work is currently executing.
+- `SUCCEEDED` — work completed successfully. This is the only success terminal
+  state.
+- `FAILED` — work completed unsuccessfully and reports a structured `error`.
+- `CANCELED` — work was terminated on request before completion.
+- `SUPERSEDED` — work was replaced by a later operation on the same resource.
 
 <Guideline.Details>
 
@@ -1265,7 +1270,7 @@ components:
 <Guideline id="IPA-132-operations-must-expire-after-a-finite-retention-period" given="lro-schema" enforcement="review" effort="explore" implementation dependsOn={["IPA-132-operation-endpoints-must-return-operation-response"]}>
 
 Operation records **must** be transient: they **must** expire after a finite
-retention period, exposed via an `expiredAt` timestamp on the Operation schema
+retention period, exposed via an `expiresAt` timestamp on the Operation schema
 indicating when this will happen. After expiry the Operations endpoint returns
 404; the underlying resource read is unaffected.
 
@@ -1279,7 +1284,7 @@ components:
     OperationResponse:
       type: object
       properties:
-        expiredAt:
+        expiresAt:
           type: string
           format: date-time
           description:
@@ -1288,7 +1293,7 @@ components:
 ```
 
 <Example.Reason>
-  The order operation record exposes an expiredAt timestamp that tells the
+  The order operation record exposes an expiresAt timestamp that tells the
   client when the record will return 404, so operation history remains transient
   and storage does not grow without bound.
 </Example.Reason>
@@ -1319,7 +1324,7 @@ components:
 <Workflow>
   <Workflow.Step>
     Confirm the Operation schema exposes an expiry timestamp (for example
-    expiredAt) and that the implementation enforces a finite TTL on terminal
+    expiresAt) and that the implementation enforces a finite TTL on terminal
     records.
   </Workflow.Step>
   <Workflow.Step>
@@ -1581,7 +1586,7 @@ paths:
   "updatedAt": "2026-07-01T12:01:00Z",
 
   // Required. When the Operation record expires and returns 404. Default retention ~30 days after terminal state.
-  "expiredAt": "2026-08-01T12:00:00Z"
+  "expiresAt": "2026-08-01T12:00:00Z"
 }
 ```
 
@@ -1596,7 +1601,7 @@ Example
   "resultHref": "https://api.example.com/orders/64f1b2e3c4d5e6f7a8b9c0d1",
   "createdAt": "2026-07-01T12:00:00Z",
   "updatedAt": "2026-07-01T12:03:00Z",
-  "expiredAt": "2026-08-01T12:00:00Z"
+  "expiresAt": "2026-08-01T12:00:00Z"
 }
 ```
 
