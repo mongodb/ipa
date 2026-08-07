@@ -957,12 +957,11 @@ An Operation **must** report progress through a `status` field.
   `SUCCEEDED`, `FAILED`, `CANCELED`, `SUPERSEDED`.
 - `SUCCEEDED` is the only success terminal state.
 
-Each value carries a fixed meaning:
+Each value means:
 
 - `PENDING`: the request was accepted but work has not started.
 - `IN_PROGRESS`: work is currently executing.
-- `SUCCEEDED`: work completed successfully. This is the only success terminal
-  state.
+- `SUCCEEDED`: work completed successfully.
 - `FAILED`: work completed unsuccessfully and reports a structured `error`.
 - `CANCELED`: work was terminated on request before completion.
 - `SUPERSEDED`: work was replaced by a later operation on the same resource.
