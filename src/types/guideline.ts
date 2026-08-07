@@ -12,6 +12,7 @@ const GIVEN_ALIASES = {
   resource: "$.paths[*]",
   paths: "$.paths",
   schema: "$.components.schemas[*]",
+  "lro-schema": "$.components.schemas.OperationResponse",
   parameter: "$.paths..parameters[*]",
   tag: "$.tags[*]",
   enum: "$..enum",

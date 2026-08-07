@@ -1,0 +1,1609 @@
+---
+id: 132
+state: experimental
+---
+
+# IPA-132: Long-Running Operations
+
+A **long-running operation (LRO)** is an operation whose completion is not
+guaranteed within a single HTTP request/response cycle. Rather than holding a
+request open until the work finishes, the API accepts the request, returns a
+handle to the work immediately, and lets the client observe progress
+asynchronously by polling a dedicated **Operation** resource.
+
+Classification is **structural**, decided at design time: an operation is
+long-running because of _what it does_ (it hands work to a background worker, or
+its worst-case time scales with an uncapped input), not because a particular
+request happened to be slow. Slowness that can be fixed (caching, an index,
+query optimization) is a performance bug, not an LRO.
+
+## Guidance
+
+### Classifying an operation as long-running
+
+<Guidelines>
+
+<Guideline id="IPA-132-lro-classification-must-be-at-design-phase" given="operation" enforcement="review" effort="reason">
+
+An operation **must** be classified as long-running at design phase when its
+completion is not guaranteed within a single request/response cycle, or when it
+is executed asynchronously (for example via a planner, job queue, or workflow
+engine).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      responses:
+        "202":
+          description: Accepted
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+```
+
+<Example.Reason>
+  Creating an order hands work to a background worker, so completion is not
+  guaranteed in-cycle; the method is correctly modeled as an LRO and must only
+  return 202 Accepted and a Location header.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /users:
+    post:
+      operationId: createUser
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+```
+
+<Example.Reason>
+  Creating a user is performed as a single insert that is expected to complete
+  within the request, so the client does not need any operation handle to poll
+  and the method should not be modeled as an LRO.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each mutating operation (POST, PUT, PATCH, DELETE, or a custom method),
+    determine whether the handler can complete the work on the request thread or
+    must hand it to a background worker (planner, job queue, workflow engine).
+  </Workflow.Step>
+  <Workflow.Step>
+    Determine whether the worst-case completion time scales with an input that
+    is not capped (fan-out, snapshot size, queue depth, an external system). An
+    uncapped input is a strong LRO signal.
+  </Workflow.Step>
+  <Workflow.Step>
+    If either signal holds, the operation is long-running and must follow this
+    principle. If the operation is merely slow but bounded and fixable, treat it
+    as a performance issue, not an LRO.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm a long-running operation can only return 202 Accepted.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-get-method-must-not-be-lro" given="get-operation" enforcement="rule" effort="check">
+
+A Get method **must not** be an LRO.
+
+- Get method returns the current state of a single resource that already resides
+  on the server.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+```
+
+<Example.Reason>
+  Fetching an order by ID reads state that already exists on the server and
+  returns it synchronously with 200 OK, so there is no background work to track
+  and the method is correctly not modeled as an LRO.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      responses:
+        "202":
+          description: Accepted
+          headers:
+            Location:
+              description: URI of the Operation resource to poll.
+              schema:
+                type: string
+                format: uri
+```
+
+<Example.Reason>
+  Fetching an order by ID reads state that already exists on the server, so
+  modeling the Get method as a long-running operation adds an Operation handle
+  where no background work exists to track.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-list-method-must-not-be-lro" given="get-operation" enforcement="rule" effort="check">
+
+A List method **must not** be an LRO.
+
+- List method returns data from a collection that already exists on the server.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Order"
+```
+
+<Example.Reason>
+  Listing orders returns a finite page of records that already exist on the
+  server, so the response is returned in-cycle with 200 OK and does not need an
+  operation handle.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: listOrders
+      responses:
+        "202":
+          description: Accepted
+          headers:
+            Location:
+              description: URI of the Operation resource to poll.
+              schema:
+                type: string
+                format: uri
+```
+
+<Example.Reason>
+  Listing orders returns a page of existing collection data, so modeling the
+  List method as a long-running operation incorrectly turns a synchronous read
+  into asynchronous work.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+### Initiating a long-running operation
+
+A method that starts long-running work acknowledges the request immediately and
+returns a handle the client uses to observe it.
+
+<Guidelines>
+
+<Guideline id="IPA-132-lro-initiation-must-return-202-accepted-with-location" given="operation" enforcement="rule" effort="check">
+
+A method that starts a long-running operation **must** return 202 Accepted with
+a Location header pointing at the Operation resource URI that clients poll for
+status.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      responses:
+        "202":
+          description: Accepted
+          headers:
+            Location:
+              description: URI of the Operation resource to poll.
+              schema:
+                type: string
+                format: uri
+```
+
+<Example.Reason>
+  Creating an order starts background work, so the method acknowledges the
+  request with 202 Accepted and hands the client the exact Operation URI to poll
+  in the Location header, providing one unambiguous way to obtain the handle.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      responses:
+        "202":
+          description: Accepted
+```
+
+<Example.Reason>
+  Creating an order starts long-running work, but the method returns 202
+  Accepted without a Location header, so the client has no Operation resource
+  URI to poll and no standard way to observe progress.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-lro-must-not-return-success-status-code-other-than-202" given="operation" enforcement="rule" effort="check">
+
+A method modeled as a long-running operation **must not** advertise any other
+2XX success status code besides 202 Accepted.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      responses:
+        "202":
+          description: Accepted
+          headers:
+            Location:
+              description: URI of the Operation resource to poll.
+              schema:
+                type: string
+                format: uri
+```
+
+<Example.Reason>
+  Because the method is correctly marked as an LRO and limits its success
+  response to 202 Accepted, the contract for starting work remains definitive
+  and declarative tooling can consistently depend on this uniform behavior.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      responses:
+        "202":
+          description: Accepted
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+```
+
+<Example.Reason>
+  The same long-running operation advertises two success codes, so clients
+  cannot reliably tell whether they should expect a body or a handle and
+  automated validation cannot enforce a single contract.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each Long-Running operation, collect all 2XX responses.
+  </Workflow.Step>
+  <Workflow.Step>Confirm the only 2XX response is 202 Accepted.</Workflow.Step>
+  <Workflow.Step>
+    Flag any long-running operation that advertises 200, 201, 204, or any other
+    2XX code apart from 202.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-lro-202-response-must-not-include-content" given="operation" enforcement="rule" effort="check" dependsOn={["IPA-132-lro-initiation-must-return-202-accepted-with-location"]}>
+
+The 202 Accepted response **must not** contain content.
+
+- The handle to the operation is carried by the Location header, not the body.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+responses:
+  "202":
+    description: Accepted
+    headers:
+      Location:
+        schema:
+          type: string
+          format: uri
+```
+
+<Example.Reason>
+  The 202 Accepted response carries only the Location header and no body, so
+  there is a single, unambiguous way for the client to obtain the operation
+  handle.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+responses:
+  "202":
+    description: Accepted.
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/Order"
+```
+
+<Example.Reason>
+  The 202 Accepted response returns an Order body alongside the handle, implying
+  the resource already exists and creating a second, conflicting source of truth
+  alongside the Operation resource.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-lro-initiation-must-validate-before-accepting-work" given="operation" enforcement="review" effort="explore" implementation dependsOn={["IPA-132-lro-initiation-must-return-202-accepted-with-location"]}>
+
+The API **must** perform all applicable request validation and authorization
+before accepting the request for long-running work, so invalid or unauthorized
+requests still receive a synchronous 4xx and never a 202.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+```
+
+<Example.Reason>
+  The order create validates the payload and caller permissions on the request
+  thread and only then enqueues the background work, so invalid or unauthorized
+  requests receive synchronous 4xx responses and 202 Accepted is reserved for
+  real work.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      responses:
+        "202":
+          description: Accepted
+```
+
+<Example.Reason>
+  The order create accepts every request unconditionally and leaves the
+  background worker to discover invalid input, so clients must poll an Operation
+  only to learn the request was malformed, instead of getting a clear
+  synchronous 4xx.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each long-running method, confirm the operation declares the synchronous
+    error responses that apply (400, 401, 403, 409, 422, …).
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the description or design makes clear that validation and
+    authorization run before the request is accepted for asynchronous work.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any endpoint that returns 202 unconditionally and reports validation or
+    authorization failures only through the Operation resource.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+### The Operation resource
+
+A long-running operation is observed through a dedicated, read-only Operation
+resource nested under its parent.
+
+<Guidelines>
+
+<Guideline id="IPA-132-lros-must-expose-an-operations-endpoint" given="operation" enforcement="rule" effort="check">
+
+An operation marked as long-running **must** expose its status through a nested
+`/operations` endpoint on its parent resource.
+
+- If the long-running operation is initiated from a collection-level method and
+  the resource instance does not yet exist, the Operation resource must be
+  nested under the collection path.
+- If the long-running operation is initiated for an existing resource instance,
+  the Operation resource must be nested under that instance path.
+
+:::note
+
+**Compatibility note with [IPA-102](0102.mdx):** The `/operations` and
+`/operations/{operationId}` segments are a standardized LRO suffix.
+
+:::
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      responses:
+        "202":
+          description: Accepted
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+  /orders/operations:
+    get:
+      operationId: listOrdersOperations
+  /orders/operations/{operationId}:
+    get:
+      operationId: getOrdersOperation
+```
+
+<Example.Reason>
+  A collection-level create that is long-running exposes its Operation resources
+  under `/orders/operations` and `/orders/operations/{operationId}`, so the
+  handle in the Location header always points at a concrete Operations endpoint
+  in the contract.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    patch:
+      operationId: updateOrder
+      responses:
+        "202":
+          description: Accepted
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+  /orders/{orderId}/operations:
+    get:
+      operationId: listOrderOperations
+  /orders/{orderId}/operations/{operationId}:
+    get:
+      operationId: getOrderOperation
+```
+
+<Example.Reason>
+  A long-running update on an existing order instance exposes its Operation
+  resources under `/orders/{orderId}/operations` and its instance-level
+  counterpart `/orders/{orderId}/operations/{operationId}`, making the
+  parent–child relationship explicit.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    post:
+      operationId: createOrder
+      responses:
+        "202":
+          description: Accepted
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+```
+
+<Example.Reason>
+  The createOrder method is marked long-running and returns a Location header,
+  but no /orders/operations endpoints are defined, so the handle points at a
+  resource that does not exist in the contract.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>Derive the parent resource path for each operation.</Workflow.Step>
+  <Workflow.Step>
+    If the long-running operation is initiated at collection level and no
+    resource instance exists yet, confirm the paths object defines
+    `<parent>/operations` and `<parent>/operations/{operationId}`.
+  </Workflow.Step>
+  <Workflow.Step>
+    If the long-running operation is initiated on an existing resource
+    instance, confirm the paths object defines
+    `<parent>/{resourceId}/operations` and
+    `<parent>/{resourceId}/operations/{operationId}`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any resource that tracks instance-level long-running operations
+    only at collection scope, either by pointing the Location header at a
+    collection-scoped Operation or by omitting the instance-scoped
+    Operations endpoints.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-operation-must-be-a-read-only-resource" given="resource" enforcement="rule" effort="check" dependsOn={["IPA-132-lros-must-expose-an-operations-endpoint"]}>
+
+Operations resource **must** be a read-only resource.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}/operations:
+    get:
+      operationId: listOrderOperations
+  /orders/{orderId}/operations/{operationId}:
+    get:
+      operationId: getOrderOperation
+```
+
+<Example.Reason>
+  The Operations endpoints expose only GET methods under `/orders/{orderId}
+  /operations` and `/orders/{orderId}/operations/{operationId}`, matching the
+  read-only, backend-managed lifecycle of Operation records.
+</Example.Reason>
+
+</Example.Correct>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-operations-endpoint-must-stem-from-parent-resource" given="paths" enforcement="review" effort="reason" dependsOn={["IPA-132-lros-must-expose-an-operations-endpoint"]}>
+
+Operations endpoints **must** be defined as nested paths under the parent
+resource's own path, at both the collection and instance level.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/orders/operations:
+    get:
+      operationId: listOrdersOperations
+  /groups/{groupId}/orders/{orderId}/operations:
+    get:
+      operationId: listOrderOperations
+```
+
+<Example.Reason>
+  Order operations are exposed under `/groups/{groupId}/orders/operations` and
+  `/groups/{groupId}/orders/{orderId}/operations`, so they remain nested under
+  the exact same path as their parent resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/orders/{orderId}:
+    patch:
+      operationId: updateOrder
+      responses:
+        "202":
+          description: Accepted
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+  /orgs/{orgId}/orders/{orderId}/operations:
+    get:
+      operationId: listOrderOperations
+  /orgs/{orgId}/orders/{orderId}/operations/{operationId}:
+    get:
+      operationId: getOrderOperation
+```
+
+<Example.Reason>
+  These Operations endpoints sit at a path detached from the parent order,
+  namely `/orgs/{orgId}/orders/{orderId}/operations`, instead of nested under
+  the order's own path at `/groups/{groupId}/orders/{orderId}`, so the
+  Operations endpoint no longer stems from its parent resource's path.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Identify the parent resource's own path for each long-running operation.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the corresponding Operations endpoints are defined as nested paths
+    directly under that parent resource path, at both the collection and
+    instance level.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any Operations endpoint whose path does not stem from its parent
+    resource's own path.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-operations-endpoint-must-not-be-global" given="paths" enforcement="review" effort="check" dependsOn={["IPA-132-lros-must-expose-an-operations-endpoint"]}>
+
+Operations endpoints **must not** be defined as standalone, global endpoints
+with no parent resource in their path.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/orders/operations:
+    get:
+      operationId: listOrdersOperations
+  /groups/{groupId}/orders/operations/{operationId}:
+    get:
+      operationId: getOrdersOperation
+```
+
+<Example.Reason>
+  The Operations endpoints are nested under the `/groups/{groupId}/orders`
+  collection path, so they are not exposed as standalone, parentless endpoints.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/orders/operations:
+    get:
+      operationId: listOrdersOperations
+  /orders/operations:
+    get:
+      operationId: listAllOrderOperations
+```
+
+<Example.Reason>
+  A single global /orders/operations endpoint has no parent resource in its
+  path, so it is detached from the resource hierarchy the operation belongs to.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every path ending in `/operations` or `/operations/{operationId}`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any such path mounted at the API root or with no parent resource
+    segment preceding it.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each Operations endpoint's path is nested under a parent resource
+    path.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-operations-endpoint-must-use-parent-resource-authorization" given="operation" enforcement="review" effort="explore" implementation dependsOn={["IPA-132-lros-must-expose-an-operations-endpoint"]}>
+
+Operations endpoints **must** use the same authorization model as read access on
+the parent resource. They **must not** introduce broader access, stronger
+permissions, or a separate permission model.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/orders/{orderId}:
+    get:
+      operationId: getOrder
+      x-rolesRequirements:
+        - Project Read Only
+  /groups/{groupId}/orders/{orderId}/operations/{operationId}:
+    get:
+      operationId: getOrderOperation
+      x-rolesRequirements:
+        - Project Read Only
+```
+
+<Example.Reason>
+  Reading an order operation requires the same role set as reading the parent
+  order, so the Operations endpoint does not introduce a separate authorization
+  surface.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/orders/{orderId}:
+    get:
+      operationId: getOrder
+      x-rolesRequirements:
+        - Project Read Only
+  /groups/{groupId}/orders/{orderId}/operations/{operationId}:
+    get:
+      operationId: getOrderOperation
+      x-rolesRequirements:
+        - Project Owner
+```
+
+<Example.Reason>
+  Reading the Operation requires a stronger role than reading the parent
+  resource, so the Operations endpoint introduces a different authorization
+  model from the parent read.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+### Communicating the Long Running Operation Status
+
+<Guidelines>
+
+<Guideline id="IPA-132-operation-endpoints-must-return-operation-response" given="lro-schema" enforcement="rule" effort="check">
+
+Operation endpoints **must** return
+[`OperationResponse`](#operationresponse-schema) to report long-running
+operation status.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}/operations/{operationId}:
+    get:
+      operationId: getOrderOperation
+      responses:
+        "200":
+          description: Operation status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationResponse"
+```
+
+<Example.Reason>
+  The Operation endpoint returns the standard OperationResponse schema, so
+  clients have one consistent contract for reading long-running operation state.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}/operations/{operationId}:
+    get:
+      operationId: getOrderOperation
+      responses:
+        "200":
+          description: Operation status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+```
+
+<Example.Reason>
+  The Operation endpoint returns an Order resource instead of OperationResponse,
+  so the long-running operation status contract is not represented through the
+  standard Operation schema.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-operation-status-must-use-the-standard-status-enum" given="lro-schema" enforcement="automatable" dependsOn={["IPA-132-operation-endpoints-must-return-operation-response"]}>
+
+An Operation **must** report progress through a `status` field.
+
+- The `status` field must use exactly this enum: `PENDING`, `IN_PROGRESS`,
+  `SUCCEEDED`, `FAILED`, `CANCELED`, `SUPERSEDED`.
+- `SUCCEEDED` is the only success terminal state.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    OperationResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, SUCCEEDED, FAILED, CANCELED, SUPERSEDED]
+```
+
+<Example.Reason>
+  The OperationResponse schema reports its lifecycle through a single status
+  field whose enum is exactly [PENDING, IN_PROGRESS, SUCCEEDED, FAILED,
+  CANCELED, SUPERSEDED], so a generic client can reason about any operation the
+  same way and SUCCEEDED is the single success terminal.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    OperationResponse:
+      type: object
+      properties:
+        state:
+          type: string
+          enum: [QUEUED, RUNNING, COMPLETE, ERROR, CANCELLED]
+```
+
+<Example.Reason>
+  The schema renames the field to state and invents a different enum, so a
+  generic client cannot map these values to the standard lifecycle and even the
+  spelling CANCELLED diverges from the canonical set.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-failed-lros-must-report-a-structured-error" given="lro-schema" enforcement="automatable" dependsOn={["IPA-132-operation-endpoints-must-return-operation-response"]}>
+
+A FAILED operation **must** report the failure through a structured `error`
+object carrying a `code`, a `message`, a `retryable` flag, an optional
+`retryStrategy`, and optional `details`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    OperationResponse:
+      type: object
+      properties:
+        error:
+          $ref: "#/components/schemas/OperationError"
+    OperationError:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        retryable:
+          type: boolean
+        retryStrategy:
+          type: string
+          enum: [IMMEDIATE, BACKOFF, NONE]
+        details:
+          type: object
+```
+
+<Example.Reason>
+  A failed order create returns a structured OperationError with code, message,
+  retryable, plus optional retryStrategy, and optional details, so a client can
+  decide whether to retry, back off, or escalate without parsing free text.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    OperationResponse:
+      type: object
+      properties:
+        error:
+          type: string
+```
+
+<Example.Reason>
+  A failed order create represents its failure as a plain error string, forcing
+  every client to parse prose and giving no machine-readable signal of whether
+  the failure is retryable.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Find the Operation schema and its error property.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm error is an object with code, message, retryable, with retryStrategy
+    and details optional.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag operations that model failure as a plain string or omit the retryable
+    signal.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-successful-lros-must-reference-the-result-resource" given="lro-schema" enforcement="automatable" dependsOn={["IPA-132-operation-endpoints-must-return-operation-response"]}>
+
+On SUCCEEDED, an Operation **must** expose a `resultHref` pointing at the
+completed resource, so a client can follow the operation straight to its result.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    OperationResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, SUCCEEDED, FAILED, CANCELED, SUPERSEDED]
+        resultHref:
+          type: string
+          format: uri
+```
+
+<Example.Reason>
+  A succeeded order create sets resultHref to the finished order's URI, so the
+  client can follow the Operation directly to the completed resource instead of
+  reconstructing the URL.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    OperationResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, SUCCEEDED, FAILED, CANCELED, SUPERSEDED]
+```
+
+<Example.Reason>
+  The succeeded order create exposes only a status field and no resultHref, so
+  the client must guess where the completed resource lives.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-operations-should-expose-status-fields" given="lro-schema" enforcement="automatable" dependsOn={["IPA-132-operation-endpoints-must-return-operation-response"]}>
+
+An Operation **should** expose `statusMessage`, `progress`, and
+`estimatedCompletionTime` so clients can reason about in-flight work.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    OperationResponse:
+      type: object
+      properties:
+        statusMessage:
+          type: string
+        progress:
+          type: object
+          properties:
+            completed:
+              type: number
+            total:
+              type: number
+            unit:
+              type: string
+        estimatedCompletionTime:
+          type: string
+          format: date-time
+```
+
+<Example.Reason>
+  An in-flight order operation provides a human-readable statusMessage and
+  quantitative progress so the client can see how far along the work is.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    OperationResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, SUCCEEDED, FAILED, CANCELED, SUPERSEDED]
+```
+
+<Example.Reason>
+  The in-flight order operation exposes only the status enum, giving the client
+  no progress signal or poll-cadence hint and making it hard to choose sensible
+  polling behaviour.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-in-progress-operations-must-expose-retry-after-seconds" given="lro-schema" enforcement="automatable" dependsOn={["IPA-132-operation-endpoints-must-return-operation-response"]}>
+
+While an Operation is in a non-terminal state (`PENDING` or `IN_PROGRESS`), it
+**must** expose `retryAfterSeconds`, the suggested minimum poll interval in
+seconds, so clients know how often to poll rather than guessing. Once an
+Operation reaches a terminal state, `retryAfterSeconds` **must** be omitted,
+since there is no further work to poll for.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    OperationResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, SUCCEEDED, FAILED, CANCELED, SUPERSEDED]
+        retryAfterSeconds:
+          type: integer
+```
+
+<Example.Reason>
+  An in-flight order operation exposes retryAfterSeconds alongside status, so
+  the client has a concrete poll-cadence hint instead of guessing an interval on
+  its own; the field is omitted once the operation reaches a terminal state.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    OperationResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, SUCCEEDED, FAILED, CANCELED, SUPERSEDED]
+```
+
+<Example.Reason>
+  The in-flight order operation exposes only the bare status enum, giving the
+  client no poll-cadence hint and risking either overly aggressive polling or
+  needlessly long waits.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-operations-must-expire-after-a-finite-retention-period" given="lro-schema" enforcement="review" effort="explore" implementation dependsOn={["IPA-132-operation-endpoints-must-return-operation-response"]}>
+
+Operation records **must** be transient: they **must** expire after a finite
+retention period, exposed via an `expiredAt` timestamp on the Operation schema
+indicating when this will happen. After expiry the Operations endpoint returns
+404; the underlying resource read is unaffected.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    OperationResponse:
+      type: object
+      properties:
+        expiredAt:
+          type: string
+          format: date-time
+          description:
+            When this operation record expires and returns 404. Default
+            retention is ~30 days after reaching a terminal state.
+```
+
+<Example.Reason>
+  The order operation record exposes an expiredAt timestamp that tells the
+  client when the record will return 404, so operation history remains transient
+  and storage does not grow without bound.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    OperationResponse:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+```
+
+<Example.Reason>
+  The order operation record has a createdAt time but no expiry, implying
+  operation history is retained forever instead of expiring after a finite
+  retention period.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Confirm the Operation schema exposes an expiry timestamp (for example
+    expiredAt) and that the implementation enforces a finite TTL on terminal
+    records.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm expired operations return 404 from the Operations endpoint while the
+    parent resource read is unaffected.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag operations retained indefinitely or with no expiry signal.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-operation-response-must-include-core-metadata" given="lro-schema" enforcement="automatable" dependsOn={["IPA-132-operation-endpoints-must-return-operation-response"]}>
+
+An OperationResponse **must** include stable core metadata for the operation
+record: a required `operationId`, a required `operationType` using exactly the
+enum `CREATE`, `UPDATE`, `DELETE`, `CUSTOM`, a `customMethod` that is required
+when `operationType` is `CUSTOM` and must be omitted otherwise, a required
+`createdAt`, and a required `updatedAt`.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    OperationResponse:
+      type: object
+      properties:
+        operationId:
+          type: string
+        operationType:
+          type: string
+          enum: [CREATE, UPDATE, DELETE, CUSTOM]
+        customMethod:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+```
+
+<Example.Reason>
+  The OperationResponse exposes a stable identifier, a standard operation kind,
+  and record timestamps, so generic clients and tooling can identify the
+  operation, understand what kind of work it represents, and tell when its
+  status last changed.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    OperationResponse:
+      type: object
+      properties:
+        operationType:
+          type: string
+          enum: [CREATE, UPDATE, DELETE, CUSTOM]
+        createdAt:
+          type: string
+          format: date-time
+```
+
+<Example.Reason>
+  Missing operationId and updatedAt means consumers cannot uniquely track the
+  record or determine the freshness of the reported status.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Locate the schema defined for Operation results.
+  </Workflow.Step>
+  <Workflow.Step>
+    Verify that operationId, operationType, createdAt, and updatedAt are
+    required fields.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the operationType enum matches exactly [CREATE, UPDATE, DELETE,
+    CUSTOM].
+  </Workflow.Step>
+  <Workflow.Step>
+    Ensure customMethod is strictly tied to CUSTOM operations and omitted for
+    others.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+### Reading a resource during a long-running operation
+
+<Guidelines>
+
+<Guideline id="IPA-132-resource-responses-must-not-convey-operation-status" given="resource" enforcement="review" effort="check" dependsOn={["IPA-132-get-method-must-not-be-lro"]}>
+
+Reads on the resource itself (Get and List) **must not** be used to convey
+operation status. A resource read returns the resource's current stored state;
+operation status is the Operation endpoint's responsibility.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+  /orders/{orderId}/operations/{operationId}:
+    get:
+      operationId: getOrderOperation
+      responses:
+        "200":
+          description: Operation status.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationResponse"
+```
+
+<Example.Reason>
+  The order read at `/orders/{orderId}` returns only the stored Order state,
+  while operation status is exposed separately at `/orders/{orderId}/operations/
+  {operationId}`, so resource representation and Operation lifecycle stay
+  cleanly separated.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Order"
+                  - type: object
+                    properties:
+                      operationStatus:
+                        type: string
+                        enum: [PENDING, IN_PROGRESS, SUCCEEDED, FAILED]
+```
+
+<Example.Reason>
+  The order read embeds an operationStatus field alongside the Order schema,
+  coupling the resource representation to LRO lifecycle concerns and giving
+  clients two competing sources of truth for progress.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Inspect the Get and List response schemas of resources that support
+    long-running mutations.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm they carry only resource state, not operation-lifecycle fields
+    (operation status, progress, operation error).
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag resource reads that surface operation status instead of leaving it to
+    the Operation endpoint.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+</Guidelines>
+
+## OperationResponse schema
+
+```json
+{
+  // Required. Unique identifier for this Operation.
+  "operationId": "string",
+
+  // Required. Enum: PENDING, IN_PROGRESS, SUCCEEDED, FAILED, CANCELED, SUPERSEDED.
+  "status": "PENDING",
+
+  // Required. Enum: CREATE, UPDATE, DELETE, CUSTOM.
+  "operationType": "CREATE",
+
+  // Required when operationType is CUSTOM; omitted otherwise.
+  "customMethod": "promoteCluster",
+
+  // Optional human-readable progress note. Not for parsing.
+  "statusMessage": "string",
+
+  // Optional quantitative progress.
+  "progress": {
+    // Optional completed units.
+    "completed": 42,
+    // Optional total units.
+    "total": 100,
+    // Optional unit label (for example "nodes", "shards", "percent").
+    "unit": "nodes"
+  },
+
+  // Present on FAILED only.
+  "error": {
+    // Required. Stable, programmatic error code.
+    "code": "string",
+    // Required. Human-readable summary of the failure.
+    "message": "string",
+    // Required. Whether the client may safely retry.
+    "retryable": true,
+    // Optional. Enum: IMMEDIATE, BACKOFF, NONE.
+    "retryStrategy": "BACKOFF",
+    // Optional. Structured metadata with provider-specific fields.
+    "details": {}
+  },
+
+  // Required on SUCCEEDED. URL of the completed resource.
+  "resultHref": "https://api.example.com/...",
+
+  // Required while non-terminal (PENDING or IN_PROGRESS). Must be omitted once the operation reaches a terminal state.
+  "retryAfterSeconds": 30,
+
+  // Optional non-binding completion estimate.
+  "estimatedCompletionTime": "2026-07-01T12:34:56Z",
+
+  // Required. Creation timestamp of the Operation record.
+  "createdAt": "2026-07-01T12:00:00Z",
+
+  // Required. Last status update timestamp.
+  "updatedAt": "2026-07-01T12:01:00Z",
+
+  // Required. When the Operation record expires and returns 404. Default retention ~30 days after terminal state.
+  "expiredAt": "2026-08-01T12:00:00Z"
+}
+```
+
+Example
+
+```json
+{
+  "operationId": "5f2e1a9c3b7d4e6f8a0b1c2d3e4f5a6b",
+  "status": "SUCCEEDED",
+  "operationType": "CREATE",
+  "statusMessage": "Order created successfully.",
+  "resultHref": "https://api.example.com/orders/64f1b2e3c4d5e6f7a8b9c0d1",
+  "createdAt": "2026-07-01T12:00:00Z",
+  "updatedAt": "2026-07-01T12:03:00Z",
+  "expiredAt": "2026-08-01T12:00:00Z"
+}
+```
+
+## Motivation and Strategic Goals
+
+A single, enforceable LRO contract lets us **auto-generate** declarative tooling
+(Terraform, Kubernetes operators, SDKs) for asynchronous work instead of
+hand-writing endpoint-specific polling logic, structured status and errors also
+make long-running failures debuggable for customers, support, and agents rather
+than hidden behind loosely defined state fields.

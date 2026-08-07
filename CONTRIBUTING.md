@@ -165,6 +165,7 @@ fits:
 | `update-operation` | PUT and PATCH operations                |
 | `delete-operation` | DELETE operations only                  |
 | `schema`           | Every component schema                  |
+| `lro-schema`       | The OperationResponse schema (IPA-132)  |
 | `parameter`        | Every parameter (inline and reusable)   |
 | `tag`              | Every tag definition                    |
 | `enum`             | Every enum value (deep search)          |
