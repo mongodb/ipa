@@ -676,6 +676,69 @@ paths:
 
 </Guideline>
 
+<Guideline id="IPA-132-operations-endpoint-must-not-define-custom-methods" given="paths" enforcement="rule" effort="check" dependsOn={["IPA-132-operation-must-be-a-read-only-resource"]}>
+
+Operations endpoints **must not** define custom methods. Control actions such as
+cancel result in side effects and require mutating methods, which the read-only
+Operations resource does not allow.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/orders/operations:
+    get:
+      operationId: listOrdersOperations
+  /groups/{groupId}/orders/operations/{operationId}:
+    get:
+      operationId: getOrdersOperation
+```
+
+<Example.Reason>
+  The Operations endpoints expose only the read methods of the Operations
+  resource, with no custom methods attached at the collection or single
+  operation level.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/orders/operations/{operationId}:cancel:
+    post:
+      operationId: cancelOrdersOperation
+```
+
+<Example.Reason>
+  The cancel control action is defined as a custom method on a single Operation,
+  so the Operations endpoint is no longer a read-only resource.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every path containing a custom method suffix (`:customMethod`).
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any such path whose resource identifier, the part before the colon, is
+    an Operations endpoint, i.e. ends with `operations` or `operations/
+    {operationId}`.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm Operations endpoints expose no custom methods at either the
+    collection or the single operation level.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
 <Guideline id="IPA-132-operations-endpoint-must-stem-from-parent-resource" given="paths" enforcement="review" effort="reason" dependsOn={["IPA-132-lros-must-expose-an-operations-endpoint"]}>
 
 Operations endpoints **must** be defined as nested paths under the parent
