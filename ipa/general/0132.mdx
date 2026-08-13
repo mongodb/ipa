@@ -1609,6 +1609,42 @@ Location: /groups/{groupId}/orders/{orderId}/operations/op-1
 
 GET /groups/{groupId}/orders/{orderId}/operations/op-1
 200 OK
+{ "operationId": "op-1", "status": "IN_PROGRESS" }
+
+GET /groups/{groupId}/orders/{orderId}
+200 OK
+{ "orderId": "order-1", "quantity": 10 }
+
+GET /groups/{groupId}/orders/{orderId}/operations/op-1
+200 OK
+{ "operationId": "op-1", "status": "SUCCEEDED" }
+
+GET /groups/{groupId}/orders/{orderId}
+200 OK
+{ "orderId": "order-1", "quantity": 25 }
+```
+
+<Example.Reason>
+  While the operation is `IN_PROGRESS` the order still reads as `10`; the
+  requested change only becomes visible once the operation reaches `SUCCEEDED`.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Correct>
+
+```http request
+GET /groups/{groupId}/orders/{orderId}
+200 OK
+{ "orderId": "order-1", "quantity": 10 }
+
+PATCH /groups/{groupId}/orders/{orderId}
+{ "quantity": 25 }
+202 Accepted
+Location: /groups/{groupId}/orders/{orderId}/operations/op-1
+
+GET /groups/{groupId}/orders/{orderId}/operations/op-1
+200 OK
 { "operationId": "op-1", "status": "FAILED", "error": { ... } }
 
 GET /groups/{groupId}/orders/{orderId}
