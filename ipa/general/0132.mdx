@@ -515,27 +515,20 @@ paths:
 ### The Operation resource
 
 A long-running operation is observed through a dedicated, read-only Operation
-resource nested under its parent.
+resource exposed on its parent.
 
 <Guidelines>
 
 <Guideline id="IPA-132-lros-must-expose-an-operations-endpoint" given="operation" enforcement="rule" effort="check">
 
-An operation marked as long-running **must** expose its status through a nested
+An operation marked as long-running **must** expose its status through an
 `/operations` endpoint on its parent resource.
 
 - If the long-running operation is initiated from a collection-level method and
   the resource instance does not yet exist, the Operation resource must be
-  nested under the collection path.
+  exposed at the collection level.
 - If the long-running operation is initiated for an existing resource instance,
-  the Operation resource must be nested under that instance path.
-
-:::note
-
-**Compatibility note with [IPA-102](0102.mdx):** The `/operations` and
-`/operations/{operationId}` segments are a standardized LRO suffix.
-
-:::
+  the Operation resource must be exposed at the instance level.
 
 <Guideline.Details>
 
@@ -687,6 +680,13 @@ paths:
 
 Operations endpoints **must** be defined as nested paths under the parent
 resource's own path, at both the collection and instance level.
+
+:::note
+
+**Compatibility note with [IPA-102](0102.mdx):** The `/operations` and
+`/operations/{operationId}` segments are a standardized LRO suffix.
+
+:::
 
 <Guideline.Details>
 
