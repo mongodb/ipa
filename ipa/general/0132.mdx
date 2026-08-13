@@ -1586,6 +1586,93 @@ paths:
 
 </Guideline>
 
+<Guideline id="IPA-132-resource-must-reflect-last-successful-state" given="resource" enforcement="review" effort="explore" implementation dependsOn={["IPA-132-operation-status-must-use-the-standard-status-enum"]}>
+
+Changes to a resource initiated by a long-running operation **must not** be
+applied or persisted until the operation reaches a successful terminal state. If
+the operation fails, the resource representation **must** reflect its last
+successfully applied state.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```http request
+GET /groups/{groupId}/orders/{orderId}
+200 OK
+{ "orderId": "order-1", "quantity": 10 }
+
+PATCH /groups/{groupId}/orders/{orderId}
+{ "quantity": 25 }
+202 Accepted
+Location: /groups/{groupId}/orders/{orderId}/operations/op-1
+
+GET /groups/{groupId}/orders/{orderId}/operations/op-1
+200 OK
+{ "operationId": "op-1", "status": "FAILED", "error": { ... } }
+
+GET /groups/{groupId}/orders/{orderId}
+200 OK
+{ "orderId": "order-1", "quantity": 10 }
+```
+
+<Example.Reason>
+  The operation reached `FAILED`, so the requested quantity change was never
+  persisted and the order still reads as `10`, its last successfully applied
+  state.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```http request
+GET /groups/{groupId}/orders/{orderId}
+200 OK
+{ "orderId": "order-1", "quantity": 10 }
+
+PATCH /groups/{groupId}/orders/{orderId}
+{ "quantity": 25 }
+202 Accepted
+Location: /groups/{groupId}/orders/{orderId}/operations/op-1
+
+GET /groups/{groupId}/orders/{orderId}/operations/op-1
+200 OK
+{ "operationId": "op-1", "status": "FAILED", "error": { ... } }
+
+GET /groups/{groupId}/orders/{orderId}
+200 OK
+{ "orderId": "order-1", "quantity": 25 }
+```
+
+<Example.Reason>
+  The order reports the requested quantity of `25` even though the operation
+  failed, so the resource exposes a change that was never successfully applied
+  and clients cannot tell which state is authoritative.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    For each long-running mutation, identify the point at which the
+    implementation writes the requested changes to the resource's durable store.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm that write happens only once the operation reaches a successful
+    terminal state, and that a failed operation leaves the stored resource at
+    its last successfully applied state.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any long-running mutation that writes requested changes before the work
+    succeeds, or that leaves partially applied changes readable after a failure.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
 </Guidelines>
 
 ## OperationResponse schema
