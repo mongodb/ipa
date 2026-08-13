@@ -761,7 +761,7 @@ paths:
 
 </Guideline>
 
-<Guideline id="IPA-132-operations-endpoint-must-not-be-global" given="paths" enforcement="review" effort="check" dependsOn={["IPA-132-lros-must-expose-an-operations-endpoint"]}>
+<Guideline id="IPA-132-operations-endpoint-must-not-be-global" given="paths" enforcement="rule" effort="check" dependsOn={["IPA-132-lros-must-expose-an-operations-endpoint"]}>
 
 Operations endpoints **must not** be defined as standalone, global endpoints
 with no parent resource in their path.
@@ -817,6 +817,67 @@ paths:
   <Workflow.Step>
     Confirm each Operations endpoint's path is nested under a parent resource
     path.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-132-operations-endpoint-must-be-a-leaf-resource" given="paths" enforcement="rule" effort="check" dependsOn={["IPA-132-lros-must-expose-an-operations-endpoint"]}>
+
+Operations endpoints **must** be leaf resources. An `operations` segment may
+only be followed by a single operation identifier path parameter.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /groups/{groupId}/orders/operations:
+    get:
+      operationId: listOrdersOperations
+  /groups/{groupId}/orders/operations/{operationId}:
+    get:
+      operationId: getOrdersOperation
+```
+
+<Example.Reason>
+  The Operations endpoints end at the `operations` collection and at the single
+  operation identified by `{operationId}`, so no resources are nested below the
+  Operations resource.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /groups/{groupId}/orders/operations/{operationId}/logs:
+    get:
+      operationId: listOrdersOperationLogs
+```
+
+<Example.Reason>
+  The `logs` resource is nested below a single Operation, so the Operations
+  endpoint is no longer a leaf resource.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>
+    Collect every path containing an `operations` segment.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm each such path ends at the `operations` segment or at a single
+    operation identifier path parameter directly following it.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag any path that nests further segments below the `operations` segment or
+    below its operation identifier path parameter.
   </Workflow.Step>
 </Workflow>
 
