@@ -678,9 +678,10 @@ paths:
 
 <Guideline id="IPA-132-operations-endpoint-must-not-define-custom-methods" given="paths" enforcement="rule" effort="check" dependsOn={["IPA-132-operation-must-be-a-read-only-resource"]}>
 
-Operations endpoints **must not** define custom methods. Control actions such as
-cancel result in side effects and require mutating methods, which the read-only
-Operations resource does not allow.
+Operations endpoints **must not** define custom methods unless they have the
+backend support for the control actions. Control actions such as cancel result
+in side effects and require mutating methods, which the read-only Operations
+resource does not otherwise allow.
 
 <Guideline.Details>
 
@@ -714,8 +715,9 @@ paths:
 ```
 
 <Example.Reason>
-  The cancel control action is defined as a custom method on a single Operation,
-  so the Operations endpoint is no longer a read-only resource.
+  The cancel control action is defined as a custom method on a single Operation
+  without backend support for that action, so the Operations endpoint stops
+  being a read-only resource and exposes a control action it cannot honor.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -730,8 +732,13 @@ paths:
     {operationId}`.
   </Workflow.Step>
   <Workflow.Step>
-    Confirm Operations endpoints expose no custom methods at either the
-    collection or the single operation level.
+    For any flagged path, confirm with the API producer that the backend
+    supports the control action; treat the custom method as compliant only when
+    that support exists.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm Operations endpoints expose no unsupported custom methods at either
+    the collection or the single operation level.
   </Workflow.Step>
 </Workflow>
 
