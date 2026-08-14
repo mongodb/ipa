@@ -1418,6 +1418,7 @@ components:
   schemas:
     OperationResponse:
       type: object
+      required: [operationId, operationType, createdAt, updatedAt]
       properties:
         operationId:
           type: string
@@ -1438,7 +1439,8 @@ components:
   The OperationResponse exposes a stable identifier, a standard operation kind,
   and record timestamps, so generic clients and tooling can identify the
   operation, understand what kind of work it represents, and tell when its
-  status last changed.
+  status last changed. The four core fields are declared required, while
+  `customMethod` stays optional because it applies only to `CUSTOM` operations.
 </Example.Reason>
 
 </Example.Correct>
