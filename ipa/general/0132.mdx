@@ -1032,6 +1032,7 @@ components:
   schemas:
     OperationResponse:
       type: object
+      required: [status]
       properties:
         status:
           type: string
@@ -1039,8 +1040,8 @@ components:
 ```
 
 <Example.Reason>
-  The OperationResponse schema reports its lifecycle through a single status
-  field whose enum is exactly [PENDING, IN_PROGRESS, SUCCEEDED, FAILED,
+  The OperationResponse schema reports its lifecycle through a single required
+  status field whose enum is exactly [PENDING, IN_PROGRESS, SUCCEEDED, FAILED,
   CANCELED, SUPERSEDED], so a generic client can reason about any operation the
   same way and SUCCEEDED is the single success terminal.
 </Example.Reason>
