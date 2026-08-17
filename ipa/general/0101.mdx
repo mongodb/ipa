@@ -781,10 +781,10 @@ paths:
 ```
 
 <Example.Reason>
-  The collection path `/groups/{groupId}/tasks` has a `GET` that lists the
-  tasks in the project. A project can have many tasks, and the `taskId` values
-  usually aren't known up front. List is what surfaces which tasks exist in the
-  first place.
+  The collection path `/groups/{groupId}/tasks` has a `GET` that lists the tasks
+  in the project. A project can have many tasks, and the `taskId` values usually
+  aren't known up front. List is what surfaces which tasks exist in the first
+  place.
 </Example.Reason>
 
 </Example.Correct>
@@ -834,10 +834,10 @@ paths:
 
 <Example.Reason>
   A project holds many tasks, but the spec only defines item-level operations on
-  `/groups/{groupId}/tasks/{taskId}`. There's no `GET` on the collection
-  path `/groups/{groupId}/tasks`. So without an already-known `taskId`,
-  there is no way to find out which tasks exist, and the IDs have to be tracked
-  somewhere outside the API.
+  `/groups/{groupId}/tasks/{taskId}`. There's no `GET` on the collection path
+  `/groups/{groupId}/tasks`. So without an already-known `taskId`, there is no
+  way to find out which tasks exist, and the IDs have to be tracked somewhere
+  outside the API.
 </Example.Reason>
 
 </Example.Incorrect>

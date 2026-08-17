@@ -574,8 +574,7 @@ paths:
 ```
 
 <Example.Reason>
-  `getGroup` is `camelCase`, matching the casing every generated client
-  expects.
+  `getGroup` is `camelCase`, matching the casing every generated client expects.
 </Example.Reason>
 
 </Example.Correct>
@@ -590,8 +589,8 @@ paths:
 ```
 
 <Example.Reason>
-  `get_group` is snake_case, so generated method names are inconsistent with
-  the rest of the API.
+  `get_group` is snake_case, so generated method names are inconsistent with the
+  rest of the API.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -632,8 +631,8 @@ paths:
 ```
 
 <Example.Reason>
-  `fetchGroup` uses a different verb, so the name no longer signals a Get
-  method consistently across the API.
+  `fetchGroup` uses a different verb, so the name no longer signals a Get method
+  consistently across the API.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -695,8 +694,8 @@ paths:
 
 Examples:
 
-| Resource Identifier                           | Operation ID         |
-| --------------------------------------------- | -------------------- |
+| Resource Identifier                       | Operation ID       |
+| ----------------------------------------- | ------------------ |
 | `/groups/${groupId}/tasks/${taskId}`      | `getGroupTask`     |
 | (Singleton) `/groups/${groupId}/settings` | `getGroupSettings` |
 

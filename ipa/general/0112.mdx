@@ -1035,9 +1035,9 @@ other instances of the same field name across APIs or resources.
 
 ## Group vs. Project
 
-For historical reasons, MongoDB APIs used `group` and `groupId` where
-the concept today is more accurately described as a project. New APIs must align on the
-historical `group` terminology for consistency.
+For historical reasons, MongoDB APIs used `group` and `groupId` where the
+concept today is more accurately described as a project. New APIs must align on
+the historical `group` terminology for consistency.
 
 <Guidelines>
 
@@ -1063,7 +1063,8 @@ paths:
 ```
 
 <Example.Reason>
-  `groupId` is the canonical name for the organizational grouping concept in the Atlas Admin API.
+  `groupId` is the canonical name for the organizational grouping concept in the
+  Atlas Admin API.
 </Example.Reason>
 
 </Example.Correct>
@@ -1083,8 +1084,8 @@ paths:
 ```
 
 <Example.Reason>
-  `projectId` is a new term. Using it in new APIs diverges from the
-  established `groupId` convention in existing APIs.
+  `projectId` is a new term. Using it in new APIs diverges from the established
+  `groupId` convention in existing APIs.
 </Example.Reason>
 
 </Example.Incorrect>

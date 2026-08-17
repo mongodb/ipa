@@ -180,8 +180,8 @@ paths:
 ```
 
 <Example.Reason>
-  The `//` between `{groupId}` and `tasks` leaves an empty segment. Use a
-  single slash.
+  The `//` between `{groupId}` and `tasks` leaves an empty segment. Use a single
+  slash.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -210,9 +210,8 @@ paths:
 ```
 
 <Example.Reason>
-  Segments alternate collection then ID at every level: `groups` then `
-  {groupId}`, then `tasks` then `{taskId}`. Each ID follows the collection it
-  belongs to.
+  Segments alternate collection then ID at every level: `groups` then `{groupId}
+  `, then `tasks` then `{taskId}`. Each ID follows the collection it belongs to.
 </Example.Reason>
 
 </Example.Correct>
@@ -349,8 +348,8 @@ paths:
 ```
 
 <Example.Reason>
-  `users`, `groups`, and `tasks` are all plural. Each segment names a
-  collection of resources, so the plural form is correct.
+  `users`, `groups`, and `tasks` are all plural. Each segment names a collection
+  of resources, so the plural form is correct.
 </Example.Reason>
 
 </Example.Correct>
@@ -623,8 +622,8 @@ paths:
 ```
 
 <Example.Reason>
-  `group_id` is `snake_case` and `TaskID` is `PascalCase`. A resource ID has
-  to be `camelCase`, so neither one passes.
+  `group_id` is `snake_case` and `TaskID` is `PascalCase`. A resource ID has to
+  be `camelCase`, so neither one passes.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -671,8 +670,8 @@ components:
 ```
 
 <Example.Reason>
-  The path parameter `groupId` and the representation field `groupId` share
-  one name and one casing, so the identifier reads the same wherever it appears.
+  The path parameter `groupId` and the representation field `groupId` share one
+  name and one casing, so the identifier reads the same wherever it appears.
 </Example.Reason>
 
 </Example.Correct>
@@ -708,9 +707,9 @@ components:
 ```
 
 <Example.Reason>
-  The path uses `groupId`, but the body exposes the same identifier as `id`.
-  The two names disagree, so a consumer cannot rely on one key for the
-  resource's ID.
+  The path uses `groupId`, but the body exposes the same identifier as `id`. The
+  two names disagree, so a consumer cannot rely on one key for the resource's
+  ID.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -930,8 +929,8 @@ paths:
 ```
 
 <Example.Reason>
-  `groupMembers` repeats the parent `groups` that already sits right in
-  front of it in the path. The `group` prefix is noise.
+  `groupMembers` repeats the parent `groups` that already sits right in front of
+  it in the path. The `group` prefix is noise.
 </Example.Reason>
 
 </Example.Incorrect>
