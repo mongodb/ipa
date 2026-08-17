@@ -210,7 +210,7 @@ paths:
 
 ```yaml
 paths:
-  /orders/{orderId}:
+  /orders:
     get:
       operationId: listOrders
       responses:
@@ -1102,6 +1102,7 @@ components:
   schemas:
     OperationResponse:
       type: object
+      required: [status]
       properties:
         status:
           type: string
@@ -1109,8 +1110,8 @@ components:
 ```
 
 <Example.Reason>
-  The OperationResponse schema reports its lifecycle through a single status
-  field whose enum is exactly [PENDING, IN_PROGRESS, SUCCEEDED, FAILED,
+  The OperationResponse schema reports its lifecycle through a single required
+  status field whose enum is exactly [PENDING, IN_PROGRESS, SUCCEEDED, FAILED,
   CANCELED, SUPERSEDED], so a generic client can reason about any operation the
   same way and SUCCEEDED is the single success terminal.
 </Example.Reason>
@@ -1488,6 +1489,7 @@ components:
   schemas:
     OperationResponse:
       type: object
+      required: [operationId, operationType, createdAt, updatedAt]
       properties:
         operationId:
           type: string
@@ -1508,7 +1510,8 @@ components:
   The OperationResponse exposes a stable identifier, a standard operation kind,
   and record timestamps, so generic clients and tooling can identify the
   operation, understand what kind of work it represents, and tell when its
-  status last changed.
+  status last changed. The four core fields are declared required, while
+  `customMethod` stays optional because it applies only to `CUSTOM` operations.
 </Example.Reason>
 
 </Example.Correct>
