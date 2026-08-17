@@ -46,13 +46,13 @@ A resource-oriented API **should** generally be modeled as a resource hierarchy
 
 ```yaml
 paths:
-  /projects/{projectId}/tasks:
+  /groups/{groupId}/tasks:
     get:
       operationId: listTasks
-  /projects/{projectId}/tasks/{taskId}:
+  /groups/{groupId}/tasks/{taskId}:
     get:
       operationId: getTask
-  /projects/{projectId}/tasks/{taskId}/comments:
+  /groups/{groupId}/tasks/{taskId}/comments:
     get:
       operationId: listComments
 ```
@@ -123,8 +123,8 @@ sub-paths by category.
 <Workflow>
   <Workflow.Step>
     List all entries under `paths` and build a segment tree: split each path on
-    `/` and nest the segments as nodes. For example, `/projects/{projectId}/tasks/{taskId}`
-    becomes `projects` → `{projectId}` → `tasks` → `{taskId}`.
+    `/` and nest the segments as nodes. For example, `/groups/{groupId}/tasks/{taskId}`
+    becomes `groups` → `{groupId}` → `tasks` → `{taskId}`.
   </Workflow.Step>
   <Workflow.Step>
     Walk each node in the tree and check the alternating pattern.
@@ -140,7 +140,7 @@ sub-paths by category.
   </Workflow.Step>
   <Workflow.Step>
     For each collection/resource pair in the tree, verify the relationship
-    reflects real ownership or containment: a `task` belongs to a `project`, a
+    reflects real ownership or containment: a `task` belongs to a `group`, a
     `comment` belongs to a `task`. If the nesting is arbitrary or purely
     organisational, flag it.
   </Workflow.Step>
@@ -659,7 +659,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
-  /projects/{projectId}/tasks/{taskId}:
+  /groups/{groupId}/tasks/{taskId}:
     get:
       operationId: getTask
       responses:
@@ -735,12 +735,12 @@ A resource **must** support [List](0105.mdx) except for
 
 ```yaml
 paths:
-  /projects/{projectId}/tasks:
+  /groups/{groupId}/tasks:
     get:
       operationId: listTasks
       summary: List the tasks in a project
       parameters:
-        - name: projectId
+        - name: groupId
           in: path
           required: true
           schema:
@@ -757,11 +757,11 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Task"
-  /projects/{projectId}/tasks/{taskId}:
+  /groups/{groupId}/tasks/{taskId}:
     get:
       operationId: getTask
       parameters:
-        - name: projectId
+        - name: groupId
           in: path
           required: true
           schema:
@@ -781,7 +781,7 @@ paths:
 ```
 
 <Example.Reason>
-  The collection path `/projects/{projectId}/tasks` has a `GET` that lists the
+  The collection path `/groups/{groupId}/tasks` has a `GET` that lists the
   tasks in the project. A project can have many tasks, and the `taskId` values
   usually aren't known up front. List is what surfaces which tasks exist in the
   first place.
@@ -793,11 +793,11 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}/tasks/{taskId}:
+  /groups/{groupId}/tasks/{taskId}:
     get:
       operationId: getTask
       parameters:
-        - name: projectId
+        - name: groupId
           in: path
           required: true
           schema:
@@ -817,7 +817,7 @@ paths:
     delete:
       operationId: deleteTask
       parameters:
-        - name: projectId
+        - name: groupId
           in: path
           required: true
           schema:
@@ -834,8 +834,8 @@ paths:
 
 <Example.Reason>
   A project holds many tasks, but the spec only defines item-level operations on
-  `/projects/{projectId}/tasks/{taskId}`. There's no `GET` on the collection
-  path `/projects/{projectId}/tasks`. So without an already-known `taskId`,
+  `/groups/{groupId}/tasks/{taskId}`. There's no `GET` on the collection
+  path `/groups/{groupId}/tasks`. So without an already-known `taskId`,
   there is no way to find out which tasks exist, and the IDs have to be tracked
   somewhere outside the API.
 </Example.Reason>

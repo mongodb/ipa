@@ -587,9 +587,9 @@ Empty arrays **must** be handled gracefully, i.e. not cause an error response.
 
 ```yaml
 paths:
-  /projects:
+  /groups:
     get:
-      operationId: listProjects
+      operationId: listGroups
       parameters:
         - name: tag
           in: query
@@ -613,9 +613,9 @@ paths:
 
 ```yaml
 paths:
-  /projects:
+  /groups:
     get:
-      operationId: listProjects
+      operationId: listGroups
       parameters:
         - name: tag
           in: query
@@ -668,7 +668,7 @@ values.
 
 <Guideline id="IPA-129-should-filter-with-query-parameters" given="operation" enforcement="review" effort="reason">
 Filtering **should** be implemented using query parameters, for example
-`/projects?name=project1`.
+`/groups?name=group1`.
 
 <Guideline.Details>
 
@@ -676,9 +676,9 @@ Filtering **should** be implemented using query parameters, for example
 
 ```yaml
 paths:
-  /projects:
+  /groups:
     get:
-      operationId: listProjects
+      operationId: listGroups
       parameters:
         - name: name
           in: query
@@ -697,9 +697,9 @@ paths:
 
 ```yaml
 paths:
-  /projects/by-name/{name}:
+  /groups/by-name/{name}:
     get:
-      operationId: getProjectByName
+      operationId: getGroupByName
       parameters:
         - name: name
           in: path
@@ -751,11 +751,11 @@ Filtering and searching **must not** be implemented for [Get](0104.mdx),
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     get:
-      operationId: getProject
+      operationId: getGroup
       parameters:
-        - name: projectId
+        - name: groupId
           in: path
           required: true
           schema:
@@ -773,11 +773,11 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     get:
-      operationId: getProject
+      operationId: getGroup
       parameters:
-        - name: projectId
+        - name: groupId
           in: path
           required: true
           schema:

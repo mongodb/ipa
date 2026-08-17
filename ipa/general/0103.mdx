@@ -90,9 +90,9 @@ Standard methods **must not** cause side effects.
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     patch:
-      operationId: updateProject
+      operationId: updateGroup
       responses:
         "200":
           description: The updated project.
@@ -110,9 +110,9 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     patch:
-      operationId: updateProject
+      operationId: updateGroup
       description: >-
         Updates the project and also deactivates every team that belongs to it.
 ```
@@ -158,9 +158,9 @@ used.
 
 ```yaml
 paths:
-  /projects/{projectId}:archive:
+  /groups/{groupId}:archive:
     post:
-      operationId: archiveProject
+      operationId: archiveGroup
       description: >-
         Archives the project and disables its teams.
 ```
@@ -177,9 +177,9 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     patch:
-      operationId: updateProject
+      operationId: updateGroup
       description: >-
         Updates the project and disables its teams.
 ```
@@ -223,9 +223,9 @@ the dependent resource's own endpoint.
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     patch:
-      operationId: updateProject
+      operationId: updateGroup
   /teams/{teamId}:
     patch:
       operationId: updateTeam
@@ -242,9 +242,9 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     patch:
-      operationId: updateProject
+      operationId: updateGroup
       description: >-
         Also rewrites the name field on each team in the project.
 ```
@@ -290,9 +290,9 @@ modeled as a custom method.
 
 ```yaml
 paths:
-  /projects/{projectId}:transfer:
+  /groups/{groupId}:transfer:
     post:
-      operationId: transferProject
+      operationId: transferGroup
       description: >-
         Moves the project to another owner and reassigns its teams.
 ```
@@ -308,9 +308,9 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     patch:
-      operationId: updateProject
+      operationId: updateGroup
       description: >-
         Moves the project to another owner and reassigns its teams.
 ```

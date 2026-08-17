@@ -159,7 +159,7 @@ identifier.
 
 ```yaml
 paths:
-  /projects/{projectId}/tasks/{taskId}:
+  /groups/{groupId}/tasks/{taskId}:
     get:
       operationId: getTask
 ```
@@ -174,13 +174,13 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}//tasks/{taskId}:
+  /groups/{groupId}//tasks/{taskId}:
     get:
       operationId: getTask
 ```
 
 <Example.Reason>
-  The `//` between `{projectId}` and `tasks` leaves an empty segment. Use a
+  The `//` between `{groupId}` and `tasks` leaves an empty segment. Use a
   single slash.
 </Example.Reason>
 
@@ -201,17 +201,17 @@ identifiers and resource IDs.
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     get:
-      operationId: getProject
-  /projects/{projectId}/tasks/{taskId}:
+      operationId: getGroup
+  /groups/{groupId}/tasks/{taskId}:
     get:
       operationId: getTask
 ```
 
 <Example.Reason>
-  Segments alternate collection then ID at every level: `projects` then `
-  {projectId}`, then `tasks` then `{taskId}`. Each ID follows the collection it
+  Segments alternate collection then ID at every level: `groups` then `
+  {groupId}`, then `tasks` then `{taskId}`. Each ID follows the collection it
   belongs to.
 </Example.Reason>
 
@@ -221,7 +221,7 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}/{taskId}:
+  /groups/{groupId}/{taskId}:
     get:
       operationId: getTask
 ```
@@ -250,13 +250,13 @@ paths:
   /users/{userId}:
     get:
       operationId: getUser
-  /users/{userId}/projectMembers:
+  /users/{userId}/groupMembers:
     get:
-      operationId: listProjectMembers
+      operationId: listGroupMembers
 ```
 
 <Example.Reason>
-  Both `users` and `projectMembers` start lowercase and contain only letters, so
+  Both `users` and `groupMembers` start lowercase and contain only letters, so
   they match the `camelCase` pattern.
 </Example.Reason>
 
@@ -269,13 +269,13 @@ paths:
   /Users/{userId}:
     get:
       operationId: getUser
-  /Users/{userId}/project_members:
+  /Users/{userId}/group_members:
     get:
-      operationId: listProjectMembers
+      operationId: listGroupMembers
 ```
 
 <Example.Reason>
-  `Users` starts with an uppercase letter and `project_members` contains an
+  `Users` starts with an uppercase letter and `group_members` contains an
   underscore. Neither is `camelCase`.
 </Example.Reason>
 
@@ -343,13 +343,13 @@ paths:
   /users/{userId}:
     get:
       operationId: getUser
-  /projects/{projectId}/tasks:
+  /groups/{groupId}/tasks:
     get:
       operationId: listTasks
 ```
 
 <Example.Reason>
-  `users`, `projects`, and `tasks` are all plural. Each segment names a
+  `users`, `groups`, and `tasks` are all plural. Each segment names a
   collection of resources, so the plural form is correct.
 </Example.Reason>
 
@@ -362,14 +362,14 @@ paths:
   /user/{userId}:
     get:
       operationId: getUser
-  /project/{projectId}/task:
+  /group/{groupId}/task:
     get:
       operationId: listTasks
 ```
 
 <Example.Reason>
-  `user`, `project`, and `task` are singular. A collection holds many resources,
-  so each segment should be plural: `users`, `projects`, `tasks`.
+  `user`, `group`, and `task` are singular. A collection holds many resources,
+  so each segment should be plural: `users`, `groups`, `tasks`.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -510,17 +510,17 @@ Resource IDs **should** follow the format `<resourceName>Id`, where
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     get:
-      operationId: getProject
-  /projects/{projectId}/tasks/{taskId}:
+      operationId: getGroup
+  /groups/{groupId}/tasks/{taskId}:
     get:
       operationId: getTask
 ```
 
 <Example.Reason>
-  Each parameter is the singular collection name plus `Id`. `projects` becomes
-  `projectId`, `tasks` becomes `taskId`.
+  Each parameter is the singular collection name plus `Id`. `groups` becomes
+  `groupId`, `tasks` becomes `taskId`.
 </Example.Reason>
 
 </Example.Correct>
@@ -529,17 +529,17 @@ paths:
 
 ```yaml
 paths:
-  /projects/{id}:
+  /groups/{id}:
     get:
-      operationId: getProject
-  /projects/{projectId}/tasks/{task}:
+      operationId: getGroup
+  /groups/{groupId}/tasks/{task}:
     get:
       operationId: getTask
 ```
 
 <Example.Reason>
   `{id}` drops the resource name, so the parameter no longer says what it
-  identifies. `{task}` leaves off the `Id` suffix. Both should read `projectId`
+  identifies. `{task}` leaves off the `Id` suffix. Both should read `groupId`
   and `taskId`.
 </Example.Reason>
 
@@ -579,11 +579,11 @@ Resource IDs **must** be in `camelCase`.
 
 ```yaml
 paths:
-  /projects/{projectId}/tasks/{taskId}:
+  /groups/{groupId}/tasks/{taskId}:
     get:
       operationId: getTask
       parameters:
-        - name: projectId
+        - name: groupId
           in: path
           required: true
           schema:
@@ -596,7 +596,7 @@ paths:
 ```
 
 <Example.Reason>
-  `projectId` and `taskId` both open with a lowercase letter and hold only
+  `groupId` and `taskId` both open with a lowercase letter and hold only
   letters. Valid `camelCase` resource IDs.
 </Example.Reason>
 
@@ -606,11 +606,11 @@ paths:
 
 ```yaml
 paths:
-  /projects/{project_id}/tasks/{TaskID}:
+  /groups/{group_id}/tasks/{TaskID}:
     get:
       operationId: getTask
       parameters:
-        - name: project_id
+        - name: group_id
           in: path
           required: true
           schema:
@@ -623,7 +623,7 @@ paths:
 ```
 
 <Example.Reason>
-  `project_id` is `snake_case` and `TaskID` is `PascalCase`. A resource ID has
+  `group_id` is `snake_case` and `TaskID` is `PascalCase`. A resource ID has
   to be `camelCase`, so neither one passes.
 </Example.Reason>
 
@@ -644,11 +644,11 @@ The resource ID used in the resource identifier (as the URI path parameter)
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     get:
-      operationId: getProject
+      operationId: getGroup
       parameters:
-        - name: projectId
+        - name: groupId
           in: path
           required: true
           schema:
@@ -658,20 +658,20 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Project"
+                $ref: "#/components/schemas/Group"
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
-        projectId:
+        groupId:
           type: string
         name:
           type: string
 ```
 
 <Example.Reason>
-  The path parameter `projectId` and the representation field `projectId` share
+  The path parameter `groupId` and the representation field `groupId` share
   one name and one casing, so the identifier reads the same wherever it appears.
 </Example.Reason>
 
@@ -681,11 +681,11 @@ components:
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     get:
-      operationId: getProject
+      operationId: getGroup
       parameters:
-        - name: projectId
+        - name: groupId
           in: path
           required: true
           schema:
@@ -695,10 +695,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Project"
+                $ref: "#/components/schemas/Group"
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         id:
@@ -708,7 +708,7 @@ components:
 ```
 
 <Example.Reason>
-  The path uses `projectId`, but the body exposes the same identifier as `id`.
+  The path uses `groupId`, but the body exposes the same identifier as `id`.
   The two names disagree, so a consumer cannot rely on one key for the
   resource's ID.
 </Example.Reason>
@@ -719,7 +719,7 @@ components:
   <Workflow.Step>For each path in `$.paths`, list the path parameters (the `{...}` segments) that identify the resource the path addresses.</Workflow.Step>
   <Workflow.Step>Find the schema for that resource. It is usually the response body schema of the `GET` on the item path. Resolve any `$ref`.</Workflow.Step>
   <Workflow.Step>Confirm the resolved schema declares a property whose name matches the path parameter exactly, casing included.</Workflow.Step>
-  <Workflow.Step>Flag any case where the representation names the identifier differently (for example path `{projectId}` but field `id`) or omits it entirely.</Workflow.Step>
+  <Workflow.Step>Flag any case where the representation names the identifier differently (for example path `{groupId}` but field `id`) or omits it entirely.</Workflow.Step>
 </Workflow>
 
 </Guideline.Details>
@@ -901,16 +901,16 @@ collection's name **may** omit the prefix.
 
 ```yaml
 paths:
-  /projects/{projectId}/members:
+  /groups/{groupId}/members:
     get:
-      operationId: listProjectMembers
-  /projects/{projectId}/members/{memberId}:
+      operationId: listGroupMembers
+  /groups/{groupId}/members/{memberId}:
     get:
-      operationId: getProjectMember
+      operationId: getGroupMember
 ```
 
 <Example.Reason>
-  The path already says these members live under a project, so the child
+  The path already says these members live under a group, so the child
   collection is just `members`. A prefix would only repeat what the path already
   tells you.
 </Example.Reason>
@@ -921,17 +921,17 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}/projectMembers:
+  /groups/{groupId}/groupMembers:
     get:
-      operationId: listProjectMembers
-  /projects/{projectId}/projectMembers/{memberId}:
+      operationId: listGroupMembers
+  /groups/{groupId}/groupMembers/{memberId}:
     get:
-      operationId: getProjectMember
+      operationId: getGroupMember
 ```
 
 <Example.Reason>
-  `projectMembers` repeats the parent `projects` that already sits right in
-  front of it in the path. The `project` prefix is noise.
+  `groupMembers` repeats the parent `groups` that already sits right in
+  front of it in the path. The `group` prefix is noise.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -945,7 +945,7 @@ paths:
   <Workflow.Step>
     For each child collection segment, check whether its name starts with the
     singular or plural form of the parent collection that comes right before it
-    in the path (for example `projectMembers` under `projects`).
+    in the path (for example `groupMembers` under `groups`).
   </Workflow.Step>
   <Workflow.Step>
     When the child name carries that parent prefix, treat it as a candidate for
@@ -974,13 +974,13 @@ Deleting a parent resource **must** delete its associated child resources
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     delete:
-      operationId: deleteProject
+      operationId: deleteGroup
       description: >
         Deletes the project and all tasks nested under it.
       parameters:
-        - name: projectId
+        - name: groupId
           in: path
           required: true
           schema:
@@ -988,13 +988,13 @@ paths:
       responses:
         "204":
           description: Project and its tasks were deleted.
-  /projects/{projectId}/tasks/{taskId}:
+  /groups/{groupId}/tasks/{taskId}:
     get:
       operationId: getTask
 ```
 
 <Example.Reason>
-  `tasks` is nested under `projects`. Deleting a project removes the tasks under
+  `tasks` is nested under `groups`. Deleting a project removes the tasks under
   it, and the delete operation says so. Nothing is left pointing at a project
   that no longer exists.
 </Example.Reason>
@@ -1005,14 +1005,14 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     delete:
-      operationId: deleteProject
+      operationId: deleteGroup
       description: >
         Deletes the project. Tasks under the project are kept and must be
         deleted separately.
       parameters:
-        - name: projectId
+        - name: groupId
           in: path
           required: true
           schema:
@@ -1020,7 +1020,7 @@ paths:
       responses:
         "204":
           description: Project deleted.
-  /projects/{projectId}/tasks/{taskId}:
+  /groups/{groupId}/tasks/{taskId}:
     get:
       operationId: getTask
 ```
@@ -1035,7 +1035,7 @@ paths:
 
 <Workflow>
   <Workflow.Step>Scan `$.paths` for nested collections: a path segment of the form `/{parentId}/<childCollection>` where the child sits under a parent resource path.</Workflow.Step>
-  <Workflow.Step>For each parent resource path with children nested under it, check whether `$.paths` defines a `delete` operation on the parent (for example `delete` on `/projects/{projectId}`).</Workflow.Step>
+  <Workflow.Step>For each parent resource path with children nested under it, check whether `$.paths` defines a `delete` operation on the parent (for example `delete` on `/groups/{groupId}`).</Workflow.Step>
   <Workflow.Step>Read that delete operation's `description` and its response descriptions. Confirm they state the cascade: deleting the parent removes the nested children.</Workflow.Step>
   <Workflow.Step>Flag the operation when the docs say children are kept, say they must be deleted separately, or stay silent about what happens to nested resources.</Workflow.Step>
 </Workflow>
@@ -1060,7 +1060,7 @@ A child resource **must not** belong to multiple parents.
 
 ```yaml
 paths:
-  /projects/{projectId}/tasks/{taskId}:
+  /groups/{groupId}/tasks/{taskId}:
     get:
       operationId: getTask
   /teams/{teamId}:
@@ -1079,9 +1079,9 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}/tasks/{taskId}:
+  /groups/{groupId}/tasks/{taskId}:
     get:
-      operationId: getTaskByProject
+      operationId: getTaskByGroup
   /teams/{teamId}/tasks/{taskId}:
     get:
       operationId: getTaskByTeam

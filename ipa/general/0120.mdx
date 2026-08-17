@@ -201,10 +201,10 @@ existing one, in lieu of a new version.
 
 ```yaml
 paths:
-  /projects/{projectId}/reports:
+  /groups/{groupId}/reports:
     get:
       operationId: listReports
-  /projects/{projectId}/reports/summary:
+  /groups/{groupId}/reports/summary:
     get:
       operationId: getReportSummary
 ```
@@ -220,10 +220,10 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}/reports:
+  /groups/{groupId}/reports:
     get:
       operationId: listReports
-  /v2/projects/{projectId}/reports:
+  /v2/groups/{groupId}/reports:
     get:
       operationId: listReportsV2
 ```
