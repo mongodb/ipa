@@ -757,7 +757,7 @@ an existing version.
 
 ```yaml
 paths:
-  /projects/{projectId}/tasks:
+  /groups/{groupId}/tasks:
     post:
       parameters:
         - name: dryRun
@@ -778,7 +778,7 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}/work-items: # path renamed from /tasks
+  /groups/{groupId}/work-items: # path renamed from /tasks
     post:
       requestBody:
         content:
@@ -1233,7 +1233,7 @@ Existing resources **must not** be moved to a new URI.
 
 ```yaml
 paths:
-  /projects/{projectId}/tasks/{taskId}: # path preserved
+  /groups/{groupId}/tasks/{taskId}: # path preserved
     get:
       operationId: getTask
 ```
@@ -1249,7 +1249,7 @@ paths:
 
 ```yaml
 paths:
-  /tasks/{taskId}: # moved out from under /projects/{projectId}
+  /tasks/{taskId}: # moved out from under /groups/{groupId}
     get:
       operationId: getTask
 ```

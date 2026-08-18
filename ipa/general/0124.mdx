@@ -24,7 +24,7 @@ Repeated fields **must** use a plural field name.
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         tags:
@@ -45,7 +45,7 @@ components:
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         tag:
@@ -93,7 +93,7 @@ elements.
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         members:
@@ -115,7 +115,7 @@ components:
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         members:
@@ -146,7 +146,7 @@ sub-resource instead.
 
 ```yaml
 paths:
-  /projects/{projectId}/members:
+  /groups/{groupId}/members:
     get:
       operationId: listMembers
       responses:
@@ -166,7 +166,7 @@ paths:
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         members:
@@ -221,7 +221,7 @@ respected by the server.
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         labels:
@@ -243,7 +243,7 @@ components:
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         labels:
@@ -297,7 +297,7 @@ unless the field is explicitly declared as a set (see
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         roles:
@@ -320,7 +320,7 @@ components:
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         roles:
@@ -390,7 +390,7 @@ list.
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         environments:
@@ -417,7 +417,7 @@ components:
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         roles:
@@ -470,7 +470,7 @@ order across repeated GET responses for the same resource state
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         members:
@@ -494,7 +494,7 @@ components:
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         members:
@@ -541,7 +541,7 @@ For arrays declared as sets, the server **must not** return duplicate elements
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         roles:
@@ -566,7 +566,7 @@ components:
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         roles:
@@ -628,7 +628,7 @@ settable via [Create](0106.mdx) or [Update](0107.mdx) operations.
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         members:
@@ -651,7 +651,7 @@ components:
 ```yaml
 components:
   schemas:
-    Project:
+    Group:
       type: object
       properties:
         members:
@@ -703,9 +703,9 @@ method, and not introduce `Add` and `Remove` methods. To learn more, see
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     put:
-      operationId: updateProject
+      operationId: updateGroup
       requestBody:
         content:
           application/json:
@@ -730,12 +730,12 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}:members:add:
+  /groups/{groupId}:members:add:
     post:
-      operationId: addProjectMembers
-  /projects/{projectId}:members:remove:
+      operationId: addGroupMembers
+  /groups/{groupId}:members:remove:
     post:
-      operationId: removeProjectMembers
+      operationId: removeGroupMembers
 ```
 
 <Example.Reason>

@@ -6,7 +6,7 @@ state: adopt
 # IPA-104: Get
 
 In REST APIs, it is customary to make a `GET` request to a resource's URI (for
-example, `/projects/{projectId}/tasks/{taskId}`) to retrieve that resource.
+example, `/groups/{groupId}/tasks/{taskId}`) to retrieve that resource.
 
 ## Guidance
 
@@ -22,9 +22,9 @@ APIs **must** provide a Get method for resources.
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     get:
-      operationId: getProject
+      operationId: getGroup
       responses:
         "200":
           description: OK
@@ -40,11 +40,11 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     put:
-      operationId: updateProject
+      operationId: updateGroup
     delete:
-      operationId: deleteProject
+      operationId: deleteGroup
 ```
 
 <Example.Reason>
@@ -85,19 +85,19 @@ paginated list.
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     get:
-      operationId: getProject
+      operationId: getGroup
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProjectResponse"
+                $ref: "#/components/schemas/GroupResponse"
 ```
 
 <Example.Reason>
-  The response is a single object describing one project.
+  The response is a single object describing one group.
 </Example.Reason>
 
 </Example.Correct>
@@ -106,9 +106,9 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     get:
-      operationId: getProject
+      operationId: getGroup
       responses:
         "200":
           content:
@@ -116,7 +116,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/ProjectResponse"
+                  $ref: "#/components/schemas/GroupResponse"
 ```
 
 <Example.Reason>
@@ -491,7 +491,7 @@ paths:
 Example
 
 ```http request
-GET /projects/${projectId}/tasks/${taskId}
+GET /groups/${groupId}/tasks/${taskId}
 ```
 
 ### Naming
@@ -508,9 +508,9 @@ Operation ID **must** be unique.
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     get:
-      operationId: getProject
+      operationId: getGroup
   /orders/{orderId}:
     get:
       operationId: getOrder
@@ -527,7 +527,7 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     get:
       operationId: get
   /orders/{orderId}:
@@ -568,14 +568,13 @@ Operation ID **must** be in `camelCase`.
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     get:
-      operationId: getProject
+      operationId: getGroup
 ```
 
 <Example.Reason>
-  `getProject` is `camelCase`, matching the casing every generated client
-  expects.
+  `getGroup` is `camelCase`, matching the casing every generated client expects.
 </Example.Reason>
 
 </Example.Correct>
@@ -584,14 +583,14 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     get:
-      operationId: get_project
+      operationId: get_group
 ```
 
 <Example.Reason>
-  `get_project` is snake_case, so generated method names are inconsistent with
-  the rest of the API.
+  `get_group` is snake_case, so generated method names are inconsistent with the
+  rest of the API.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -610,9 +609,9 @@ Operation ID **must** start with the verb "get".
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     get:
-      operationId: getProject
+      operationId: getGroup
 ```
 
 <Example.Reason>
@@ -626,14 +625,14 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}:
+  /groups/{groupId}:
     get:
-      operationId: fetchProject
+      operationId: fetchGroup
 ```
 
 <Example.Reason>
-  `fetchProject` uses a different verb, so the name no longer signals a Get
-  method consistently across the API.
+  `fetchGroup` uses a different verb, so the name no longer signals a Get method
+  consistently across the API.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -654,13 +653,13 @@ singular form.
 
 ```yaml
 paths:
-  /projects/{projectId}/tasks/{taskId}:
+  /groups/{groupId}/tasks/{taskId}:
     get:
-      operationId: getProjectTask
+      operationId: getGroupTask
 ```
 
 <Example.Reason>
-  `ProjectTask` is the collection identifiers `projects` and `tasks` in singular
+  `GroupTask` is the collection identifiers `groups` and `tasks` in singular
   form, so the name mirrors the resource path.
 </Example.Reason>
 
@@ -670,9 +669,9 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}/tasks/{taskId}:
+  /groups/{groupId}/tasks/{taskId}:
     get:
-      operationId: getProjectsTasks
+      operationId: getGroupsTasks
 ```
 
 <Example.Reason>
@@ -695,10 +694,10 @@ paths:
 
 Examples:
 
-| Resource Identifier                           | Operation ID         |
-| --------------------------------------------- | -------------------- |
-| `/projects/${projectId}/tasks/${taskId}`      | `getProjectTask`     |
-| (Singleton) `/projects/${projectId}/settings` | `getProjectSettings` |
+| Resource Identifier                       | Operation ID       |
+| ----------------------------------------- | ------------------ |
+| `/groups/${groupId}/tasks/${taskId}`      | `getGroupTask`     |
+| (Singleton) `/groups/${groupId}/settings` | `getGroupSettings` |
 
 ### Error Handling
 

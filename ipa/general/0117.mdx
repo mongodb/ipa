@@ -1388,7 +1388,7 @@ For additional details about the behavior of the operations, refer to
 
 ```yaml
 paths:
-  /projects/{projectId}/members:
+  /groups/{groupId}/members:
     post:
       summary: Add One Member to One Project
       description: >-
@@ -1407,7 +1407,7 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}/members:
+  /groups/{groupId}/members:
     post:
       summary: >-
         Add One Member to One Project, Which Requires the Owner Role and Applies
@@ -1788,7 +1788,7 @@ paths:
   /orders/{orderId}:
     delete:
       summary: Delete One Order
-  /projects/{projectId}/members/{userId}:
+  /groups/{groupId}/members/{userId}:
     delete:
       summary: Remove One Member from One Project
 ```
@@ -1805,7 +1805,7 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}/members/{userId}:
+  /groups/{groupId}/members/{userId}:
     delete:
       summary: Delete One Member from One Project
 ```
@@ -1835,7 +1835,7 @@ paths:
   /orders:
     post:
       summary: Create One Order
-  /projects/{projectId}/members:
+  /groups/{groupId}/members:
     post:
       summary: Add One Member to One Project
 ```
@@ -1851,7 +1851,7 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}/members:
+  /groups/{groupId}/members:
     post:
       summary: Create One Member in One Project
 ```
@@ -1878,7 +1878,7 @@ its default state.
 
 ```yaml
 paths:
-  /projects/{projectId}/settings:reset:
+  /groups/{groupId}/settings:reset:
     post:
       summary: Reset Settings for One Project
 ```
@@ -1894,7 +1894,7 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}/settings:reset:
+  /groups/{groupId}/settings:reset:
     post:
       summary: Update Settings for One Project to Default
 ```
@@ -2104,7 +2104,7 @@ Project".
 
 ```yaml
 paths:
-  /projects/{projectId}/members/{userId}:
+  /groups/{groupId}/members/{userId}:
     patch:
       summary: Update One Member in One Project
     delete:
@@ -2122,7 +2122,7 @@ paths:
 
 ```yaml
 paths:
-  /projects/{projectId}/members/{userId}:
+  /groups/{groupId}/members/{userId}:
     delete:
       summary: Remove One Member in One Project
 ```

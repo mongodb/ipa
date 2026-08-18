@@ -41,16 +41,16 @@ A resource **must** be strongly consistent with the **Resource-Oriented Design**
 
 ```yaml
 paths:
-  /projects:
+  /groups:
     get:
-      operationId: listProjects
+      operationId: listGroups
     post:
-      operationId: createProject
-  /projects/{projectId}:
+      operationId: createGroup
+  /groups/{groupId}:
     get:
-      operationId: getProject
+      operationId: getGroup
     delete:
-      operationId: deleteProject
+      operationId: deleteGroup
 ```
 
 <Example.Reason>
@@ -65,12 +65,12 @@ paths:
 
 ```yaml
 paths:
-  /createProject:
+  /createGroup:
     post:
-      operationId: createProject
-  /deleteProjectById:
+      operationId: createGroup
+  /deleteGroupById:
     post:
-      operationId: deleteProjectById
+      operationId: deleteGroupById
 ```
 
 <Example.Reason>
