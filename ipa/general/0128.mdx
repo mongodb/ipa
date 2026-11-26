@@ -110,8 +110,7 @@ A **stable** API resource **must** maintain backwards compatibility
   enforcement="advisory"
 >
   A **stable** API resource **must** remain supported until all users have
-  migrated to an alternative version, or until otherwise agreed between API
-  provider and customers.
+  migrated off it, or until otherwise agreed between API provider and customers.
 </Guideline>
 
 </Guidelines>
@@ -127,8 +126,8 @@ A **deprecated** API resource is still supported but is on its way to becoming
   id="IPA-128-may-stop-deprecated-backwards-compat"
   enforcement="advisory"
 >
-  A **deprecated** API resource **may** no longer receive backwards
-  compatibility changes.
+  A **deprecated** API resource **may** stop receiving new functionality, but
+  **must** keep working as documented until it transitions to **sunset**.
 </Guideline>
 
 <Guideline id="IPA-128-must-declare-replacement-decision" enforcement="advisory">
@@ -140,6 +139,81 @@ a replacement:
    consumers migrate to it.
 2. If it has no replacement, the documentation **must** state that none exists
    and that the element will be removed in a future version.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Invoice:
+      type: object
+      properties:
+        total:
+          type: number
+        amount:
+          type: number
+          deprecated: true
+          description: >-
+            Deprecated: use `total` instead. `amount` remains supported in this
+            version and is removed only in a new version.
+```
+
+<Example.Reason>
+  The deprecated field names its replacement and says how long it stays
+  supported, so consumers can migrate before it is removed.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /invoices:
+    get:
+      operationId: listInvoices
+      parameters:
+        - name: legacyFormat
+          in: query
+          deprecated: true
+          description: >-
+            Deprecated: ignored, and will be removed in a future version. There
+            is no replacement.
+          schema:
+            type: boolean
+```
+
+<Example.Reason>
+  The deprecated parameter has no replacement, so the description says so
+  explicitly instead of leaving consumers to guess.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Invoice:
+      type: object
+      properties:
+        amount:
+          type: number
+          deprecated: true
+```
+
+<Example.Reason>
+  The field is deprecated but says nothing about a replacement, so consumers
+  cannot tell whether there is a migration path or the field is simply going
+  away.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
 
 </Guideline>
 
@@ -169,8 +243,8 @@ consumers when it will transition to **sunset**.
 </Guideline>
 
 <Guideline id="IPA-128-should-migrate-from-deprecated" enforcement="advisory">
-  Consumers **should** migrate from a **deprecated** API resource to the
-  **stable** version.
+  Where a replacement exists, consumers **should** migrate from a **deprecated**
+  API resource to its replacement.
 </Guideline>
 
 </Guidelines>
@@ -189,8 +263,8 @@ A **sunset** API resource **must** return
 </Guideline>
 
 <Guideline id="IPA-128-must-migrate-from-sunset" enforcement="advisory">
-  Consumers **must** migrate from a **sunset** API resource to the **stable**
-  version.
+  Where a replacement exists, consumers **must** migrate from an API resource
+  that is becoming **sunset** to its replacement.
 </Guideline>
 
 </Guidelines>

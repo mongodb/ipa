@@ -1292,6 +1292,9 @@ paths:
   /orders/{orderId}:
     get:
       deprecated: true
+      description: >-
+        Deprecated: no replacement. This endpoint will be removed after the
+        sunset date.
       responses:
         "200":
           headers:
@@ -1302,8 +1305,8 @@ paths:
 ```
 
 <Example.Reason>
-  The resource is marked deprecated and announces a sunset date, giving callers
-  a defined window to migrate before it is removed.
+  The resource is marked deprecated, states that it has no replacement, and
+  announces a sunset date, giving callers a defined window before it is removed.
 </Example.Reason>
 
 </Example.Correct>
@@ -1462,6 +1465,27 @@ New options **may** be added to existing enums.
 
 Input and output fields and parameters **may** be marked as deprecated in
 existing versions, subject to [IPA-128](/ipa/128).
+
+</Guideline>
+
+<Guideline id="IPA-116-may-add-media-types" enforcement="advisory">
+
+An additional media type **may** be added alongside the existing ones, provided
+the existing media types keep working.
+
+</Guideline>
+
+<Guideline id="IPA-116-may-add-methods" enforcement="advisory">
+
+A new method **may** be added to an existing path, provided the existing methods
+keep working.
+
+</Guideline>
+
+<Guideline id="IPA-116-may-add-status-codes" enforcement="advisory">
+
+A new status code **may** be added alongside the existing ones, provided the
+existing status codes keep their meaning and behavior.
 
 </Guideline>
 

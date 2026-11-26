@@ -280,6 +280,7 @@ paths:
                   amount:
                     type: number
                     deprecated: true
+                    description: Deprecated: use `total` instead.
 ```
 
 <Example.Reason>
@@ -352,6 +353,7 @@ paths:
     get:
       operationId: getUserV1
       deprecated: true
+      description: Deprecated: use getUserV2 instead.
       responses:
         "200":
           headers:
@@ -359,7 +361,7 @@ paths:
               schema:
                 type: string
                 format: date
-          description: A user. This version is deprecated; migrate to v2.
+          description: A user.
   /v2/users/{userId}:
     get:
       operationId: getUserV2
