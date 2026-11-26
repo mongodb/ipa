@@ -333,6 +333,50 @@ paths:
 
 </Guideline>
 
+<Guideline id="IPA-120-must-gate-breaking-changes-by-version" enforcement="advisory">
+
+Breaking changes **must** be introduced in a new API version. Users of existing,
+unchanged API versions **must** remain undisturbed and be able to plan an
+upgrade at their own pace. Deprecating an existing version and making
+version-gated incompatible or unsafe changes are governed by the applicable
+deprecation policy ([IPA-128](0128.mdx)).
+
+</Guideline>
+
+<Guideline id="IPA-120-must-allow-versions-to-coexist" enforcement="advisory">
+
+Different versions of the same API **must** be able to work at the same time
+within a single client application for a reasonable transition period, so the
+client can move to the newer version smoothly. An older version **must** go
+through a reasonable, well-communicated deprecation period before it becomes
+**sunset**.
+
+</Guideline>
+
+<Guideline id="IPA-120-must-define-deprecation-period" enforcement="advisory">
+
+A backwards-incompatible change **must** be made only after a reasonable
+deprecation period that gives users an opportunity to migrate their code. The
+deprecation period **must** be defined when the version is declared **stable**.
+
+</Guideline>
+
+<Guideline id="IPA-120-should-start-deprecation-clock" enforcement="advisory">
+
+When a breaking change becomes necessary, the API producer **should** create the
+next version of the API and start a deprecation clock on the existing version.
+
+</Guideline>
+
+<Guideline id="IPA-120-must-define-turn-down-process" enforcement="advisory">
+
+Turning down a version that contains **stable** components **must** have a
+formal process defined when the version is declared **stable**. That process
+**must** specify a deprecation period that gives users reasonable advance
+warning.
+
+</Guideline>
+
 <Guideline id="IPA-120-may-sunset-faster-than-default" enforcement="advisory">
   An API producer **may** reach **sunset** sooner than the default timeline of
   one year.
