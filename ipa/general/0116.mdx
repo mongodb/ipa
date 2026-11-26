@@ -1280,8 +1280,8 @@ paths:
 
 <Guideline id="IPA-116-must-not-remove-resource-without-sunset" given="paths" enforcement="review" effort="reason">
 
-Existing resources **must not** be removed from the API specification without
-first being marked **deprecated** and becoming **sunset** ([IPA-128](0128.mdx)).
+Existing resources **must not** be removed without first being **sunsetted**
+([IPA-128](0128.mdx)).
 
 <Guideline.Details>
 
@@ -1293,7 +1293,9 @@ paths:
     get:
       deprecated: true
       description: >-
-        Deprecated: no replacement. This endpoint will be removed after the
+        Deprecated: use `/v2/orders/{orderId}` instead, which returns the same
+        order and supports partial updates. It is deprecated because the v1
+        response cannot express a partial update. It will be removed after the
         sunset date.
       responses:
         "200":
@@ -1305,8 +1307,9 @@ paths:
 ```
 
 <Example.Reason>
-  The resource is marked deprecated, states that it has no replacement, and
-  announces a sunset date, giving callers a defined window before it is removed.
+  The resource is marked deprecated before removal, names its replacement and
+  the reason for the deprecation, and announces a sunset date, giving callers a
+  defined window to migrate.
 </Example.Reason>
 
 </Example.Correct>
@@ -1323,8 +1326,8 @@ paths:
 ```
 
 <Example.Reason>
-  Deleting a live resource that was never marked sunsetting breaks callers with
-  no warning and no migration window.
+  Deleting a live resource that was never marked deprecated or sunsetted breaks
+  callers with no warning and no migration window.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -1465,28 +1468,7 @@ New options **may** be added to existing enums.
 <Guideline id="IPA-116-may-mark-fields-deprecated" enforcement="advisory">
 
 Input and output fields and parameters **may** be marked as deprecated in
-existing versions, subject to [IPA-128](/ipa/128).
-
-</Guideline>
-
-<Guideline id="IPA-116-may-add-media-types" enforcement="advisory">
-
-An additional media type **may** be added alongside the existing ones, provided
-the existing media types keep working.
-
-</Guideline>
-
-<Guideline id="IPA-116-may-add-methods" enforcement="advisory">
-
-A new method **may** be added to an existing path, provided the existing methods
-keep working.
-
-</Guideline>
-
-<Guideline id="IPA-116-may-add-status-codes" enforcement="advisory">
-
-A new status code **may** be added alongside the existing ones, provided the
-existing status codes keep their meaning and behavior.
+existing versions, subject to [IPA-128](0128.mdx).
 
 </Guideline>
 

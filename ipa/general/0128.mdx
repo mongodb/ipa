@@ -110,7 +110,8 @@ A **stable** API resource **must** maintain backwards compatibility
   enforcement="advisory"
 >
   A **stable** API resource **must** remain supported until all users have
-  migrated off it, or until otherwise agreed between API provider and customers.
+  stopped using it, or until otherwise agreed between API provider and
+  customers.
 </Guideline>
 
 </Guidelines>
@@ -127,18 +128,21 @@ A **deprecated** API resource is still supported but is on its way to becoming
   enforcement="advisory"
 >
   A **deprecated** API resource **may** stop receiving new functionality, but
-  **must** keep working as documented until it transitions to **sunset**.
+  **must** keep working as documented until it is **sunsetted**.
 </Guideline>
 
 <Guideline id="IPA-128-must-declare-replacement-decision" enforcement="advisory">
 
 A **deprecated** API resource, field, or parameter **must** state whether it has
-a replacement:
+a replacement and migration path:
 
 1. If it has a replacement, the documentation **must** name it and explain how
-   consumers migrate to it.
+   consumers migrate to it. The replacement may be in the same version, in a
+   newer version, or a different resource or endpoint.
 2. If it has no replacement, the documentation **must** state that none exists
    and that the element will be removed in a future version.
+
+The documentation **should** also state why the element is being deprecated.
 
 <Guideline.Details>
 
@@ -156,13 +160,15 @@ components:
           type: number
           deprecated: true
           description: >-
-            Deprecated: use `total` instead. `amount` remains supported in this
-            version and is removed only in a new version.
+            Deprecated: use `total` instead. Read `total` and stop reading or
+            sending `amount`. It is deprecated because both fields always held
+            the same value. `amount` remains supported in this version and is
+            removed only in a new version.
 ```
 
 <Example.Reason>
-  The deprecated field names its replacement and says how long it stays
-  supported, so consumers can migrate before it is removed.
+  The deprecated field names its replacement, explains the migration, gives the
+  reason for the deprecation, and says how long it stays supported.
 </Example.Reason>
 
 </Example.Correct>
@@ -180,14 +186,15 @@ paths:
           deprecated: true
           description: >-
             Deprecated: ignored, and will be removed in a future version. There
-            is no replacement.
+            is no replacement. It is deprecated because the server always uses
+            the default format.
           schema:
             type: boolean
 ```
 
 <Example.Reason>
   The deprecated parameter has no replacement, so the description says so
-  explicitly instead of leaving consumers to guess.
+  explicitly, gives the reason, and states that it will be removed.
 </Example.Reason>
 
 </Example.Correct>
@@ -219,10 +226,10 @@ components:
 
 <Guideline id="IPA-128-must-transition-deprecated-to-sunset" enforcement="advisory">
 
-A **deprecated** API resource or version **must** transition to **sunset**
-within an established timeframe. Deprecated fields and parameters have no
-independent sunset date and are removed only in a new API version
-([IPA-116](/ipa/116)).
+A **deprecated** API resource or version **must** be **sunsetted** within an
+established timeframe ([IPA-120](0120.mdx)). Deprecated fields and parameters
+have no independent sunset date and are removed only in a new API version
+([IPA-116](0116.mdx)).
 
 </Guideline>
 
@@ -238,13 +245,13 @@ consumers that the resource is deprecated.
 
 A **deprecated** API resource **must** provide the Sunset HTTP response header
 ([RFC 8594](https://datatracker.ietf.org/doc/html/rfc8594)) to signal to
-consumers when it will transition to **sunset**.
+consumers when it will be **sunsetted**.
 
 </Guideline>
 
 <Guideline id="IPA-128-should-migrate-from-deprecated" enforcement="advisory">
   Where a replacement exists, consumers **should** migrate from a **deprecated**
-  API resource to its replacement.
+  API resource to its replacement before it is **sunsetted**.
 </Guideline>
 
 </Guidelines>
@@ -257,10 +264,10 @@ A **sunset** API resource is no longer supported.
 
 <Guideline id="IPA-128-must-deprecate-before-sunset" enforcement="advisory">
 
-A **stable** API resource or version **must** be marked **deprecated** and
-announce its sunset date before it becomes **sunset**, and **must** become
-**sunset** before it is removed from the API specification. Deprecated fields
-and parameters follow the lifecycle of the version that contains them.
+A **stable** API resource or version **must not** be **sunsetted** without first
+being **deprecated**. Deprecated fields and parameters follow the lifecycle of
+the version that contains them. For version-level rules, see
+[IPA-120](0120.mdx).
 
 </Guideline>
 
@@ -272,8 +279,8 @@ A **sunset** API resource **must** return
 </Guideline>
 
 <Guideline id="IPA-128-must-migrate-from-sunset" enforcement="advisory">
-  Where a replacement exists, consumers **must** migrate from an API resource
-  that is becoming **sunset** to its replacement.
+  Where a replacement exists, consumers **must** migrate to it before the
+  resource is **sunsetted**.
 </Guideline>
 
 </Guidelines>

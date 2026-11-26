@@ -347,17 +347,16 @@ deprecation policy ([IPA-128](0128.mdx)).
 
 Different versions of the same API **must** be able to work at the same time
 within a single client application for a reasonable transition period, so the
-client can move to the newer version smoothly. An older version **must** go
-through a reasonable, well-communicated deprecation period before it becomes
-**sunset**.
+client can move to the newer version smoothly. An older version **must** remain
+usable through a reasonable, well-communicated deprecation period before it is
+**sunsetted** ([IPA-128](0128.mdx)).
 
 </Guideline>
 
 <Guideline id="IPA-120-must-define-deprecation-period" enforcement="advisory">
 
 A backwards-incompatible change **must** be made only after a reasonable
-deprecation period that gives users an opportunity to migrate their code. The
-deprecation period **must** be defined when the version is declared **stable**.
+deprecation period that gives users an opportunity to migrate their code.
 
 </Guideline>
 
@@ -378,15 +377,8 @@ warning.
 </Guideline>
 
 <Guideline id="IPA-120-may-sunset-faster-than-default" enforcement="advisory">
-  An API producer **may** reach **sunset** sooner than the default timeline of
+  An old version **may** be **sunsetted** sooner than the default timeline of
   one year.
-</Guideline>
-
-<Guideline id="IPA-120-must-deprecate-version-before-sunset" enforcement="advisory">
-
-A superseded API version **must** be marked **deprecated** and announce its
-sunset date before it becomes **sunset** ([IPA-128](0128.mdx)).
-
 </Guideline>
 
 <Guideline id="IPA-120-must-coordinate-version-transition" given="spec" enforcement="review" implementation effort="explore">
@@ -405,6 +397,9 @@ paths:
       operationId: getUserV1
       deprecated: true
       description: Deprecated: use getUserV2 instead.
+      externalDocs:
+        description: getUserV2
+        url: https://example.com/docs/users#getuserv2
       responses:
         "200":
           headers:
