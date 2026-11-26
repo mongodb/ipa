@@ -1297,6 +1297,9 @@ paths:
         Deprecated: use `upgradeFlexCluster` instead, which upgrades Flex
         clusters. It is deprecated because new serverless instances are no
         longer created. It will be removed after the sunset date.
+      externalDocs:
+        description: upgradeFlexCluster
+        url: https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2/#tag/Flex-Clusters/operation/upgradeFlexCluster
       responses:
         "200":
           headers:
@@ -1307,9 +1310,9 @@ paths:
 ```
 
 <Example.Reason>
-  The resource is marked deprecated before removal, names a replacement that is
-  a different endpoint, states the reason, and announces a sunset date, giving
-  callers a defined window to migrate.
+  The resource is marked deprecated before removal, names and links to a
+  replacement that is a different endpoint, states the reason, and announces a
+  sunset date, giving callers a defined window to migrate.
 </Example.Reason>
 
 </Example.Correct>
