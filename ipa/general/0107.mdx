@@ -311,6 +311,23 @@ for all fields in the request (see
 
 </Example.Correct>
 
+<Example.Incorrect>
+
+```yaml
+# PATCH /groups/{groupId}/clusters/{clusterName}
+# Request body:
+{ "diskSizeGB": 100 }
+# The server also resets instanceSize to M10 because it was omitted.
+```
+
+<Example.Reason>
+  The client sent only `diskSizeGB`, but the server replaced the existing
+  `instanceSize` with a default. A partial update must leave fields the client
+  did not send unchanged.
+</Example.Reason>
+
+</Example.Incorrect>
+
 <Workflow>
   <Workflow.Step>
     Determine whether the operation is a partial update (`PATCH`) or a full
