@@ -1289,14 +1289,14 @@ Existing resources **must not** be removed without first being **sunsetted**
 
 ```yaml
 paths:
-  /orders/{orderId}:
-    get:
+  /api/atlas/v2/groups/{groupId}/clusters/tenantUpgradeToServerless:
+    post:
+      operationId: upgradeSharedClusterToServerless
       deprecated: true
       description: >-
-        Deprecated: use `/v2/orders/{orderId}` instead, which returns the same
-        order and supports partial updates. It is deprecated because the v1
-        response cannot express a partial update. It will be removed after the
-        sunset date.
+        Deprecated: use `upgradeFlexCluster` instead, which upgrades Flex
+        clusters. It is deprecated because new serverless instances are no
+        longer created. It will be removed after the sunset date.
       responses:
         "200":
           headers:
@@ -1307,9 +1307,9 @@ paths:
 ```
 
 <Example.Reason>
-  The resource is marked deprecated before removal, names its replacement and
-  the reason for the deprecation, and announces a sunset date, giving callers a
-  defined window to migrate.
+  The resource is marked deprecated before removal, names a replacement that is
+  a different endpoint, states the reason, and announces a sunset date, giving
+  callers a defined window to migrate.
 </Example.Reason>
 
 </Example.Correct>

@@ -109,9 +109,9 @@ A **stable** API resource **must** maintain backwards compatibility
   given="spec"
   enforcement="advisory"
 >
-  A **stable** API resource **must** remain supported until all users have
-  stopped using it, or until otherwise agreed between API provider and
-  customers.
+  A **stable** API resource **must** remain supported until its announced sunset
+  date, which **must** be communicated well in advance, unless otherwise agreed
+  between API provider and customers.
 </Guideline>
 
 </Guidelines>
@@ -137,8 +137,9 @@ A **deprecated** API resource, field, or parameter **must** state whether it has
 a replacement and migration path:
 
 1. If it has a replacement, the documentation **must** name it and explain how
-   consumers migrate to it. The replacement may be in the same version, in a
-   newer version, or a different resource or endpoint.
+   consumers migrate to it. The replacement may be another element in the same
+   version (for example, another field), the same operation in another version,
+   or a different resource or endpoint.
 2. If it has no replacement, the documentation **must** state that none exists
    and that the element will be removed in a future version.
 
