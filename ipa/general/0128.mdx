@@ -131,10 +131,24 @@ A **deprecated** API resource is still supported but is on its way to becoming
   compatibility changes.
 </Guideline>
 
+<Guideline id="IPA-128-must-declare-replacement-decision" enforcement="advisory">
+
+A **deprecated** API resource, field, or parameter **must** state whether it has
+a replacement:
+
+1. If it has a replacement, the documentation **must** name it and explain how
+   consumers migrate to it.
+2. If it has no replacement, the documentation **must** state that none exists
+   and that the element will be removed in a future version.
+
+</Guideline>
+
 <Guideline id="IPA-128-must-transition-deprecated-to-sunset" enforcement="advisory">
 
-A **deprecated** API resource **must** transition to **sunset** within an
-established timeframe.
+A **deprecated** API resource or version **must** transition to **sunset**
+within an established timeframe. Deprecated fields and parameters have no
+independent sunset date and are removed only in a new API version
+([IPA-116](/ipa/116)).
 
 </Guideline>
 
