@@ -520,6 +520,59 @@ parameters:
 
 </Guideline>
 
+<Guideline id="IPA-117-should-prefix-deprecated-descriptions" given={["schema", "parameter"]} enforcement="rule">
+
+The description of a deprecated property or parameter **should** start with
+`Deprecated: ` so generated SDK documentation is well-formed.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Invoice:
+      type: object
+      properties:
+        amount:
+          type: number
+          deprecated: true
+          description: Deprecated: use `total` instead.
+```
+
+<Example.Reason>
+  The `Deprecated: ` prefix matches the format generated SDK documentation
+  expects, and names the replacement in the same sentence.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Invoice:
+      type: object
+      properties:
+        amount:
+          type: number
+          deprecated: true
+          description: This field is no longer used. Use `total` instead.
+```
+
+<Example.Reason>
+  Without the `Deprecated: ` prefix, the generated SDK documentation fails its
+  format check even though the description names the replacement.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
 <Guideline id="IPA-117-must-not-use-raw-html" given={["schema", "operation", "parameter", "tag"]} enforcement="rule">
 
 Descriptions **must not** use raw HTML.
