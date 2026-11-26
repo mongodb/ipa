@@ -334,8 +334,15 @@ paths:
 </Guideline>
 
 <Guideline id="IPA-120-may-sunset-faster-than-default" enforcement="advisory">
-  An API producer **may** coordinate to sunset old versions faster than the
-  default timeline of one year.
+  An API producer **may** reach **sunset** sooner than the default timeline of
+  one year.
+</Guideline>
+
+<Guideline id="IPA-120-must-deprecate-version-before-sunset" enforcement="advisory">
+
+A superseded API version **must** be marked **deprecated** and announce its
+sunset date before it becomes **sunset** ([IPA-128](0128.mdx)).
+
 </Guideline>
 
 <Guideline id="IPA-120-must-coordinate-version-transition" given="spec" enforcement="review" implementation effort="explore">

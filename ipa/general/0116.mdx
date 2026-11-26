@@ -1280,8 +1280,8 @@ paths:
 
 <Guideline id="IPA-116-must-not-remove-resource-without-sunset" given="paths" enforcement="review" effort="reason">
 
-Existing resources **must not** be removed without previously being marked as
-sunsetting.
+Existing resources **must not** be removed from the API specification without
+first being marked **deprecated** and becoming **sunset** ([IPA-128](0128.mdx)).
 
 <Guideline.Details>
 
@@ -1316,7 +1316,8 @@ paths:
 ```yaml
 paths:
   /invoices/{invoiceId}:
-    # the entire path was deleted in this revision with no prior sunset notice
+    # the entire path was deleted in this revision with no prior deprecation
+    # or sunset notice
     get:
       operationId: getInvoice
 ```

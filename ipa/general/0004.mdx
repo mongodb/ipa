@@ -58,3 +58,32 @@ silently rewrites client-owned fields on resource Y.
 
 A dedicated group or entity, known as API Champions, responsible for ensuring
 adherence to IPAs and best practices.
+
+### Deprecated
+
+An API element is **deprecated** when it is still functional and supported, but
+is announced for removal. Consumers **should** stop using it and migrate to its
+replacement, where one exists. See [IPA-128](0128.mdx).
+
+### Sunset
+
+An API resource or version is **sunset** when it is no longer functional. A
+sunset resource **must** return
+[410 GONE](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Status/410).
+See [IPA-128](0128.mdx).
+
+### Sunset date
+
+The announced date on which an API resource or version becomes **sunset**.
+Producers communicate it with the `Sunset` HTTP response header
+([RFC 8594](https://datatracker.ietf.org/doc/html/rfc8594)).
+
+### Removed
+
+An API element is **removed** when it is no longer present in the API
+specification; requests to it fail, typically with `404 Not Found`. Removing a
+field, parameter, or resource requires a new API version. See
+[IPA-116](0116.mdx).
+
+Use these terms consistently: prefer **deprecated**, **sunset**, and **removed**
+over "sunsetting", "end-of-life", and "retired".

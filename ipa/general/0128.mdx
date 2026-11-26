@@ -255,6 +255,15 @@ A **sunset** API resource is no longer supported.
 
 <Guidelines>
 
+<Guideline id="IPA-128-must-deprecate-before-sunset" enforcement="advisory">
+
+A **stable** API resource or version **must** be marked **deprecated** and
+announce its sunset date before it becomes **sunset**, and **must** become
+**sunset** before it is removed from the API specification. Deprecated fields
+and parameters follow the lifecycle of the version that contains them.
+
+</Guideline>
+
 <Guideline id="IPA-128-must-return-410-for-sunset" given="operation" enforcement="automatable">
 
 A **sunset** API resource **must** return
