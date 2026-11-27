@@ -418,37 +418,6 @@ client can move to the newer version smoothly.
 
 </Guideline>
 
-<Guideline id="IPA-120-must-define-sunset-process" given="spec" enforcement="review" implementation effort="reason">
-
-A version that contains **stable** components **must** have a sunset plan
-defined when the version is declared **stable**. The plan **must** specify the
-deprecation period and the advance warning given to users.
-
-<Guideline.Details>
-
-The lifecycle itself is defined by [IPA-128](0128.mdx); this guideline requires
-the version's own timeline to be committed at stable declaration rather than
-decided when sunset becomes necessary. It is verified against the release plan,
-not the OpenAPI document.
-
-<Workflow>
-  <Workflow.Step>Locate the release plan for the version.</Workflow.Step>
-  <Workflow.Step>
-    Confirm it defines the sunset plan for versions with stable components.
-  </Workflow.Step>
-  <Workflow.Step>
-    Confirm the process specifies the deprecation period and the advance warning
-    given to users.
-  </Workflow.Step>
-  <Workflow.Step>
-    Report any version declared stable without that process defined.
-  </Workflow.Step>
-</Workflow>
-
-</Guideline.Details>
-
-</Guideline>
-
 <Guideline id="IPA-120-may-sunset-faster-than-default" enforcement="advisory">
   An old version of an API resource **may** be **sunsetted** sooner than the
   default timeline of one year.

@@ -134,12 +134,12 @@ A **deprecated** API resource is still supported but is on its way to becoming
 <Guideline id="IPA-128-must-declare-replacement-decision" given={["operation", "schema", "parameter"]} enforcement="review" effort="check">
 
 A **deprecated** API resource, field, or parameter **must** state whether it has
-a replacement and migration path:
+a replacement:
 
-1. If it has a replacement, the documentation **must** name it and explain how
-   consumers migrate to it. The replacement may be another element in the same
-   version (for example, another field), the same operation in another version,
-   or a different resource or endpoint.
+1. If it has a replacement, the documentation **must** name it and provide a
+   migration plan that explains how consumers move to it. The replacement may be
+   another element in the same version (for example, another field), the same
+   operation in another version, or a different resource or endpoint.
 2. If it has no replacement, the documentation **must** state that none exists
    and that the element will be removed in a future version.
 
