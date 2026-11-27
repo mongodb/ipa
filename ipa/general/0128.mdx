@@ -321,6 +321,13 @@ that defines the version. The header is added to responses at runtime for the
 version being served; it is not declared as a response header in the
 specification.
 
+The response for that version carries the header, for example:
+
+```http
+HTTP/1.1 200 OK
+Sunset: Thu, 01 Jan 2099 00:00:00 GMT
+```
+
 <Example.Correct>
 
 ```yaml
