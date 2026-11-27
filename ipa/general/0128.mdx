@@ -300,10 +300,9 @@ header ([RFC 9745](https://datatracker.ietf.org/doc/rfc9745/)) to signal to
 consumers that the resource is deprecated.
 
 <Guideline.Details>
-
-The header is added to responses at runtime for the API version being served. In
-the specification for that version, the operation is marked `deprecated: true`.
-The deprecation date itself is not recorded in the specification.
+The header is added to responses at runtime for the API version being served.
+The deprecation date is set in the code that defines the version, not in the
+OpenAPI specification.
 
 </Guideline.Details>
 
@@ -317,10 +316,9 @@ consumers when it will be **sunsetted**.
 
 <Guideline.Details>
 
-Record the sunset date as `x-sunset`. In the specification for that version, the
-operation is marked `deprecated: true` and carries `x-sunset`. The header is
-added to responses at runtime for that version; it is not declared as a response
-header in the specification.
+Record the sunset date as `x-sunset`. The header is added to responses at
+runtime for the version being served; it is not declared as a response header in
+the specification.
 
 <Example.Correct>
 
