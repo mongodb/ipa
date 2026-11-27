@@ -523,8 +523,7 @@ parameters:
 <Guideline id="IPA-117-should-prefix-deprecated-descriptions" given={["schema", "parameter"]} enforcement="automatable" effort="check">
 
 The description of a deprecated property or parameter **should** start with
-`Deprecated:` followed by a space, so generated SDK documentation is
-well-formed.
+`Deprecated:` followed by a space.
 
 <Guideline.Details>
 
@@ -547,8 +546,8 @@ components:
 ```
 
 <Example.Reason>
-  The `Deprecated:` prefix matches the format generated SDK documentation
-  expects, names the replacement, and keeps the field's description.
+  The `Deprecated:` prefix marks the deprecation clearly, names the replacement,
+  and keeps the field's description.
 </Example.Reason>
 
 </Example.Correct>
@@ -568,8 +567,8 @@ components:
 ```
 
 <Example.Reason>
-  Without the `Deprecated:` prefix, the generated SDK documentation fails its
-  format check even though the description names the replacement.
+  Without the `Deprecated:` prefix, the deprecation is not recognizable from the
+  description, even though it names the replacement.
 </Example.Reason>
 
 </Example.Incorrect>
