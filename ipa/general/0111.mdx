@@ -135,7 +135,7 @@ components:
 
 </Guideline>
 
-<Guideline id="IPA-111-must-not-accept-server-owned-in-request" given="schema" enforcement="review" effort="reason">
+<Guideline id="IPA-111-must-not-accept-server-owned-in-request" given="schema" enforcement="review" effort="explore" implementation>
 
 Server-owned fields **must not** be accepted in request bodies for
 [Create](0106.mdx) or [Update](0107.mdx) operations
@@ -164,6 +164,26 @@ components:
 
 </Example.Correct>
 
+<Example.Incorrect>
+
+```yaml
+# POST /groups/{groupId}/clusters
+request:
+  clusterName: my-cluster
+  stateName: IDLE # readOnly server-owned field sent by client
+response:
+  clusterName: my-cluster
+  stateName: IDLE # server echoed/applied the client-supplied value
+```
+
+<Example.Reason>
+  `stateName` is server-owned (`readOnly: true`), yet the service accepted and
+  echoed the client-supplied value instead of rejecting or ignoring it and
+  returning the server's own value.
+</Example.Reason>
+
+</Example.Incorrect>
+
 <Workflow>
   <Workflow.Step>
     For each Create or Update operation, inspect the request body schema.
@@ -172,7 +192,13 @@ components:
     Confirm no server-owned (read-only) field is accepted in the request body.
   </Workflow.Step>
   <Workflow.Step>
-    Flag operations that accept a server-owned field in their request body.
+    If the implementation is accessible, send a Create or Update request that
+    supplies a server-owned (`readOnly: true`) field and confirm the service
+    rejects or ignores it rather than applying or echoing the client value.
+  </Workflow.Step>
+  <Workflow.Step>
+    Flag operations that accept or echo a server-owned field in their request
+    body.
   </Workflow.Step>
 </Workflow>
 
@@ -261,6 +287,26 @@ components:
 
 </Example.Correct>
 
+<Example.Incorrect>
+
+```yaml
+# POST /groups/{groupId}/clusters
+request:
+  clusterName: my-cluster
+  region: us-east-1
+response:
+  clusterName: my-cluster
+  region: US_EAST_1 # server normalized the client-owned value
+```
+
+<Example.Reason>
+  The client sent `us-east-1`, but the service normalized it to `US_EAST_1`.
+  State-driven clients compare their desired value against the returned one and
+  report perpetual drift.
+</Example.Reason>
+
+</Example.Incorrect>
+
 <Workflow>
   <Workflow.Step>
     Set a client-owned field to a known value via a Create or Update operation.
@@ -301,6 +347,25 @@ components:
 </Example.Reason>
 
 </Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+# PATCH /groups/{groupId}/clusters/my-cluster
+request:
+  clusterName: my-cluster
+  description: staging
+response:
+  clusterName: my-cluster # description was dropped from the response
+```
+
+<Example.Reason>
+  The client sent `description`, but the service dropped it from the response.
+  Clients cannot confirm the value was stored, and declarative tools treat the
+  missing field as drift.
+</Example.Reason>
+
+</Example.Incorrect>
 
 <Workflow>
   <Workflow.Step>
