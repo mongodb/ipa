@@ -302,9 +302,8 @@ consumers that the resource is deprecated.
 <Guideline.Details>
 
 The header is added to responses at runtime for the API version being served. In
-the version-specific specification, the operation for that version is marked
-`deprecated: true`. The header's date comes from the version's deprecation date,
-which is not recorded in the specification.
+the specification for that version, the operation is marked `deprecated: true`.
+The deprecation date itself is not recorded in the specification.
 
 </Guideline.Details>
 
@@ -318,10 +317,10 @@ consumers when it will be **sunsetted**.
 
 <Guideline.Details>
 
-Record the sunset date as `x-sunset`. In the version-specific specification, an
-operation whose version is being removed is marked `deprecated: true` and
-carries `x-sunset`. The header is added to responses at runtime for that
-version; it is not declared as a response header in the specification.
+Record the sunset date as `x-sunset`. In the specification for that version, the
+operation is marked `deprecated: true` and carries `x-sunset`. The header is
+added to responses at runtime for that version; it is not declared as a response
+header in the specification.
 
 <Example.Correct>
 
@@ -342,8 +341,8 @@ paths:
 ```
 
 <Example.Reason>
-  The operation for the version being removed is marked `deprecated: true` and
-  records its sunset date, so the runtime can emit the Sunset header for it.
+  The operation is marked `deprecated: true` and records its sunset date, so the
+  runtime can emit the Sunset header for that version.
 </Example.Reason>
 
 </Example.Correct>
