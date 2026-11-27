@@ -225,12 +225,71 @@ components:
 
 </Guideline>
 
-<Guideline id="IPA-128-must-transition-deprecated-to-sunset" enforcement="advisory">
+<Guideline id="IPA-128-must-transition-deprecated-to-sunset" given="operation" enforcement="review" effort="check">
 
 A **deprecated** API resource or version **must** be **sunsetted** within an
 established timeframe ([IPA-120](0120.mdx)). Deprecated fields and parameters
 have no independent sunset date and are removed only in a new API version
 ([IPA-116](0116.mdx)).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      deprecated: true
+      responses:
+        "200":
+          headers:
+            Sunset:
+              schema:
+                type: string
+                format: date-time
+```
+
+<Example.Reason>
+  The deprecated operation announces a sunset date, so consumers know when it
+  will stop working and can plan their migration.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      deprecated: true
+```
+
+<Example.Reason>
+  The operation is deprecated but no sunset date is established, so consumers
+  have no timeframe to migrate within.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>Find every deprecated operation or version.</Workflow.Step>
+  <Workflow.Step>
+    Confirm each carries a sunset date, or is covered by the version's defined
+    timeframe.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm deprecated fields and parameters have no independent sunset date.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any deprecation without an established timeframe.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
 
 </Guideline>
 
@@ -263,12 +322,73 @@ A **sunset** API resource is no longer supported.
 
 <Guidelines>
 
-<Guideline id="IPA-128-must-deprecate-before-sunset" enforcement="advisory">
+<Guideline id="IPA-128-must-deprecate-before-sunset" given="operation" enforcement="review" effort="reason">
 
 A **stable** API resource or version **must not** be **sunsetted** without first
 being **deprecated**. Deprecated fields and parameters follow the lifecycle of
 the version that contains them. For version-level rules, see
 [IPA-120](0120.mdx).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      deprecated: true
+      responses:
+        "200":
+          headers:
+            Sunset:
+              schema:
+                type: string
+                format: date-time
+```
+
+<Example.Reason>
+  The operation is deprecated with an announced sunset date, so it is sunsetted
+  only after a deprecation phase consumers can act on.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      responses:
+        "410":
+          description: Gone.
+```
+
+<Example.Reason>
+  The operation is already gone (410) with no deprecation phase, so consumers
+  had no warning and no migration window.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>Compare the spec against the prior version.</Workflow.Step>
+  <Workflow.Step>
+    For each removed or sunsetted element, confirm the prior version marked it
+    deprecated with an announced sunset date.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm deprecated fields and parameters follow their version's lifecycle.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any element that was sunsetted without a deprecation phase.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
 
 </Guideline>
 

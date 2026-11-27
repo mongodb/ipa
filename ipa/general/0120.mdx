@@ -335,38 +335,95 @@ paths:
 
 </Guideline>
 
-<Guideline id="IPA-120-must-gate-breaking-changes-by-version" enforcement="advisory">
+<Guideline id="IPA-120-must-gate-breaking-changes-by-version" given="spec" enforcement="review" effort="reason">
 
-A backwards-incompatible change **must** be introduced in a new API version; it
-**must not** change the behavior of an existing version. Users of existing
-versions stay undisturbed and can upgrade at their own pace, and the existing
-version is deprecated with a sunset date so they can migrate
-([IPA-128](0128.mdx)).
+A backwards-incompatible change **must** be introduced in a new API version and
+**must not** change the behavior of an existing version. Backwards-compatible
+changes stay in the existing version ([IPA-116](0116.mdx)). When a new version
+is introduced, the prior version is superseded and enters the deprecation
+lifecycle ([IPA-128](0128.mdx)).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      responses:
+        "200":
+          content:
+            application/vnd.example.2023-01-01+json:
+              schema:
+                $ref: "#/components/schemas/PaginatedOrders2023"
+            application/vnd.example.2024-01-01+json:
+              schema:
+                $ref: "#/components/schemas/PaginatedOrders2024"
+```
+
+<Example.Reason>
+  The incompatible shape is a new media type. The existing one is unchanged, so
+  current clients keep receiving the shape they were built against.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      responses:
+        "200":
+          content:
+            application/vnd.example.2023-01-01+json:
+              schema:
+                $ref: "#/components/schemas/PaginatedOrders2024"
+```
+
+<Example.Reason>
+  The incompatible shape replaced the existing media type, so every client on
+  that version breaks at once and has no way to opt in.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>Diff the published spec against the revision.</Workflow.Step>
+  <Workflow.Step>
+    For each incompatible change, confirm it appears under a new version rather
+    than an existing one.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the existing version's shape and behavior are unchanged.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any incompatible change applied in place.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
 
 </Guideline>
 
-<Guideline id="IPA-120-must-allow-versions-to-coexist" enforcement="advisory">
+<Guideline id="IPA-120-should-allow-versions-to-coexist" enforcement="advisory">
 
-Different versions of the same API **must** be able to work at the same time
+Different versions of the same API **should** be able to work at the same time
 within a single client application for a reasonable transition period, so the
-client can move to the newer version smoothly. An older version **must** remain
-usable through a reasonable, well-communicated deprecation period before it is
-**sunsetted** ([IPA-128](0128.mdx)).
+client can move to the newer version smoothly.
 
 </Guideline>
 
-<Guideline id="IPA-120-should-start-deprecation-clock" enforcement="advisory">
+<Guideline id="IPA-120-should-define-sunset-process" enforcement="advisory">
 
-When a breaking change becomes necessary, the API producer **should** create the
-next version of the API and start a deprecation clock on the existing version.
-
-</Guideline>
-
-<Guideline id="IPA-120-must-define-sunset-process" enforcement="advisory">
-
-A version that contains **stable** components **must** have a formal process for
-sunsetting it, defined when the version is declared **stable**. That process
-**must** specify the deprecation period and the advance warning given to users.
+A version that contains **stable** components **should** have a formal process
+for sunsetting it, defined when the version is declared **stable**. That process
+**should** specify the deprecation period and the advance warning given to
+users.
 
 </Guideline>
 
@@ -386,28 +443,28 @@ to avoid impact.
 
 ```yaml
 paths:
-  /api/atlas/v2/groups/{groupId}/clusters:
+  /orders:
     get:
-      operationId: listClusters
+      operationId: listOrders
       responses:
         "200":
           content:
-            application/vnd.atlas.2023-01-01+json:
+            application/vnd.example.2023-01-01+json:
               x-xgen-version: "2023-01-01"
               x-sunset: "2099-01-01" # illustrative: deprecated, sunset announced
               schema:
-                $ref: "#/components/schemas/PaginatedClusterDescription2023"
-            application/vnd.atlas.2024-01-01+json:
+                $ref: "#/components/schemas/PaginatedOrders2023"
+            application/vnd.example.2024-01-01+json:
               x-xgen-version: "2024-01-01"
               schema:
-                $ref: "#/components/schemas/PaginatedClusterDescription2024"
+                $ref: "#/components/schemas/PaginatedOrders2024"
 ```
 
 <Example.Reason>
-  Both versions are served from the same path. The older version carries a
-  sunset date (`x-sunset` is the spec-level form of the `Sunset` response header
-  required by [IPA-128](0128.mdx)), so consumers can keep using it while they
-  move to the newer media type at their own pace.
+  Both versions are served from the same path. The version and sunset date are
+  recorded on each media type (`x-xgen-version`, `x-sunset`), so consumers can
+  keep using the older one while they move to the newer media type at their own
+  pace.
 </Example.Reason>
 
 </Example.Correct>
@@ -416,16 +473,16 @@ paths:
 
 ```yaml
 paths:
-  /api/atlas/v2/groups/{groupId}/clusters:
+  /orders:
     get:
-      operationId: listClusters
+      operationId: listOrders
       responses:
         "200":
           content:
-            application/vnd.atlas.2024-01-01+json:
+            application/vnd.example.2024-01-01+json:
               x-xgen-version: "2024-01-01"
               schema:
-                $ref: "#/components/schemas/PaginatedClusterDescription2024"
+                $ref: "#/components/schemas/PaginatedOrders2024"
 ```
 
 <Example.Reason>
