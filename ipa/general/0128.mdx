@@ -244,16 +244,17 @@ paths:
       deprecated: true
       responses:
         "200":
-          headers:
-            Sunset:
+          content:
+            application/vnd.example.2023-01-01+json:
+              x-xgen-version: "2023-01-01"
+              x-sunset: "2099-01-01"
               schema:
-                type: string
-                format: date-time
+                $ref: "#/components/schemas/Order2023"
 ```
 
 <Example.Reason>
-  The deprecated operation announces a sunset date, so consumers know when it
-  will stop working and can plan their migration.
+  The deprecated version records a sunset date, so consumers know when it will
+  stop working and can plan their migration.
 </Example.Reason>
 
 </Example.Correct>
@@ -301,8 +302,8 @@ consumers that the resource is deprecated.
 
 <Guideline.Details>
 The header is added to responses at runtime for the API version being served.
-The deprecation date is set in the code that defines the version, not in the
-OpenAPI specification.
+In the spec, mark the operation `deprecated: true`; the deprecation date is set
+in the code that defines the version, not in the OpenAPI specification.
 
 </Guideline.Details>
 
@@ -316,10 +317,14 @@ consumers when it will be **sunsetted**.
 
 <Guideline.Details>
 
-Record the sunset date as `x-sunset`, matching the sunset date set in the code
-that defines the version. The header is added to responses at runtime for the
-version being served; it is not declared as a response header in the
-specification.
+Record the sunset date as `x-sunset` on the versioned media type, alongside
+`x-xgen-version`. The value is a `YYYY-MM-DD` date that mirrors the sunset date
+set in the code that defines the version, and must match it. The header is added
+to responses at runtime for the version being served; it is not declared as a
+response header in the specification.
+
+The mechanically checkable part is `x-sunset`; the header itself is runtime
+behavior.
 
 The response for that version carries the header, for example:
 
@@ -336,19 +341,19 @@ paths:
     get:
       operationId: listOrders
       deprecated: true
-      x-sunset: "2099-01-01"
       responses:
         "200":
           content:
             application/vnd.example.2023-01-01+json:
               x-xgen-version: "2023-01-01"
+              x-sunset: "2099-01-01"
               schema:
                 $ref: "#/components/schemas/PaginatedOrders2023"
 ```
 
 <Example.Reason>
-  The operation records the sunset date as `x-sunset`, matching the version's
-  sunset date, so consumers can see when the version stops working.
+  The versioned media type records the sunset date as `x-sunset`, matching the
+  version's sunset date, so consumers can see when the version stops working.
 </Example.Reason>
 
 </Example.Correct>
@@ -415,16 +420,17 @@ paths:
       deprecated: true
       responses:
         "200":
-          headers:
-            Sunset:
+          content:
+            application/vnd.example.2023-01-01+json:
+              x-xgen-version: "2023-01-01"
+              x-sunset: "2099-01-01"
               schema:
-                type: string
-                format: date-time
+                $ref: "#/components/schemas/Order2023"
 ```
 
 <Example.Reason>
-  The operation is deprecated with an announced sunset date, so it is sunsetted
-  only after a deprecation phase consumers can act on.
+  The deprecated version records a sunset date, so it is sunsetted only after a
+  deprecation phase consumers can act on.
 </Example.Reason>
 
 </Example.Correct>

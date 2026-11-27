@@ -1293,7 +1293,6 @@ paths:
     get:
       operationId: getLegacyOrderSummary
       deprecated: true
-      x-sunset: "2099-01-01"
       description: >-
         Deprecated: use `getOrderSummary` instead, which returns the same data
         with line-item totals. It is deprecated because the legacy summary omits
@@ -1304,6 +1303,12 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/vnd.example.2023-01-01+json:
+              x-xgen-version: "2023-01-01"
+              x-sunset: "2099-01-01"
+              schema:
+                $ref: "#/components/schemas/OrderSummary2023"
 ```
 
 <Example.Reason>
