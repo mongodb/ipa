@@ -295,17 +295,34 @@ paths:
 
 <Guideline id="IPA-128-must-provide-deprecation-header" given="operation" enforcement="automatable">
 
-A **deprecated** API resource **must** provide the Deprecation HTTP response
+A **deprecated** API resource **must** return the Deprecation HTTP response
 header ([RFC 9745](https://datatracker.ietf.org/doc/rfc9745/)) to signal to
 consumers that the resource is deprecated.
+
+<Guideline.Details>
+
+In the OpenAPI specification, mark the deprecated element `deprecated: true`.
+The header is added to responses at runtime for the API version being served; it
+is not declared as a response header in the specification.
+
+</Guideline.Details>
 
 </Guideline>
 
 <Guideline id="IPA-128-must-provide-sunset-header" given="operation" enforcement="automatable">
 
-A **deprecated** API resource **must** provide the Sunset HTTP response header
+A **deprecated** API resource **must** return the Sunset HTTP response header
 ([RFC 8594](https://datatracker.ietf.org/doc/html/rfc8594)) to signal to
 consumers when it will be **sunsetted**.
+
+<Guideline.Details>
+
+Record the sunset date in the OpenAPI specification as `x-sunset` on the
+versioned media type. The header is added to responses at runtime for the API
+version being served; it is not declared as a response header in the
+specification.
+
+</Guideline.Details>
 
 </Guideline>
 
