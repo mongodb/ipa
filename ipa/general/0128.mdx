@@ -301,10 +301,10 @@ consumers that the resource is deprecated.
 
 <Guideline.Details>
 
-The header is added to responses at runtime for the API version being served.
-The OpenAPI specification does not record a version's deprecation date. An
-endpoint deprecated as a whole is marked `deprecated: true`; an individual
-superseded version is not.
+The header is added to responses at runtime for the API version being served. In
+the version-specific specification, the operation for that version is marked
+`deprecated: true`. The header's date comes from the version's deprecation date,
+which is not recorded in the specification.
 
 </Guideline.Details>
 
@@ -318,14 +318,10 @@ consumers when it will be **sunsetted**.
 
 <Guideline.Details>
 
-Record the sunset date in the OpenAPI specification as `x-sunset` on the
-versioned media type. The header is added to responses at runtime for the API
-version being served; it is not declared as a response header in the
-specification.
-
-A superseded version is not marked `deprecated: true`, because the operation
-still serves the current version. An endpoint deprecated as a whole is marked
-`deprecated: true`, with the sunset date recorded on its media type.
+Record the sunset date as `x-sunset`. In the version-specific specification, an
+operation whose version is being removed is marked `deprecated: true` and
+carries `x-sunset`. The header is added to responses at runtime for that
+version; it is not declared as a response header in the specification.
 
 <Example.Correct>
 
@@ -334,23 +330,20 @@ paths:
   /orders:
     get:
       operationId: listOrders
+      deprecated: true
+      x-sunset: "2099-01-01"
       responses:
         "200":
           content:
             application/vnd.example.2023-01-01+json:
               x-xgen-version: "2023-01-01"
-              x-sunset: "2099-01-01"
               schema:
                 $ref: "#/components/schemas/PaginatedOrders2023"
-            application/vnd.example.2024-01-01+json:
-              x-xgen-version: "2024-01-01"
-              schema:
-                $ref: "#/components/schemas/PaginatedOrders2024"
 ```
 
 <Example.Reason>
-  The older version records its sunset date, so the runtime can emit the Sunset
-  header for it. The current version has no sunset date.
+  The operation for the version being removed is marked `deprecated: true` and
+  records its sunset date, so the runtime can emit the Sunset header for it.
 </Example.Reason>
 
 </Example.Correct>
@@ -359,9 +352,9 @@ paths:
 
 ```yaml
 paths:
-  /orders/{orderId}:
+  /orders:
     get:
-      operationId: getOrder
+      operationId: listOrders
       deprecated: true
       responses:
         "200":
@@ -369,12 +362,12 @@ paths:
             application/vnd.example.2023-01-01+json:
               x-xgen-version: "2023-01-01"
               schema:
-                $ref: "#/components/schemas/Order2023"
+                $ref: "#/components/schemas/PaginatedOrders2023"
 ```
 
 <Example.Reason>
-  The endpoint is deprecated but has no sunset date recorded, so the runtime
-  cannot emit the Sunset header and consumers do not know when it stops working.
+  The operation is deprecated but records no sunset date, so the runtime cannot
+  emit the Sunset header and consumers do not know when it stops working.
 </Example.Reason>
 
 </Example.Incorrect>
