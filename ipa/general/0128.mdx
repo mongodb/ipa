@@ -316,9 +316,10 @@ consumers when it will be **sunsetted**.
 
 <Guideline.Details>
 
-Record the sunset date as `x-sunset`. The header is added to responses at
-runtime for the version being served; it is not declared as a response header in
-the specification.
+Record the sunset date as `x-sunset`, matching the sunset date set in the code
+that defines the version. The header is added to responses at runtime for the
+version being served; it is not declared as a response header in the
+specification.
 
 <Example.Correct>
 
@@ -339,8 +340,8 @@ paths:
 ```
 
 <Example.Reason>
-  The operation is marked `deprecated: true` and records its sunset date, so the
-  runtime can emit the Sunset header for that version.
+  The operation records the sunset date as `x-sunset`, matching the version's
+  sunset date, so consumers can see when the version stops working.
 </Example.Reason>
 
 </Example.Correct>
@@ -363,8 +364,9 @@ paths:
 ```
 
 <Example.Reason>
-  The operation is deprecated but records no sunset date, so the runtime cannot
-  emit the Sunset header and consumers do not know when it stops working.
+  The sunset date is not recorded as `x-sunset`, so the published specification
+  does not show when the version stops working and does not match the date set
+  in code.
 </Example.Reason>
 
 </Example.Incorrect>
