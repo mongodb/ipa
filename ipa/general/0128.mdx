@@ -310,8 +310,9 @@ consumers when it will be **sunsetted**.
 </Guideline>
 
 <Guideline id="IPA-128-should-migrate-from-deprecated" enforcement="advisory">
-  Where a replacement exists, consumers **should** migrate from a **deprecated**
-  API resource to its replacement before it is **sunsetted**.
+  Where a replacement exists, consumers **should** migrate to it during the
+  deprecation period. They **may** keep using the deprecated resource until its
+  sunset date.
 </Guideline>
 
 </Guidelines>
@@ -400,8 +401,8 @@ A **sunset** API resource **must** return
 </Guideline>
 
 <Guideline id="IPA-128-must-migrate-from-sunset" enforcement="advisory">
-  Where a replacement exists, consumers **must** migrate to it before the
-  resource is **sunsetted**.
+  A **sunset** API resource no longer works, so consumers **must** have migrated
+  to a replacement, where one exists, by its sunset date.
 </Guideline>
 
 </Guidelines>

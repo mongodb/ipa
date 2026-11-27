@@ -420,19 +420,21 @@ client can move to the newer version smoothly.
 
 <Guideline id="IPA-120-must-define-sunset-process" given="spec" enforcement="review" implementation effort="reason">
 
-A version that contains **stable** components **must** have a formal process for
-sunsetting it, defined when the version is declared **stable**. That process
-**must** specify the deprecation period and the advance warning given to users.
+A version that contains **stable** components **must** have a sunset plan
+defined when the version is declared **stable**. The plan **must** specify the
+deprecation period and the advance warning given to users.
 
 <Guideline.Details>
 
-This requirement is verified against the version's release plan rather than the
-OpenAPI document.
+The lifecycle itself is defined by [IPA-128](0128.mdx); this guideline requires
+the version's own timeline to be committed at stable declaration rather than
+decided when sunset becomes necessary. It is verified against the release plan,
+not the OpenAPI document.
 
 <Workflow>
   <Workflow.Step>Locate the release plan for the version.</Workflow.Step>
   <Workflow.Step>
-    Confirm it defines the sunset process for versions with stable components.
+    Confirm it defines the sunset plan for versions with stable components.
   </Workflow.Step>
   <Workflow.Step>
     Confirm the process specifies the deprecation period and the advance warning
