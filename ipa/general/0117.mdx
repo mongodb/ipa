@@ -536,15 +536,19 @@ components:
     Invoice:
       type: object
       properties:
+        total:
+          type: number
+          description: Total amount of the invoice.
         amount:
           type: number
           deprecated: true
-          description: Deprecated: use `total` instead.
+          description: >-
+            Deprecated: use `total` instead. Legacy name for the invoice total.
 ```
 
 <Example.Reason>
-  The `Deprecated: ` prefix matches the format generated SDK documentation
-  expects, and names the replacement in the same sentence.
+  The `Deprecated:` prefix matches the format generated SDK documentation
+  expects, names the replacement, and keeps the field's description.
 </Example.Reason>
 
 </Example.Correct>
@@ -560,11 +564,11 @@ components:
         amount:
           type: number
           deprecated: true
-          description: This field is no longer used. Use `total` instead.
+          description: Legacy name for the invoice total. Use `total` instead.
 ```
 
 <Example.Reason>
-  Without the `Deprecated: ` prefix, the generated SDK documentation fails its
+  Without the `Deprecated:` prefix, the generated SDK documentation fails its
   format check even though the description names the replacement.
 </Example.Reason>
 

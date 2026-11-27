@@ -131,7 +131,7 @@ A **deprecated** API resource is still supported but is on its way to becoming
   **must** keep working as documented until it is **sunsetted**.
 </Guideline>
 
-<Guideline id="IPA-128-must-declare-replacement-decision" enforcement="advisory">
+<Guideline id="IPA-128-must-declare-replacement-decision" given={["operation", "schema", "parameter"]} enforcement="review" effort="check">
 
 A **deprecated** API resource, field, or parameter **must** state whether it has
 a replacement and migration path:

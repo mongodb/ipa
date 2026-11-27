@@ -280,7 +280,9 @@ paths:
                   amount:
                     type: number
                     deprecated: true
-                    description: Deprecated: use `total` instead.
+                    description: >-
+                      Deprecated: use `total` instead. Legacy name for the
+                      invoice total.
 ```
 
 <Example.Reason>
@@ -360,7 +362,7 @@ next version of the API and start a deprecation clock on the existing version.
 
 </Guideline>
 
-<Guideline id="IPA-120-must-define-turn-down-process" enforcement="advisory">
+<Guideline id="IPA-120-must-define-sunset-process" enforcement="advisory">
 
 A version that contains **stable** components **must** have a formal process for
 sunsetting it, defined when the version is declared **stable**. That process
@@ -392,7 +394,7 @@ paths:
           content:
             application/vnd.atlas.2023-01-01+json:
               x-xgen-version: "2023-01-01"
-              x-sunset: "2025-01-01" # deprecated, sunset date announced
+              x-sunset: "2099-01-01" # illustrative: deprecated, sunset announced
               schema:
                 $ref: "#/components/schemas/PaginatedClusterDescription2023"
             application/vnd.atlas.2024-01-01+json:
@@ -403,8 +405,9 @@ paths:
 
 <Example.Reason>
   Both versions are served from the same path. The older version carries a
-  sunset date, so consumers can keep using it while they move to the newer media
-  type at their own pace.
+  sunset date (`x-sunset` is the spec-level form of the `Sunset` response header
+  required by [IPA-128](0128.mdx)), so consumers can keep using it while they
+  move to the newer media type at their own pace.
 </Example.Reason>
 
 </Example.Correct>
