@@ -197,7 +197,7 @@ components:
 
 </Guideline>
 
-<Guideline id="IPA-107-must-return-resource-in-response-body" given="update-operation" enforcement="review" effort="reason">
+<Guideline id="IPA-107-must-return-resource-in-response-body" given="update-operation" enforcement="review" effort="explore" implementation>
 
 The response body **must** be the same resource returned by the
 [Get method](0104.mdx)
@@ -265,6 +265,11 @@ paths:
     it is the complete resource rather than a partial projection.
   </Workflow.Step>
   <Workflow.Step>
+    If the implementation is accessible, issue a synchronous Update and compare
+    its response body against a Get of the same resource to confirm no fields
+    are omitted at runtime.
+  </Workflow.Step>
+  <Workflow.Step>
     Flag Update operations that return no body, a partial body, or a schema that
     differs from the Get resource.
   </Workflow.Step>
@@ -274,7 +279,7 @@ paths:
 
 </Guideline>
 
-<Guideline id="IPA-107-must-respect-client-provided-values" given="update-operation" enforcement="review" effort="reason">
+<Guideline id="IPA-107-must-respect-client-provided-values" given="update-operation" enforcement="review" effort="explore" implementation>
 
 The Update method **must** respect the client provided values, or lack thereof,
 for all fields in the request (see
@@ -310,6 +315,23 @@ for all fields in the request (see
 </Example.Reason>
 
 </Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+# PATCH /groups/{groupId}/clusters/{clusterName}
+# Request body:
+{ "diskSizeGB": 100 }
+# The server also resets instanceSize to M10 because it was omitted.
+```
+
+<Example.Reason>
+  The client sent only `diskSizeGB`, but the server replaced the existing
+  `instanceSize` with a default. A partial update must leave fields the client
+  did not send unchanged.
+</Example.Reason>
+
+</Example.Incorrect>
 
 <Workflow>
   <Workflow.Step>
