@@ -678,7 +678,7 @@ retrying the request.
 
 <Example.Correct>
 
-```yaml
+```http
 HTTP/1.1 429 Too Many Requests
 Retry-After: 30
 ```
@@ -722,7 +722,7 @@ clients manage their request rates proactively:
 
 <Example.Correct>
 
-```yaml
+```http
 HTTP/1.1 200 OK
 RateLimit-Limit: 100
 RateLimit-Remaining: 73
