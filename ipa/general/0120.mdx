@@ -280,6 +280,9 @@ paths:
                   amount:
                     type: number
                     deprecated: true
+                    description: >-
+                      Deprecated: use `total` instead. Legacy name for the
+                      invoice total.
 ```
 
 <Example.Reason>
@@ -332,8 +335,91 @@ paths:
 
 </Guideline>
 
+<Guideline id="IPA-120-must-gate-breaking-changes-by-version" given="spec" enforcement="review" effort="reason">
+
+A backwards-incompatible change **must** be introduced in a new API version and
+**must not** change the behavior of an existing version. Backwards-compatible
+changes stay in the existing version ([IPA-116](0116.mdx)). When a new version
+is introduced, the prior version is superseded and enters the deprecation
+lifecycle ([IPA-128](0128.mdx)).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      responses:
+        "200":
+          content:
+            application/vnd.example.2023-01-01+json:
+              schema:
+                $ref: "#/components/schemas/PaginatedOrders2023"
+            application/vnd.example.2024-01-01+json:
+              schema:
+                $ref: "#/components/schemas/PaginatedOrders2024"
+```
+
+<Example.Reason>
+  The incompatible shape is a new media type. The existing one is unchanged, so
+  current clients keep receiving the shape they were built against.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      responses:
+        "200":
+          content:
+            application/vnd.example.2023-01-01+json:
+              schema:
+                $ref: "#/components/schemas/PaginatedOrders2024"
+```
+
+<Example.Reason>
+  The incompatible shape replaced the existing media type, so every client on
+  that version breaks at once and has no way to opt in.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>Diff the published spec against the revision.</Workflow.Step>
+  <Workflow.Step>
+    For each incompatible change, confirm it appears under a new version rather
+    than an existing one.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm the existing version's shape and behavior are unchanged.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any incompatible change applied in place.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-120-should-allow-versions-to-coexist" enforcement="advisory">
+
+Different versions of the same API **should** be able to work at the same time
+within a single client application for a reasonable transition period, so the
+client can move to the newer version smoothly.
+
+</Guideline>
+
 <Guideline id="IPA-120-may-sunset-faster-than-default" enforcement="advisory">
-  An API producer **may** coordinate to sunset old versions faster than the
+  An old version of an API resource **may** be **sunsetted** sooner than the
   default timeline of one year.
 </Guideline>
 
@@ -348,30 +434,28 @@ to avoid impact.
 
 ```yaml
 paths:
-  /v1/users/{userId}:
+  /orders:
     get:
-      operationId: getUserV1
-      deprecated: true
+      operationId: listOrders
       responses:
         "200":
-          headers:
-            Sunset:
+          content:
+            application/vnd.example.2023-01-01+json:
+              x-xgen-version: "2023-01-01"
+              x-sunset: "2099-01-01" # illustrative: deprecated, sunset announced
               schema:
-                type: string
-                format: date
-          description: A user. This version is deprecated; migrate to v2.
-  /v2/users/{userId}:
-    get:
-      operationId: getUserV2
-      responses:
-        "200":
-          description: A user.
+                $ref: "#/components/schemas/PaginatedOrders2023"
+            application/vnd.example.2024-01-01+json:
+              x-xgen-version: "2024-01-01"
+              schema:
+                $ref: "#/components/schemas/PaginatedOrders2024"
 ```
 
 <Example.Reason>
-  The superseded version stays available, is marked `deprecated`, and advertises
-  a `Sunset` date, giving consumers a signalled window to move before the old
-  version is withdrawn.
+  Both versions are served from the same path. The version and sunset date are
+  recorded on each media type (`x-xgen-version`, `x-sunset`), so consumers can
+  keep using the older one while they move to the newer media type at their own
+  pace.
 </Example.Reason>
 
 </Example.Correct>
@@ -380,17 +464,21 @@ paths:
 
 ```yaml
 paths:
-  /v2/users/{userId}:
+  /orders:
     get:
-      operationId: getUserV2
+      operationId: listOrders
       responses:
         "200":
-          description: A user.
+          content:
+            application/vnd.example.2024-01-01+json:
+              x-xgen-version: "2024-01-01"
+              schema:
+                $ref: "#/components/schemas/PaginatedOrders2024"
 ```
 
 <Example.Reason>
-  The previous version was removed outright with no deprecation marker or sunset
-  signal, so consumers still on it break the moment it disappears.
+  The older version was dropped outright, with no sunset date, so consumers
+  still requesting its media type break immediately.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -405,9 +493,8 @@ paths:
     during a transition window rather than being dropped at once.
   </Workflow.Step>
   <Workflow.Step>
-    Confirm the superseded operations are marked `deprecated` and advertise a
-    sunset signal (such as a `Sunset` header or a deprecation date in the
-    description).
+    Confirm the superseded version is still served and advertises a sunset
+    signal (for example, `x-sunset` on its versioned media type).
   </Workflow.Step>
   <Workflow.Step>
     Inspect release notes, changelogs, or client-communication records to

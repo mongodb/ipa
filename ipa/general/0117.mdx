@@ -520,6 +520,63 @@ parameters:
 
 </Guideline>
 
+<Guideline id="IPA-117-should-prefix-deprecated-descriptions" given={["schema", "parameter"]} enforcement="automatable" effort="check">
+
+The description of a deprecated property or parameter **should** start with
+`Deprecated:` followed by a space.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Invoice:
+      type: object
+      properties:
+        total:
+          type: number
+          description: Total amount of the invoice.
+        amount:
+          type: number
+          deprecated: true
+          description: >-
+            Deprecated: use `total` instead. Legacy name for the invoice total.
+```
+
+<Example.Reason>
+  The `Deprecated:` prefix marks the deprecation clearly, names the replacement,
+  and keeps the field's description.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Invoice:
+      type: object
+      properties:
+        amount:
+          type: number
+          deprecated: true
+          description: Legacy name for the invoice total. Use `total` instead.
+```
+
+<Example.Reason>
+  Without the `Deprecated:` prefix, the deprecation is not recognizable from the
+  description, even though it names the replacement.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
 <Guideline id="IPA-117-must-not-use-raw-html" given={["schema", "operation", "parameter", "tag"]} enforcement="rule">
 
 Descriptions **must not** use raw HTML.

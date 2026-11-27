@@ -1280,8 +1280,8 @@ paths:
 
 <Guideline id="IPA-116-must-not-remove-resource-without-sunset" given="paths" enforcement="review" effort="reason">
 
-Existing resources **must not** be removed without previously being marked as
-sunsetting.
+Existing resources **must not** be removed without first being **sunsetted**
+([IPA-128](0128.mdx)).
 
 <Guideline.Details>
 
@@ -1289,9 +1289,17 @@ sunsetting.
 
 ```yaml
 paths:
-  /orders/{orderId}:
+  /orders/{orderId}/legacySummary:
     get:
+      operationId: getLegacyOrderSummary
       deprecated: true
+      description: >-
+        Deprecated: use `getOrderSummary` instead, which returns the same data
+        with line-item totals. It is deprecated because the legacy summary omits
+        them. It will be removed after the sunset date.
+      externalDocs:
+        description: getOrderSummary
+        url: https://example.com/docs/orders#getordersummary
       responses:
         "200":
           headers:
@@ -1302,8 +1310,9 @@ paths:
 ```
 
 <Example.Reason>
-  The resource is marked deprecated and announces a sunset date, giving callers
-  a defined window to migrate before it is removed.
+  The resource is marked deprecated before removal, names and links to a
+  replacement that is a different endpoint, states the reason, and announces a
+  sunset date, giving callers a defined window to migrate.
 </Example.Reason>
 
 </Example.Correct>
@@ -1313,14 +1322,15 @@ paths:
 ```yaml
 paths:
   /invoices/{invoiceId}:
-    # the entire path was deleted in this revision with no prior sunset notice
+    # the entire path was deleted in this revision with no prior deprecation
+    # or sunset notice
     get:
       operationId: getInvoice
 ```
 
 <Example.Reason>
-  Deleting a live resource that was never marked sunsetting breaks callers with
-  no warning and no migration window.
+  Deleting a live resource that was never marked deprecated or sunsetted breaks
+  callers with no warning and no migration window.
 </Example.Reason>
 
 </Example.Incorrect>
@@ -1460,7 +1470,9 @@ New options **may** be added to existing enums.
 
 <Guideline id="IPA-116-may-mark-fields-deprecated" enforcement="advisory">
 
-Input and output fields **may** be marked as deprecated in existing versions.
+Input and output fields and parameters **may** be marked as deprecated in
+existing versions, subject to [IPA-128](0128.mdx), which defines what a
+deprecation must state and includes field and parameter examples.
 
 </Guideline>
 

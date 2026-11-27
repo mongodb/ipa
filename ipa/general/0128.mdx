@@ -109,9 +109,9 @@ A **stable** API resource **must** maintain backwards compatibility
   given="spec"
   enforcement="advisory"
 >
-  A **stable** API resource **must** remain supported until all users have
-  migrated to an alternative version, or until otherwise agreed between API
-  provider and customers.
+  A **stable** API resource **must** remain supported until its announced sunset
+  date, which **must** be communicated well in advance, unless otherwise agreed
+  between API provider and customers.
 </Guideline>
 
 </Guidelines>
@@ -127,14 +127,169 @@ A **deprecated** API resource is still supported but is on its way to becoming
   id="IPA-128-may-stop-deprecated-backwards-compat"
   enforcement="advisory"
 >
-  A **deprecated** API resource **may** no longer receive backwards
-  compatibility changes.
+  A **deprecated** API resource **may** stop receiving new functionality, but
+  **must** keep working as documented until it is **sunsetted**.
 </Guideline>
 
-<Guideline id="IPA-128-must-transition-deprecated-to-sunset" enforcement="advisory">
+<Guideline id="IPA-128-must-declare-replacement-decision" given={["operation", "schema", "parameter"]} enforcement="review" effort="check">
 
-A **deprecated** API resource **must** transition to **sunset** within an
-established timeframe.
+A **deprecated** API resource, field, or parameter **must** state whether it has
+a replacement:
+
+1. If it has a replacement, the documentation **must** name it and provide a
+   migration plan that explains how consumers move to it. The replacement may be
+   another element in the same version (for example, another field), the same
+   operation in another version, or a different resource or endpoint.
+2. If it has no replacement, the documentation **must** state that none exists
+   and that the element will be removed in a future version.
+
+The documentation **should** also state why the element is being deprecated.
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+components:
+  schemas:
+    Invoice:
+      type: object
+      properties:
+        total:
+          type: number
+        amount:
+          type: number
+          deprecated: true
+          description: >-
+            Deprecated: use `total` instead. Read `total` and stop reading or
+            sending `amount`. It is deprecated because both fields always held
+            the same value. `amount` remains supported in this version and is
+            removed only in a new version.
+```
+
+<Example.Reason>
+  The deprecated field names its replacement, explains the migration, gives the
+  reason for the deprecation, and says how long it stays supported.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /invoices:
+    get:
+      operationId: listInvoices
+      parameters:
+        - name: legacyFormat
+          in: query
+          deprecated: true
+          description: >-
+            Deprecated: ignored, and will be removed in a future version. There
+            is no replacement. It is deprecated because the server always uses
+            the default format.
+          schema:
+            type: boolean
+```
+
+<Example.Reason>
+  The deprecated parameter has no replacement, so the description says so
+  explicitly, gives the reason, and states that it will be removed.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+components:
+  schemas:
+    Invoice:
+      type: object
+      properties:
+        amount:
+          type: number
+          deprecated: true
+```
+
+<Example.Reason>
+  The field is deprecated but says nothing about a replacement, so consumers
+  cannot tell whether there is a migration path or the field is simply going
+  away.
+</Example.Reason>
+
+</Example.Incorrect>
+
+</Guideline.Details>
+
+</Guideline>
+
+<Guideline id="IPA-128-must-transition-deprecated-to-sunset" given="operation" enforcement="review" effort="check">
+
+A **deprecated** API resource or version **must** be **sunsetted** within an
+established timeframe ([IPA-120](0120.mdx)). Deprecated fields and parameters
+have no independent sunset date and are removed only in a new API version
+([IPA-116](0116.mdx)).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      deprecated: true
+      responses:
+        "200":
+          headers:
+            Sunset:
+              schema:
+                type: string
+                format: date-time
+```
+
+<Example.Reason>
+  The deprecated operation announces a sunset date, so consumers know when it
+  will stop working and can plan their migration.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      deprecated: true
+```
+
+<Example.Reason>
+  The operation is deprecated but no sunset date is established, so consumers
+  have no timeframe to migrate within.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>Find every deprecated operation or version.</Workflow.Step>
+  <Workflow.Step>
+    Confirm each carries a sunset date, or is covered by the version's defined
+    timeframe.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm deprecated fields and parameters have no independent sunset date.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any deprecation without an established timeframe.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
 
 </Guideline>
 
@@ -150,13 +305,14 @@ consumers that the resource is deprecated.
 
 A **deprecated** API resource **must** provide the Sunset HTTP response header
 ([RFC 8594](https://datatracker.ietf.org/doc/html/rfc8594)) to signal to
-consumers when it will transition to **sunset**.
+consumers when it will be **sunsetted**.
 
 </Guideline>
 
 <Guideline id="IPA-128-should-migrate-from-deprecated" enforcement="advisory">
-  Consumers **should** migrate from a **deprecated** API resource to the
-  **stable** version.
+  Where a replacement exists, consumers **should** migrate to it during the
+  deprecation period. They **may** keep using the deprecated resource until its
+  sunset date.
 </Guideline>
 
 </Guidelines>
@@ -167,6 +323,76 @@ A **sunset** API resource is no longer supported.
 
 <Guidelines>
 
+<Guideline id="IPA-128-must-deprecate-before-sunset" given="operation" enforcement="review" effort="reason">
+
+A **stable** API resource or version **must not** be **sunsetted** without first
+being **deprecated**. Deprecated fields and parameters follow the lifecycle of
+the version that contains them. For version-level rules, see
+[IPA-120](0120.mdx).
+
+<Guideline.Details>
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      deprecated: true
+      responses:
+        "200":
+          headers:
+            Sunset:
+              schema:
+                type: string
+                format: date-time
+```
+
+<Example.Reason>
+  The operation is deprecated with an announced sunset date, so it is sunsetted
+  only after a deprecation phase consumers can act on.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      responses:
+        "410":
+          description: Gone.
+```
+
+<Example.Reason>
+  The operation is already gone (410) with no deprecation phase, so consumers
+  had no warning and no migration window.
+</Example.Reason>
+
+</Example.Incorrect>
+
+<Workflow>
+  <Workflow.Step>Compare the spec against the prior version.</Workflow.Step>
+  <Workflow.Step>
+    For each removed or sunsetted element, confirm the prior version marked it
+    deprecated with an announced sunset date.
+  </Workflow.Step>
+  <Workflow.Step>
+    Confirm deprecated fields and parameters follow their version's lifecycle.
+  </Workflow.Step>
+  <Workflow.Step>
+    Report any element that was sunsetted without a deprecation phase.
+  </Workflow.Step>
+</Workflow>
+
+</Guideline.Details>
+
+</Guideline>
+
 <Guideline id="IPA-128-must-return-410-for-sunset" given="operation" enforcement="automatable">
 
 A **sunset** API resource **must** return
@@ -175,8 +401,8 @@ A **sunset** API resource **must** return
 </Guideline>
 
 <Guideline id="IPA-128-must-migrate-from-sunset" enforcement="advisory">
-  Consumers **must** migrate from a **sunset** API resource to the **stable**
-  version.
+  A **sunset** API resource no longer works, so consumers **must** have migrated
+  to a replacement, where one exists, by its sunset date.
 </Guideline>
 
 </Guidelines>
