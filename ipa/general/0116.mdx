@@ -1302,16 +1302,18 @@ paths:
         url: https://example.com/docs/orders#getordersummary
       responses:
         "200":
-          headers:
-            Sunset: # announced before removal
+          description: OK
+          content:
+            application/vnd.example.2023-01-01+json:
+              x-xgen-version: "2023-01-01"
+              x-sunset: "2099-01-01"
               schema:
-                type: string
-                format: date-time
+                $ref: "#/components/schemas/OrderSummary2023"
 ```
 
 <Example.Reason>
   The resource is marked deprecated before removal, names and links to a
-  replacement that is a different endpoint, states the reason, and announces a
+  replacement that is a different endpoint, states the reason, and records its
   sunset date, giving callers a defined window to migrate.
 </Example.Reason>
 
@@ -1342,10 +1344,10 @@ paths:
   </Workflow.Step>
   <Workflow.Step>
     For each removed path, check the prior version's history for a `deprecated:
-    true` marking and a `Sunset` header announced ahead of removal.
+    true` marking and an `x-sunset` date recorded ahead of removal.
   </Workflow.Step>
   <Workflow.Step>
-    Report any resource removed without a prior sunset announcement.
+    Report any resource removed without a prior sunset date.
   </Workflow.Step>
 </Workflow>
 
