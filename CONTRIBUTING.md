@@ -70,6 +70,13 @@ npm run lint:prettier
 npm run lint:markdown
 ```
 
+Run the tests with `npm test`. They include a check that every `yaml` code block
+in `ipa/**/*.mdx` parses as valid YAML (for example, a plain scalar such as
+`description: Deprecated: use x` fails because it contains a colon followed by a
+space; quote it or use a `>-` block). Tag non-YAML snippets, such as HTTP
+messages, with their own language (`http`) instead of `yaml`. The check lives in
+`src/validation/yamlExamples.test.ts`.
+
 ## Writing IPA guidelines
 
 ### Principles vs. guidelines
