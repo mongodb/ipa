@@ -302,7 +302,9 @@ consumers that the resource is deprecated.
 <Guideline.Details>
 
 The header is added to responses at runtime for the API version being served.
-The OpenAPI specification does not record a version's deprecation date.
+The OpenAPI specification does not record a version's deprecation date. An
+endpoint deprecated as a whole is marked `deprecated: true`; an individual
+superseded version is not.
 
 </Guideline.Details>
 
@@ -320,6 +322,62 @@ Record the sunset date in the OpenAPI specification as `x-sunset` on the
 versioned media type. The header is added to responses at runtime for the API
 version being served; it is not declared as a response header in the
 specification.
+
+A superseded version is not marked `deprecated: true`, because the operation
+still serves the current version. An endpoint deprecated as a whole is marked
+`deprecated: true`, with the sunset date recorded on its media type.
+
+<Example.Correct>
+
+```yaml
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      responses:
+        "200":
+          content:
+            application/vnd.example.2023-01-01+json:
+              x-xgen-version: "2023-01-01"
+              x-sunset: "2099-01-01"
+              schema:
+                $ref: "#/components/schemas/PaginatedOrders2023"
+            application/vnd.example.2024-01-01+json:
+              x-xgen-version: "2024-01-01"
+              schema:
+                $ref: "#/components/schemas/PaginatedOrders2024"
+```
+
+<Example.Reason>
+  The older version records its sunset date, so the runtime can emit the Sunset
+  header for it. The current version has no sunset date.
+</Example.Reason>
+
+</Example.Correct>
+
+<Example.Incorrect>
+
+```yaml
+paths:
+  /orders/{orderId}:
+    get:
+      operationId: getOrder
+      deprecated: true
+      responses:
+        "200":
+          content:
+            application/vnd.example.2023-01-01+json:
+              x-xgen-version: "2023-01-01"
+              schema:
+                $ref: "#/components/schemas/Order2023"
+```
+
+<Example.Reason>
+  The endpoint is deprecated but has no sunset date recorded, so the runtime
+  cannot emit the Sunset header and consumers do not know when it stops working.
+</Example.Reason>
+
+</Example.Incorrect>
 
 </Guideline.Details>
 
